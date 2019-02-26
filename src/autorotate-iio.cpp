@@ -17,23 +17,55 @@
 using namespace Gio;
 class WayfireAutorotateIIO : public wayfire_plugin_t
 {
-    public:
+    /* Tries to detect whether autorotate is enabled for the current output.
+     * Currently it is enabled only for integrated panels */
+    bool is_autorotate_enabled()
+    {
+        static const std::string integrated_connectors[] = {
+            "eDP",
+            "LVDS",
+            "DSI",
+        };
 
+        for (auto iconnector : integrated_connectors)
+        {
+            /* In wlroots, the output name is based on the connector */
+            if (std::string(output->handle->name)
+                .find_first_of(iconnector) != std::string::npos)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    guint watch_id;
+    public:
     effect_hook_t on_frame = [=] ()
     {
         Glib::MainContext::get_default()->iteration(false);
     };
 
     Glib::RefPtr<Glib::MainLoop> loop;
-    void init(wayfire_config *config)
+    void init(wayfire_config *config) override
     {
+        if (!is_autorotate_enabled())
+            return;
+
+        if (loop)
+        {
+            log_error ("Unexpected: more than one integrated panel?");
+            return;
+        }
+
         Glib::init();
         Gio::init();
 
         loop = Glib::MainLoop::create(true);
         output->render->add_effect(&on_frame, WF_OUTPUT_EFFECT_PRE);
 
-        DBus::watch_name(DBus::BUS_TYPE_SYSTEM, "net.hadess.SensorProxy",
+        watch_id = DBus::watch_name(DBus::BUS_TYPE_SYSTEM, "net.hadess.SensorProxy",
             sigc::mem_fun(this, &WayfireAutorotateIIO::on_iio_appeared),
             sigc::mem_fun(this, &WayfireAutorotateIIO::on_iio_disappeared));
     }
@@ -93,6 +125,19 @@ class WayfireAutorotateIIO : public wayfire_plugin_t
     {
         log_info("lost connection to iio-sensors.");
         iio_proxy.reset();
+    }
+
+    void fini() override
+    {
+        /* If loop is NULL, autorotate was disabled for the current output */
+        if (!loop)
+            return;
+
+        iio_proxy.reset();
+        DBus::unwatch_name(watch_id);
+        loop->quit();
+
+        output->render->rem_effect(&on_frame);
     }
 };
 
