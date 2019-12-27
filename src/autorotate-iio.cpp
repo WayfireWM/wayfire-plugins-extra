@@ -1,3 +1,11 @@
+#include <wayfire/plugin.hpp>
+#include <wayfire/output.hpp>
+#include <wayfire/render-manager.hpp>
+#include <wayfire/input-device.hpp>
+#include <wayfire/output-layout.hpp>
+#include <wayfire/core.hpp>
+#include <wayfire/util/log.hpp>
+
 #include <giomm/dbusconnection.h>
 #include <giomm/dbuswatchname.h>
 #include <giomm/dbusproxy.h>
@@ -5,15 +13,6 @@
 
 #include <glibmm/main.h>
 #include <glibmm/init.h>
-
-#include <plugin.hpp>
-#include <config.hpp>
-#include <output.hpp>
-#include <render-manager.hpp>
-#include <input-device.hpp>
-#include <output-layout.hpp>
-#include <debug.hpp>
-#include <core.hpp>
 
 #include <map>
 
@@ -64,12 +63,15 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         }
     };
 
-    guint watch_id;
-    wf_option rotate_left_opt;
-    wf_option rotate_right_opt;
-    wf_option rotate_up_opt;
-    wf_option rotate_down_opt;
+    wf::option_wrapper_t<wf::activatorbinding_t>
+        rotate_up_opt{"autorotate-iio/rotate_up"},
+        rotate_left_opt{"autorotate-iio/rotate_left"},
+        rotate_down_opt{"autorotate-iio/rotate_down"},
+        rotate_right_opt{"autorotate-iio/rotate_right"};
+    wf::option_wrapper_t<bool>
+        config_rotation_locked{"autorotate-iio/lock_rotation"};
 
+    guint watch_id;
     activator_callback on_rotate_left = [=] (wf_activator_source src, int32_t) {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
     };
@@ -85,7 +87,6 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
 
     /* User-specified rotation via keybinding, -1 means not set */
     int32_t user_rotation = -1;
-    wf_option config_rotation_locked;
 
     /* Transform coming from the iio-sensors, -1 means not set */
     int32_t sensor_transform = -1;
@@ -113,7 +114,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         wl_output_transform transform_to_use;
         if (user_rotation >= 0) {
             transform_to_use = (wl_output_transform)user_rotation;
-        } else if (sensor_transform >= 0 && !config_rotation_locked->as_int()) {
+        } else if (sensor_transform >= 0 && !config_rotation_locked) {
             transform_to_use = (wl_output_transform)sensor_transform;
         } else {
             /* No user rotation set, and no sensor data */
@@ -138,20 +139,8 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     Glib::RefPtr<Glib::MainLoop> loop;
 
     public:
-    void init(wayfire_config *config) override
+    void init() override
     {
-        auto section = config->get_section("autorotate-iio");
-
-        rotate_up_opt    =
-            section->get_option("rotate_up", "<ctrl> <super> KEY_UP");
-        rotate_left_opt =
-            section->get_option("rotate_left", "<ctrl> <super> KEY_LEFT");
-        rotate_down_opt =
-            section->get_option("rotate_down", "<ctrl> <super> KEY_DOWN");
-        rotate_right_opt =
-            section->get_option("rotate_right", "<ctrl> <super> KEY_RIGHT");
-        config_rotation_locked = section->get_option("lock_rotation", "0");
-
         output->add_activator(rotate_left_opt, &on_rotate_left);
         output->add_activator(rotate_right_opt, &on_rotate_right);
         output->add_activator(rotate_up_opt, &on_rotate_up);
@@ -184,13 +173,13 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     void on_iio_appeared(const Glib::RefPtr<DBus::Connection>& conn,
         Glib::ustring name, Glib::ustring owner)
     {
-        log_info("iio-sensors appeared, connecting ...");
+        LOGI("iio-sensors appeared, connecting ...");
         iio_proxy = DBus::Proxy::create_sync(conn,
             name, "/net/hadess/SensorProxy", "net.hadess.SensorProxy");
 
         if (!iio_proxy)
         {
-            log_error("Failed to connect to iio-proxy.");
+            LOGE("Failed to connect to iio-proxy.");
             return;
         }
 
@@ -212,7 +201,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
 
         Glib::Variant<Glib::ustring> orientation;
         iio_proxy->get_cached_property(orientation, "AccelerometerOrientation");
-        log_info("IIO Accelerometer orientation: %s", orientation.get().c_str());
+        LOGI("IIO Accelerometer orientation: %s", orientation.get().c_str());
 
         static const std::map<std::string, wl_output_transform> transform_by_name =
         {
@@ -232,7 +221,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     void on_iio_disappeared(const Glib::RefPtr<DBus::Connection>& conn,
         Glib::ustring name)
     {
-        log_info("lost connection to iio-sensors.");
+        LOGI("lost connection to iio-sensors.");
         iio_proxy.reset();
     }
 

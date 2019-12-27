@@ -4,7 +4,7 @@ project(
 	'cpp',
 	version: '0.1',
 	license: 'MIT',
-	meson_version: '>=0.43.0',
+	meson_version: '>=0.51.0',
 	default_options: [
 		'cpp_std=c++14',
         'c_std=c11',
@@ -25,6 +25,7 @@ add_project_link_arguments(['-rdynamic'], language:'cpp')
 add_project_arguments(['-Wno-unused-parameter'], language: 'cpp')
 subdir('proto')
 subdir('src')
+subdir('metadata')
 
 summary = [
 	'',
