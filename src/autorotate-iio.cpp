@@ -71,16 +71,16 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     wf_option rotate_down_opt;
 
     activator_callback on_rotate_left = [=] (wf_activator_source src, int32_t) {
-        on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
     };
     activator_callback on_rotate_right = [=] (wf_activator_source src, int32_t) {
-        on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
     };
     activator_callback on_rotate_up = [=] (wf_activator_source src, int32_t) {
-        on_rotate_binding(WL_OUTPUT_TRANSFORM_NORMAL);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_NORMAL);
     };
     activator_callback on_rotate_down = [=] (wf_activator_source src, int32_t) {
-        on_rotate_binding(WL_OUTPUT_TRANSFORM_180);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_180);
     };
 
     /* User-specified rotation via keybinding, -1 means not set */
@@ -90,8 +90,11 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     /* Transform coming from the iio-sensors, -1 means not set */
     int32_t sensor_transform = -1;
 
-    void on_rotate_binding(int32_t target_rotation)
+    bool on_rotate_binding(int32_t target_rotation)
     {
+        if (!output->can_activate_plugin(grab_interface))
+            return false;
+
         /* If the user presses the same rotation binding twice, this means
          * unlock the rotation. Otherwise, just use the new rotation. */
         if (target_rotation == user_rotation)
@@ -101,11 +104,11 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
             user_rotation = target_rotation;
         }
 
-        update_transform();
+        return update_transform();
     };
 
     /** Calculate the transform based on user and sensor data, and apply it */
-    void update_transform()
+    bool update_transform()
     {
         wl_output_transform transform_to_use;
         if (user_rotation >= 0) {
@@ -114,16 +117,18 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
             transform_to_use = (wl_output_transform)sensor_transform;
         } else {
             /* No user rotation set, and no sensor data */
-            return;
+            return false;
         }
 
         auto configuration =
             wf::get_core().output_layout->get_current_configuration();
         if (configuration[output->handle].transform == transform_to_use)
-            return;
+            return false;
 
         configuration[output->handle].transform = transform_to_use;
         wf::get_core().output_layout->apply_configuration(configuration);
+
+        return true;
     }
 
     wf::effect_hook_t on_frame = [=] ()
