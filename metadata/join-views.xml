@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <wayfire>
   <plugin name="join-views">
-    <_short>Synchronize child views with their parent</_short>
+    <_short>Join Views</_short>
     <category>Desktop</category>
   </plugin>
 </wayfire>
