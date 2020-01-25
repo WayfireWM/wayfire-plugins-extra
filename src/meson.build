@@ -14,6 +14,10 @@ magnifier = shared_module('magnifier', 'mag.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+backgroundview = shared_module('background-view', 'background-view.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 
 subdir('network-keyboard')
 
