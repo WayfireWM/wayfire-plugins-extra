@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="autorotate-iio">
+	<_short>Auto Rotate</_short>
+	<category>Desktop</category>
+	<option name="lock_rotation" type="bool">
+		<_short>Lock Rotation</_short>
+		<default>0</default>
+	</option>
+	<option name="rotate_up" type="activator">
+		<_short>Rotate Up</_short>
+		<default>&lt;ctrl&gt; &lt;super&gt; KEY_UP</default>
+	</option>
+	<option name="rotate_left" type="activator">
+		<_short>Rotate Left</_short>
+		<default>&lt;ctrl&gt; &lt;super&gt; KEY_LEFT</default>
+	</option>
+	<option name="rotate_down" type="activator">
+		<_short>Rotate Down</_short>
+		<default>&lt;ctrl&gt; &lt;super&gt; KEY_DOWN</default>
+	</option>
+	<option name="rotate_right" type="activator">
+		<_short>Rotate Right</_short>
+		<default>&lt;ctrl&gt; &lt;super&gt; KEY_RIGHT</default>
+	</option>
+	</plugin>
+</wayfire>

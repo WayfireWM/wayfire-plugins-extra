@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<wayfire>
+  <plugin name="join-views">
+    <_short>Join Views</_short>
+    <category>Desktop</category>
+  </plugin>
+</wayfire>
