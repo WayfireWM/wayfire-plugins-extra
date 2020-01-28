@@ -15,7 +15,7 @@ class JoinViewsSingleton
         int cy = parent_geometry.y + parent_geometry.height / 2;
         for (auto child : view->children)
         {
-            wf_geometry target = child->get_wm_geometry();
+            auto target = child->get_wm_geometry();
             target.x = cx - target.width / 2;
             target.y = cy - target.height / 2;
             child->set_geometry(target);

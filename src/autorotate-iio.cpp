@@ -72,16 +72,16 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         config_rotation_locked{"autorotate-iio/lock_rotation"};
 
     guint watch_id;
-    activator_callback on_rotate_left = [=] (wf_activator_source src, int32_t) {
+    wf::activator_callback on_rotate_left = [=] (wf::activator_source_t src, int32_t) {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
     };
-    activator_callback on_rotate_right = [=] (wf_activator_source src, int32_t) {
+    wf::activator_callback on_rotate_right = [=] (wf::activator_source_t src, int32_t) {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
     };
-    activator_callback on_rotate_up = [=] (wf_activator_source src, int32_t) {
+    wf::activator_callback on_rotate_up = [=] (wf::activator_source_t src, int32_t) {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_NORMAL);
     };
-    activator_callback on_rotate_down = [=] (wf_activator_source src, int32_t) {
+    wf::activator_callback on_rotate_down = [=] (wf::activator_source_t src, int32_t) {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_180);
     };
 
