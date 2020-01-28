@@ -38,7 +38,7 @@ class JoinViewsSingleton
     JoinViewsSingleton()
     {
         wf::option_wrapper_t<bool> opt{"move/join_views"};
-        opt.raw_option->set_value(true);
+        ((wf::option_sptr_t<bool>)opt)->set_value(true);
     }
 };
 
