@@ -10,7 +10,7 @@ keycolor = shared_module('keycolor', 'keycolor.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
-magnifier = shared_module('magnifier', 'mag.cpp',
+magnifier = shared_module('mag', 'mag.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
