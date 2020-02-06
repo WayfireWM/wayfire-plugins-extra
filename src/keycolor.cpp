@@ -75,12 +75,14 @@ void main()
 
 OpenGL::program_t program;
 
-wf::option_wrapper_t<wf::color_t> color{"keycolor/color"};
-wf::option_wrapper_t<double> opacity{"keycolor/opacity"};
-wf::option_wrapper_t<double> threshold{"keycolor/threshold"};
-
 class wf_keycolor : public wf::view_transformer_t
 {
+    nonstd::observer_ptr<wf::view_interface_t> view;
+    wf::config::option_base_t::updated_callback_t option_changed;
+    wf::option_wrapper_t<wf::color_t> color{"keycolor/color"};
+    wf::option_wrapper_t<double> opacity{"keycolor/opacity"};
+    wf::option_wrapper_t<double> threshold{"keycolor/threshold"};
+
     uint32_t get_z_order() override
     {
         return wf::TRANSFORMER_HIGHLEVEL;
@@ -99,6 +101,20 @@ class wf_keycolor : public wf::view_transformer_t
     }
 
     public:
+
+    wf_keycolor(wayfire_view view) : wf::view_transformer_t()
+    {
+        this->view = view;
+
+        option_changed = [=] ()
+        {
+            this->view->damage();
+        };
+
+        color.set_callback(option_changed);
+        opacity.set_callback(option_changed);
+        threshold.set_callback(option_changed);
+    }
 
     void render_box(wf::texture_t src_tex, wlr_box _src_box,
         wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
@@ -167,7 +183,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
 {
     const std::string transformer_name = "keycolor";
     wf::signal_callback_t view_attached, view_detached;
-    wf::config::option_base_t::updated_callback_t option_changed;
 
     void add_transformer(wayfire_view view)
     {
@@ -176,7 +191,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
             return;
         }
 
-        view->add_transformer(std::make_unique<wf_keycolor> (),
+        view->add_transformer(std::make_unique<wf_keycolor> (view),
             transformer_name);
     }
 
@@ -192,10 +207,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
     {
         for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
         {
-            if (view->get_transformer(transformer_name))
-            {
-                pop_transformer(view);
-            }
+            pop_transformer(view);
         }
     }
 
@@ -205,18 +217,9 @@ class wayfire_keycolor : public wf::plugin_interface_t
         grab_interface->name = transformer_name;
         grab_interface->capabilities = 0;
 
-        option_changed = [=] ()
-        {
-            for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
-            {
-                if (view->get_transformer(transformer_name))
-                     view->damage();
-            }
-        };
-
-        color.set_callback(option_changed);
-        opacity.set_callback(option_changed);
-        threshold.set_callback(option_changed);
+        OpenGL::render_begin();
+        program.compile(vertex_shader, fragment_shader);
+        OpenGL::render_end();
 
         view_attached = [=] (wf::signal_data_t *data)
         {
@@ -227,24 +230,10 @@ class wayfire_keycolor : public wf::plugin_interface_t
                 return;
             }
 
-            assert(!view->get_transformer(transformer_name));
-            add_transformer(view);
-        };
-
-        /* If a view is detached, we remove its blur transformer.
-         * If it is just moved to another output, the blur plugin
-         * on the other output will add its own transformer there */
-        view_detached = [=] (wf::signal_data_t *data)
-        {
-            auto view = get_signaled_view(data);
-            pop_transformer(view);
+            if(!view->get_transformer(transformer_name))
+                add_transformer(view);
         };
         output->connect_signal("attach-view", &view_attached);
-        output->connect_signal("detach-view", &view_detached);
-
-        OpenGL::render_begin();
-        program.compile(vertex_shader, fragment_shader);
-        OpenGL::render_end();
 
         for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
         {
@@ -261,7 +250,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
     {
         remove_transformers();
         output->disconnect_signal("attach-view", &view_attached);
-        output->disconnect_signal("detach-view", &view_detached);
         OpenGL::render_begin();
         program.free_resources();
         OpenGL::render_end();
