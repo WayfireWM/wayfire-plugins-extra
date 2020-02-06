@@ -18,6 +18,10 @@ backgroundview = shared_module('background-view', 'background-view.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+fullscreen = shared_module('fullscreen', 'fullscreen.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 
 subdir('network-keyboard')
 
