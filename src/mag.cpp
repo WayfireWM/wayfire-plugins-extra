@@ -169,32 +169,6 @@ class wayfire_magnifier : public wf::plugin_interface_t
         return true;
     }
 
-    wf::texture_t get_texture_from_surface(wlr_texture *texture)
-    {
-        assert(wlr_texture_is_gles2(texture));
-
-        wlr_gles2_texture_attribs attribs;
-        wlr_gles2_texture_get_attribs(texture, &attribs);
-
-        wf::texture_t tex;
-        /* Wayfire Y-inverts by default */
-        tex.invert_y = !attribs.inverted_y;
-        tex.target = attribs.target;
-        tex.tex_id = attribs.tex;
-
-        if (tex.target == GL_TEXTURE_2D)
-        {
-            tex.type = attribs.has_alpha ?
-                wf::TEXTURE_TYPE_RGBA : wf::TEXTURE_TYPE_RGBX;
-        }
-        else
-        {
-            tex.type = wf::TEXTURE_TYPE_EXTERNAL;
-        }
-
-        return tex;
-    }
-
     wf::effect_hook_t post_hook = [=]()
     {
         wlr_dmabuf_attributes dmabuf_attribs;
@@ -265,7 +239,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
         auto wlr_texture = wlr_texture_from_dmabuf(
             wf::get_core().renderer, &dmabuf_attribs);
 
-        auto texture = get_texture_from_surface(wlr_texture);
+        wf::texture_t texture{wlr_texture};
 
         OpenGL::render_begin();
         mag_view->mag_tex.allocate(width, height);
