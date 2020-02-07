@@ -40,6 +40,7 @@ class FullscreenTransformer : public wf::view_2D
         wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
     {
         OpenGL::render_begin(target_fb);
+        target_fb.scissor(scissor_box);
         OpenGL::clear({0, 0, 0, 1});
         OpenGL::render_end();
 
