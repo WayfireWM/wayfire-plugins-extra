@@ -182,7 +182,6 @@ class wf_keycolor : public wf::view_transformer_t
 class wayfire_keycolor : public wf::plugin_interface_t
 {
     const std::string transformer_name = "keycolor";
-    wf::signal_callback_t view_attached, view_detached;
 
     void add_transformer(wayfire_view view)
     {
@@ -221,18 +220,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
         program.compile(vertex_shader, fragment_shader);
         OpenGL::render_end();
 
-        view_attached = [=] (wf::signal_data_t *data)
-        {
-            auto view = get_signaled_view(data);
-
-            if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
-            {
-                return;
-            }
-
-            if(!view->get_transformer(transformer_name))
-                add_transformer(view);
-        };
         output->connect_signal("attach-view", &view_attached);
 
         for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
@@ -246,10 +233,22 @@ class wayfire_keycolor : public wf::plugin_interface_t
         }
     }
 
+    wf::signal_connection_t view_attached{[this] (wf::signal_data_t *data)
+    {
+        auto view = get_signaled_view(data);
+
+        if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
+        {
+            return;
+        }
+
+        if(!view->get_transformer(transformer_name))
+            add_transformer(view);
+    }};
+
     void fini() override
     {
         remove_transformers();
-        output->disconnect_signal("attach-view", &view_attached);
         OpenGL::render_begin();
         program.free_resources();
         OpenGL::render_end();
