@@ -62,7 +62,6 @@ static std::map<wf::output_t *, struct process> procs;
 class wayfire_background_view : public wf::plugin_interface_t
 {
     const std::string transformer_name = "background-view";
-    wf::signal_callback_t view_mapped;
     wf::config::option_base_t::updated_callback_t option_changed;
     wf::option_wrapper_t<std::string> command{"background-view/command"};
     wf::option_wrapper_t<std::string> file{"background-view/file"};
@@ -89,51 +88,6 @@ class wayfire_background_view : public wf::plugin_interface_t
         command.set_callback(option_changed);
         file.set_callback(option_changed);
 
-        view_mapped = [=] (wf::signal_data_t *data)
-        {
-            auto view = get_signaled_view(data);
-#if WLR_HAS_XWAYLAND
-            wlr_surface *wlr_surface = view->get_wlr_surface();
-            bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
-#endif
-
-            for (auto& o : wf::get_core().output_layout->get_outputs())
-            {
-                if (procs[o].client == view->get_client()
-#if WLR_HAS_XWAYLAND
-                    || (is_xwayland_surface &&
-                    /* For this match to work, the client must set _NET_WM_PID */
-                    procs[o].pid == wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid)
-#endif
-                    )
-                {
-#if WLR_HAS_XWAYLAND
-                    if (is_xwayland_surface)
-                        view->set_decoration(nullptr);
-#endif
-
-                    /* Move to the respective output */
-                    wf::get_core().move_view_to_output(view, o);
-
-                    /* A client should be used that can be resized to any size
-                     * If we set it fullscreen, the screensaver would be inhibited
-                     * so we send a resize request that is the size of the output
-                     */
-                    view->set_geometry(o->get_relative_geometry());
-
-                    /* Set it as the background */
-                    o->workspace->add_view(view, wf::LAYER_BACKGROUND);
-
-                    /* Make it show on all workspaces */
-                    view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
-
-                    procs[o].view = view;
-
-                    break;
-                }
-            }
-        };
-
         output->connect_signal("map-view", &view_mapped);
 
         if (!signal)
@@ -144,6 +98,49 @@ class wayfire_background_view : public wf::plugin_interface_t
         procs[output].client = client_launch((std::string(command) + add_arg_if_not_empty(file)).c_str());
         procs[output].view = nullptr;
     }
+
+    wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
+    {
+        auto view = get_signaled_view(data);
+#if WLR_HAS_XWAYLAND
+        wlr_surface *wlr_surface = view->get_wlr_surface();
+        bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
+#endif
+        for (auto& o : wf::get_core().output_layout->get_outputs())
+        {
+            if (procs[o].client == view->get_client()
+#if WLR_HAS_XWAYLAND
+                || (is_xwayland_surface &&
+                /* For this match to work, the client must set _NET_WM_PID */
+                procs[o].pid == wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid)
+#endif
+                )
+            {
+#if WLR_HAS_XWAYLAND
+                if (is_xwayland_surface)
+                    view->set_decoration(nullptr);
+#endif
+                /* Move to the respective output */
+                wf::get_core().move_view_to_output(view, o);
+
+                /* A client should be used that can be resized to any size
+                 * If we set it fullscreen, the screensaver would be inhibited
+                 * so we send a resize request that is the size of the output
+                 */
+                view->set_geometry(o->get_relative_geometry());
+
+                /* Set it as the background */
+                o->workspace->add_view(view, wf::LAYER_BACKGROUND);
+
+                /* Make it show on all workspaces */
+                view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
+
+                procs[o].view = view;
+
+                break;
+            }
+        }
+    }};
 
     std::string add_arg_if_not_empty(std::string in)
     {
@@ -352,8 +349,6 @@ class wayfire_background_view : public wf::plugin_interface_t
         {
             wl_event_source_remove(signal);
         }
-
-        output->disconnect_signal("map-view", &view_mapped);
     }
 };
 
