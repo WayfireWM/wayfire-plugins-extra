@@ -4,3 +4,4 @@ install_data('keycolor.xml', install_dir: wayfire.get_variable(pkgconfig: 'metad
 install_data('mag.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('background-view.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('fullscreen.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
+install_data('bench.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
