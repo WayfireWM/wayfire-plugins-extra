@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="showrepaint">
+		<_short>Show Repaint</_short>
+		<_long>Show repainted areas on the screen.</_long>
+		<category>Utility</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle</_short>
+			<_long>Toggles the plugin state.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; KEY_S</default>
+		</option>
+	</plugin>
+</wayfire>

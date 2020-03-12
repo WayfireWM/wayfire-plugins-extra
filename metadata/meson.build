@@ -5,3 +5,4 @@ install_data('mag.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadi
 install_data('background-view.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('fullscreen.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('bench.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
+install_data('showrepaint.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))

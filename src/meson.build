@@ -26,6 +26,10 @@ bench = shared_module('bench', 'bench.cpp',
     dependencies: [wayfire, wlroots, wfconfig, cairo],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+showrepaint = shared_module('showrepaint', 'showrepaint.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 
 subdir('network-keyboard')
 
