@@ -5,7 +5,7 @@
 	<category>Desktop</category>
 	<option name="command" type="string">
 		<_short>Command</_short>
-		<default>mpv --no-keepaspect-window --loop=inf</default>
+		<default>mpv --loop=inf</default>
 	</option>
 	<option name="file" type="string">
 		<_short>File</_short>

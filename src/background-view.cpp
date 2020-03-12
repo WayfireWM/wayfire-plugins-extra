@@ -22,21 +22,14 @@
  * SOFTWARE.
  */
 
-#include <map>
-#include <fcntl.h>
-#include <unistd.h>
 #include <signal.h>
-#include <sys/wait.h>
-#include <sys/socket.h>
-#include "wayfire/core.hpp"
-#include "wayfire/view.hpp"
-#include "wayfire/plugin.hpp"
-#include "wayfire/output.hpp"
-#include "wayfire/signal-definitions.hpp"
-#include "wayfire/workspace-manager.hpp"
-#include "wayfire/output-layout.hpp"
-
-#include <wayfire/util/log.hpp>
+#include <wayfire/core.hpp>
+#include <wayfire/view.hpp>
+#include <wayfire/plugin.hpp>
+#include <wayfire/output.hpp>
+#include <wayfire/signal-definitions.hpp>
+#include <wayfire/workspace-manager.hpp>
+#include <wayfire/output-layout.hpp>
 
 extern "C"
 {
@@ -53,7 +46,6 @@ extern "C"
 struct process
 {
     nonstd::observer_ptr<wf::view_interface_t> view;
-    struct wl_client *client;
     pid_t pid;
 };
 
@@ -62,10 +54,14 @@ static std::map<wf::output_t *, struct process> procs;
 class wayfire_background_view : public wf::plugin_interface_t
 {
     const std::string transformer_name = "background-view";
-    wf::config::option_base_t::updated_callback_t option_changed;
+    /* The command option should be set to a client like mpv, projectM or
+     * a single xscreensaver.
+     */
     wf::option_wrapper_t<std::string> command{"background-view/command"};
+    /* The file option is for convenience when using wcm. If file is set,
+     * it will be appended to the command, wrapped in double quotes.
+     */
     wf::option_wrapper_t<std::string> file{"background-view/file"};
-    struct wl_event_source *signal = nullptr;
 
     public:
     void init() override
@@ -73,31 +69,25 @@ class wayfire_background_view : public wf::plugin_interface_t
         grab_interface->name = transformer_name;
         grab_interface->capabilities = 0;
 
-        option_changed = [=] ()
-        {
-            if (procs[output].view)
-            {
-                procs[output].view->close();
-                kill(procs[output].pid, SIGINT);
-                procs[output].view = nullptr;
-            }
-
-            procs[output].client = client_launch((std::string(command) + add_arg_if_not_empty(file)).c_str());
-        };
-
         command.set_callback(option_changed);
         file.set_callback(option_changed);
 
         output->connect_signal("map-view", &view_mapped);
 
-        if (!signal)
+        option_changed();
+    }
+
+    wf::config::option_base_t::updated_callback_t option_changed = [=] ()
+    {
+        if (procs[output].view)
         {
-            signal = wl_event_loop_add_signal(wf::get_core().ev_loop, SIGCHLD, sigchld_handler, &procs);
+            procs[output].view->close();
+            kill(procs[output].pid, SIGINT);
         }
 
-        procs[output].client = client_launch((std::string(command) + add_arg_if_not_empty(file)).c_str());
         procs[output].view = nullptr;
-    }
+        procs[output].pid = wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
+    };
 
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
     {
@@ -106,9 +96,23 @@ class wayfire_background_view : public wf::plugin_interface_t
         wlr_surface *wlr_surface = view->get_wlr_surface();
         bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
 #endif
+        /* Get pid for view */
+        pid_t view_pid;
+        wl_client_get_credentials(view->get_client(), &view_pid, 0, 0);
+
         for (auto& o : wf::get_core().output_layout->get_outputs())
         {
-            if (procs[o].client == view->get_client()
+            /* This condition attempts to match the pid that we got from run()
+             * to the client pid. This will not work in all cases. Naturally,
+             * not every command will spawn a view. This wont work well for gtk
+             * apps because it has a system where the client will defer to an
+             * existing instance with the same app-id and have that instance
+             * spawn a new view but have the same pid, meaning when we compare
+             * the pids, they wont match unless we happen to be the first to run
+             * the app. This does work well with clients such as mpv, projectM
+             * and running xscreensavers directly.
+             */
+            if (procs[o].pid == view_pid
 #if WLR_HAS_XWAYLAND
                 || (is_xwayland_surface &&
                 /* For this match to work, the client must set _NET_WM_PID */
@@ -116,14 +120,12 @@ class wayfire_background_view : public wf::plugin_interface_t
 #endif
                 )
             {
-#if WLR_HAS_XWAYLAND
-                if (is_xwayland_surface)
-                    view->set_decoration(nullptr);
-#endif
+                view->set_decoration(nullptr);
+
                 /* Move to the respective output */
                 wf::get_core().move_view_to_output(view, o);
 
-                /* A client should be used that can be resized to any size
+                /* A client should be used that can be resized to any size.
                  * If we set it fullscreen, the screensaver would be inhibited
                  * so we send a resize request that is the size of the output
                  */
@@ -154,200 +156,12 @@ class wayfire_background_view : public wf::plugin_interface_t
         }
     }
 
-    /* The following functions borrowed from weston */
-    int os_fd_set_cloexec(int fd)
-    {
-        long flags;
-
-        if (fd == -1)
-        {
-            return -1;
-        }
-
-        flags = fcntl(fd, F_GETFD);
-        if (flags == -1)
-        {
-            return -1;
-        }
-
-        if (fcntl(fd, F_SETFD, flags | FD_CLOEXEC) == -1)
-        {
-            return -1;
-        }
-
-        return 0;
-    }
-
-    int set_cloexec_or_close(int fd)
-    {
-        if (os_fd_set_cloexec(fd) != 0)
-        {
-            close(fd);
-            return -1;
-        }
-        return fd;
-    }
-
-    int os_socketpair_cloexec(int domain, int type, int protocol, int *sv)
-    {
-        int ret;
-
-#ifdef SOCK_CLOEXEC
-        ret = socketpair(domain, type | SOCK_CLOEXEC, protocol, sv);
-        if (ret == 0 || errno != EINVAL)
-        {
-            return ret;
-        }
-#endif
-
-        ret = socketpair(domain, type, protocol, sv);
-        if (ret < 0)
-        {
-            return ret;
-        }
-
-        sv[0] = set_cloexec_or_close(sv[0]);
-        sv[1] = set_cloexec_or_close(sv[1]);
-
-        if (sv[0] != -1 && sv[1] != -1)
-        {
-            return 0;
-        }
-
-        close(sv[0]);
-        close(sv[1]);
-        return -1;
-    }
-
-    static int sigchld_handler(int signal_number, void *data)
-    {
-        std::map<wf::output_t *, struct process> *procs = (std::map<wf::output_t *, struct process> *) data;
-        pid_t pid;
-        int status;
-
-        while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-            for (auto& p : *procs)
-            {
-                if (p.second.pid == pid)
-                {
-                    p.second.view = nullptr;
-                    break;
-                }
-            }
-        }
-
-        if (pid < 0 && errno != ECHILD)
-        {
-            LOGE("waitpid error: ", strerror(errno));
-        }
-
-        return 1;
-    }
-
-    void child_client_exec(int sockfd, const char *command)
-    {
-        int clientfd;
-        char s[32];
-        sigset_t allsigs;
-
-        /* do not give our signal mask to the new process */
-        sigfillset(&allsigs);
-        sigprocmask(SIG_UNBLOCK, &allsigs, NULL);
-
-        /* Launch clients as the user. Do not launch clients with wrong euid. */
-        if (seteuid(getuid()) == -1)
-        {
-            LOGE("seteuid failed");
-            return;
-        }
-
-        /* SOCK_CLOEXEC closes both ends, so we dup the fd to get a
-         * non-CLOEXEC fd to pass through exec. */
-        clientfd = dup(sockfd);
-        if (clientfd == -1)
-        {
-            LOGE("dup failed: ", strerror(errno));
-            return;
-        }
-
-        snprintf(s, sizeof s, "%d", clientfd);
-        setenv("WAYLAND_SOCKET", s, 1);
-        setenv("WAYLAND_DISPLAY", wf::get_core().wayland_display.c_str(), 1);
-
-        setenv("_JAVA_AWT_WM_NONREPARENTING", "1", 1);
-
-#if WLR_HAS_XWAYLAND
-        if (wf::get_core().get_xwayland_display() >= 0)
-        {
-            auto xdisp = ":" + std::to_string(wf::get_core().get_xwayland_display());
-            setenv("DISPLAY", xdisp.c_str(), 1);
-        }
-#endif
-
-        if (execlp("bash", "bash", "-c", command, NULL) < 0)
-        {
-            LOGE("executing '", command ,"' failed: ", strerror(errno));
-        }
-    }
-
-    struct wl_client *client_launch(const char *command)
-    {
-        int sv[2];
-        pid_t pid;
-        struct wl_client *client;
-
-        LOGI("launching '", command, "'");
-
-        if (os_socketpair_cloexec(AF_UNIX, SOCK_STREAM, 0, sv) < 0)
-        {
-            LOGE(__func__, ": socketpair failed while launching '", command , "': ",
-                strerror(errno));
-            return NULL;
-        }
-
-        pid = fork();
-        if (pid == -1)
-        {
-            close(sv[0]);
-            close(sv[1]);
-            LOGE(__func__, ": fork failed while launching '", command, "': ",
-                strerror(errno));
-            return NULL;
-        }
-
-        if (pid == 0)
-        {
-            child_client_exec(sv[1], command);
-            _exit(-1);
-        }
-
-        close(sv[1]);
-
-        client = wl_client_create(wf::get_core().display, sv[0]);
-        if (!client)
-        {
-            close(sv[0]);
-            LOGE(__func__, ": wl_client_create failed while launching '", command , "'.");
-            return NULL;
-        }
-
-        procs[output].pid = pid;
-
-        return client;
-    }
-    /* End from weston */
-
     void fini() override
     {
         if (procs[output].view)
         {
             procs[output].view->close();
             kill(procs[output].pid, SIGINT);
-        }
-
-        if (signal)
-        {
-            wl_event_source_remove(signal);
         }
     }
 };
