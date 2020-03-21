@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="background-view">
+	<_short>Background View</_short>
+	<category>Desktop</category>
+	<option name="command" type="string">
+		<_short>Command</_short>
+		<default>mpv --loop=inf</default>
+	</option>
+	<option name="file" type="string">
+		<_short>File</_short>
+		<hint>file</hint>
+		<default></default>
+	</option>
+	</plugin>
+</wayfire>
