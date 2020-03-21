@@ -6,6 +6,6 @@ joinviews = shared_module('join-views', 'join-views.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
-
-subdir('network-keyboard')
-
+if get_option('enable_nk')
+    subdir('network-keyboard')
+endif

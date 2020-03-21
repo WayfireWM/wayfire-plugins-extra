@@ -1,0 +1,1 @@
+option('enable_nk', type: 'boolean', value: false, description: 'Enable network-keyboard demo')
