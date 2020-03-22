@@ -253,16 +253,13 @@ class wayfire_bench_screen : public wf::plugin_interface_t
             text_y + yc);
         cairo_show_text(cr, fps_buf);
         cairo_stroke(cr);
-    }
 
-    wf::effect_hook_t pre_hook = [=] ()
-    {
         output->render->damage({
             cairo_geometry.x, cairo_geometry.y,
             cairo_geometry.width, cairo_geometry.height});
-    };
+    }
 
-    wf::effect_hook_t overlay_hook = [=] ()
+    wf::effect_hook_t pre_hook = [=] ()
     {
         uint32_t current_time = wf::get_current_time();
         uint32_t elapsed = current_time - last_time;
@@ -278,7 +275,10 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         }
 
         last_time = current_time;
+    };
 
+    wf::effect_hook_t overlay_hook = [=] ()
+    {
         OpenGL::render_begin();
         bench_tex.allocate(cairo_geometry.width, cairo_geometry.height);
         GL_CALL(glBindTexture(GL_TEXTURE_2D, bench_tex.tex));
