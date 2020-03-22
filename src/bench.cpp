@@ -249,9 +249,15 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         cairo_show_text(cr, fps_buf);
         cairo_stroke(cr);
 
-        output->render->damage({
-            cairo_geometry.x, cairo_geometry.y,
-            cairo_geometry.width, cairo_geometry.height});
+        OpenGL::render_begin();
+        bench_tex.allocate(cairo_geometry.width, cairo_geometry.height);
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, bench_tex.tex));
+        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+            cairo_geometry.width, cairo_geometry.height,
+            0, GL_RGBA, GL_UNSIGNED_BYTE,
+            cairo_image_surface_get_data(cairo_surface)));
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+        OpenGL::render_end();
     }
 
     wf::effect_hook_t pre_hook = [=] ()
@@ -270,17 +276,15 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         }
 
         last_time = current_time;
+
+        output->render->damage({
+            cairo_geometry.x, cairo_geometry.y,
+            cairo_geometry.width, cairo_geometry.height});
     };
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
         OpenGL::render_begin();
-        bench_tex.allocate(cairo_geometry.width, cairo_geometry.height);
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, bench_tex.tex));
-        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-            cairo_geometry.width, cairo_geometry.height,
-            0, GL_RGBA, GL_UNSIGNED_BYTE,
-            cairo_image_surface_get_data(cairo_surface)));
         gl_geometry src_geometry = {
             (float) cairo_geometry.x,
             (float) cairo_geometry.y,
