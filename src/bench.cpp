@@ -48,7 +48,6 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     uint32_t last_time = wf::get_current_time();
     double current_fps;
     double widget_radius;
-    bool hook_set = false;
     wf::framebuffer_t bench_tex;
     wf::geometry_t cairo_geometry;
     cairo_surface_t *cairo_surface;
@@ -65,13 +64,9 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         grab_interface->name = "bench";
         grab_interface->capabilities = 0;
 
-        if (!hook_set)
-        {
-            hook_set = true;
-            output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
-            output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
-            output->render->set_redraw_always();
-        }
+        output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
+        output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
+        output->render->set_redraw_always();
 
         output->connect_signal("reserved-workarea", &workarea_changed);
         position.set_callback(position_changed);
@@ -299,20 +294,11 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         OpenGL::render_end();
     };
 
-    void unset_hook()
+    void fini() override
     {
-        if (!hook_set)
-            return;
-
         output->render->set_redraw_always(false);
         output->render->rem_effect(&pre_hook);
         output->render->rem_effect(&overlay_hook);
-        hook_set = false;
-    }
-
-    void fini() override
-    {
-        unset_hook();
         cairo_surface_destroy(cairo_surface);
         cairo_destroy(cr);
         OpenGL::render_begin();
