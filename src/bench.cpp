@@ -24,6 +24,8 @@
 
 #include <math.h>
 #include <cairo.h>
+#include <deque>
+#include <numeric>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/opengl.hpp>
@@ -39,13 +41,11 @@ extern "C"
 
 class wayfire_bench_screen : public wf::plugin_interface_t
 {
-    int frames;
-    cairo_t *cr;
+    cairo_t *cr = nullptr;
     double text_y;
-    double max_fps;
+    double max_fps = 0;
     double widget_xc;
-    char fps_buf[128];
-    uint32_t last_time;
+    uint32_t last_time = wf::get_current_time();
     double current_fps;
     double widget_radius;
     bool hook_set = false;
@@ -53,7 +53,10 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     wf::geometry_t cairo_geometry;
     cairo_surface_t *cairo_surface;
     cairo_text_extents_t text_extents;
+    std::deque<int> last_frame_times;
+    int frames_since_last_update = 0;
     wf::option_wrapper_t<std::string> position{"bench/position"};
+    wf::option_wrapper_t<int> average_frames{"bench/average_frames"};
     wf::option_wrapper_t<int> frames_per_update{"bench/frames_per_update"};
 
     public:
@@ -69,11 +72,6 @@ class wayfire_bench_screen : public wf::plugin_interface_t
             output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
             output->render->set_redraw_always();
         }
-
-        last_time = wf::get_current_time();
-        cr = nullptr;
-        max_fps = 0;
-        frames = 0;
 
         output->connect_signal("reserved-workarea", &workarea_changed);
         position.set_callback(position_changed);
@@ -93,14 +91,14 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         if (!cr)
         {
             /* Setup dummy context to get initial font size */
-            cairo_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 1, 1);
+            cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
             cr = cairo_create(cairo_surface);
         }
 
         cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, font_size);
 
-        cairo_text_extents (cr, "234.5", &text_extents);
+        cairo_text_extents(cr, "234.5", &text_extents);
 
         widget_xc = text_extents.width / 2 + text_extents.x_bearing + WIDGET_PADDING;
         text_y = text_extents.height + WIDGET_PADDING;
@@ -114,7 +112,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         cairo_destroy(cr);
         cairo_surface_destroy(cairo_surface);
 
-        cairo_surface = cairo_image_surface_create (CAIRO_FORMAT_ARGB32,
+        cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
             cairo_geometry.width, cairo_geometry.height);
         cr = cairo_create(cairo_surface);
 
@@ -200,6 +198,20 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         double max_angle = M_PI - M_PI / 8;
         double target_angle = 2 * M_PI - M_PI / 8;
         double fps_angle;
+        char fps_buf[128];
+
+        double average = std::accumulate(
+            last_frame_times.begin(), last_frame_times.end(), 0.0);
+        average /= last_frame_times.size();
+
+        current_fps = (double) 1000 / average;
+
+        if (current_fps > max_fps)
+            max_fps = current_fps;
+        else
+            max_fps -= 1;
+
+        sprintf(fps_buf, "%.1f", current_fps);
 
         if (output->handle->current_mode)
         {
@@ -235,30 +247,12 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         else
             cairo_set_source_rgba_swizzle(cr, 1, 1, 0, 1);
 
-        cairo_text_extents (cr, fps_buf, &text_extents);
+        cairo_text_extents(cr, fps_buf, &text_extents);
         cairo_move_to(cr,
-            xc - text_extents.width / 2 + text_extents.x_bearing,
+            xc - (text_extents.width / 2 + text_extents.x_bearing),
             text_y + yc);
         cairo_show_text(cr, fps_buf);
         cairo_stroke(cr);
-    }
-
-    void update_fps()
-    {
-        uint32_t elapsed;
-        uint32_t current_time = wf::get_current_time();
-        elapsed = current_time - last_time;
-
-        last_time = current_time;
-
-        current_fps = (double) 1000 / elapsed;
-
-        if (current_fps > max_fps)
-            max_fps = current_fps;
-        else
-            max_fps -= 1;
-
-        sprintf(fps_buf, "%.1f", current_fps);
     }
 
     wf::effect_hook_t pre_hook = [=] ()
@@ -270,12 +264,20 @@ class wayfire_bench_screen : public wf::plugin_interface_t
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
-        update_fps();
-        if (frames++ >= frames_per_update)
+        uint32_t current_time = wf::get_current_time();
+        uint32_t elapsed = current_time - last_time;
+
+        while ((int) last_frame_times.size() >= average_frames)
+            last_frame_times.pop_front();
+        last_frame_times.push_back(elapsed);
+
+        if (++frames_since_last_update >= frames_per_update)
         {
              render_bench();
-             frames = 0;
+             frames_since_last_update = 0;
         }
+
+        last_time = current_time;
 
         OpenGL::render_begin();
         bench_tex.allocate(cairo_geometry.width, cairo_geometry.height);
