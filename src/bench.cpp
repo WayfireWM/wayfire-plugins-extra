@@ -23,14 +23,13 @@
  */
 
 #include <math.h>
-#include <cairo.h>
 #include <deque>
 #include <numeric>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
-#include <wayfire/opengl.hpp>
 #include <wayfire/render-manager.hpp>
 #include <wayfire/workspace-manager.hpp>
+#include <wayfire/plugins/common/cairo-util.hpp>
 
 extern "C"
 {
@@ -48,7 +47,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     uint32_t last_time = wf::get_current_time();
     double current_fps;
     double widget_radius;
-    wf::framebuffer_t bench_tex;
+    wf::simple_texture_t bench_tex;
     wf::geometry_t cairo_geometry;
     cairo_surface_t *cairo_surface;
     cairo_text_extents_t text_extents;
@@ -250,13 +249,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         cairo_stroke(cr);
 
         OpenGL::render_begin();
-        bench_tex.allocate(cairo_geometry.width, cairo_geometry.height);
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, bench_tex.tex));
-        GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-            cairo_geometry.width, cairo_geometry.height,
-            0, GL_RGBA, GL_UNSIGNED_BYTE,
-            cairo_image_surface_get_data(cairo_surface)));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+        cairo_surface_upload_to_texture(cairo_surface, bench_tex);
         OpenGL::render_end();
     }
 
@@ -276,25 +269,16 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         }
 
         last_time = current_time;
-
-        output->render->damage({
-            cairo_geometry.x, cairo_geometry.y,
-            cairo_geometry.width, cairo_geometry.height});
+        output->render->damage(cairo_geometry);
     };
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
-        OpenGL::render_begin();
-        gl_geometry src_geometry = {
-            (float) cairo_geometry.x,
-            (float) cairo_geometry.y,
-            (float) cairo_geometry.x + cairo_geometry.width,
-            (float) cairo_geometry.y + cairo_geometry.height};
         auto fb = output->render->get_target_framebuffer();
-        fb.bind();
-        OpenGL::render_transformed_texture(bench_tex.tex, src_geometry, {},
-            fb.get_orthographic_projection(), glm::vec4(1.0),
-            TEXTURE_TRANSFORM_INVERT_Y);
+        OpenGL::render_begin(fb);
+        OpenGL::render_transformed_texture(wf::texture_t{bench_tex.tex},
+            cairo_geometry, fb.get_orthographic_projection(), glm::vec4(1.0),
+            OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
         OpenGL::render_end();
     };
 
@@ -305,12 +289,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         output->render->rem_effect(&overlay_hook);
         cairo_surface_destroy(cairo_surface);
         cairo_destroy(cr);
-        OpenGL::render_begin();
-        bench_tex.release();
-        OpenGL::render_end();
-        output->render->damage({
-            cairo_geometry.x, cairo_geometry.y,
-            cairo_geometry.width, cairo_geometry.height});
+        output->render->damage(cairo_geometry);
     }
 };
 
