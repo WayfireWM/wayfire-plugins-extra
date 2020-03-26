@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="bench">
+		<_short>Bench</_short>
+		<_long>Display fps on each output.</_long>
+		<category>Utility</category>
+		<option name="frames_per_update" type="int">
+			<_short>Frames per Update</_short>
+			<_long>How many frames will pass before each fps sample is displayed.</_long>
+			<default>3</default>
+			<min>1</min>
+		</option>
+		<option name="average_frames" type="int">
+			<_short>Average frames</_short>
+			<_long>How many frames to average to get the FPS value.</_long>
+			<default>1</default>
+			<min>1</min>
+		</option>
+		<option name="position" type="string">
+			<_short>Position</_short>
+			<_long>Position of rendering.</_long>
+			<default>top_center</default>
+			<desc>
+				<value>top_left</value>
+				<_name>Top Left</_name>
+			</desc>
+			<desc>
+				<value>top_center</value>
+				<_name>Top Center</_name>
+			</desc>
+			<desc>
+				<value>top_right</value>
+				<_name>Top Right</_name>
+			</desc>
+			<desc>
+				<value>center_left</value>
+				<_name>Center Left</_name>
+			</desc>
+			<desc>
+				<value>center</value>
+				<_name>Center</_name>
+			</desc>
+			<desc>
+				<value>center_right</value>
+				<_name>Center Right</_name>
+			</desc>
+			<desc>
+				<value>bottom_left</value>
+				<_name>Bottom Left</_name>
+			</desc>
+			<desc>
+				<value>bottom_center</value>
+				<_name>Bottom Center</_name>
+			</desc>
+			<desc>
+				<value>bottom_right</value>
+				<_name>Bottom Right</_name>
+			</desc>
+		</option>
+	</plugin>
+</wayfire>
