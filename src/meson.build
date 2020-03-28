@@ -1,3 +1,7 @@
+annotate = shared_module('annotate', 'annotate.cpp',
+    dependencies: [wayfire, wlroots, wfconfig, cairo],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 autorotate = shared_module('autorotate-iio', 'autorotate-iio.cpp',
     dependencies: [wayfire, wlroots, wfconfig, giomm],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
