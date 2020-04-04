@@ -317,8 +317,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.y = std::min(from.y, to.y) - padding;
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
-        auto fb = output->render->get_target_framebuffer();
-        bbox = fb.damage_box_from_geometry_box(bbox);
         output->render->damage(bbox);
     }
 
@@ -363,8 +361,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.y = std::min(from.y, to.y) - padding;
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
-        auto fb = output->render->get_target_framebuffer();
-        bbox = fb.damage_box_from_geometry_box(bbox);
         output->render->damage(bbox);
         if (damage_last_bbox)
         {
@@ -425,8 +421,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.y = y - padding;
         bbox.width = w + padding * 2;
         bbox.height = h + padding * 2;
-        auto fb = output->render->get_target_framebuffer();
-        bbox = fb.damage_box_from_geometry_box(bbox);
         output->render->damage(bbox);
         if (damage_last_bbox)
         {
@@ -479,8 +473,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.y = (from.y - radius) - padding;
         bbox.width = (radius * 2) + padding * 2;
         bbox.height = (radius * 2) + padding * 2;
-        auto fb = output->render->get_target_framebuffer();
-        bbox = fb.damage_box_from_geometry_box(bbox);
         output->render->damage(bbox);
         if (damage_last_bbox)
         {
@@ -493,20 +485,14 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     {
         const auto& workspace = static_cast<wf::stream_signal_t*>(data);
         auto& ol = overlays[workspace->ws.x][workspace->ws.y];
-        auto current = output->workspace->get_current_workspace();
-        auto og = output->get_relative_geometry();
-        auto og_transformed = workspace->fb.framebuffer_box_from_geometry_box(og);
+        auto og = workspace->fb.geometry;
         auto damage = output->render->get_scheduled_damage() &
-            output->render->get_damage_box();
+            output->render->get_ws_box(workspace->ws);
 
         OpenGL::render_begin(workspace->fb);
         for (auto& box : damage)
         {
-            auto b = workspace->fb.framebuffer_box_from_damage_box(
-                wlr_box_from_pixman_box(box));
-            b.x -= (workspace->ws.x - current.x) * og_transformed.width;
-            b.y -= (workspace->ws.y - current.y) * og_transformed.height;
-            workspace->fb.scissor(b);
+            workspace->fb.logic_scissor(wlr_box_from_pixman_box(box));
             if (ol.cr)
             {
                 OpenGL::render_texture(wf::texture_t{ol.texture->tex},
