@@ -91,7 +91,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
             }
         };
 
-        output->connect_signal("reserved-workarea", &workarea_changed);
+        output->connect_signal("output-configuration-changed", &output_config_changed);
         output->connect_signal("viewport-changed", &viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
@@ -248,8 +248,21 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         output->render->damage_whole();
     }
 
-    wf::signal_connection_t workarea_changed{[this] (wf::signal_data_t *data)
+    wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
     {
+        wf::output_configuration_changed_signal *signal =
+            static_cast<wf::output_configuration_changed_signal*>(data);
+
+        if (!signal->changed_fields)
+        {
+            return;
+        }
+
+        if (signal->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
+        {
+            return;
+        }
+
         clear();
     }};
 
