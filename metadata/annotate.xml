@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="annotate">
+		<_short>Annotate</_short>
+		<_long>Draw on the output.</_long>
+		<category>Utility</category>
+		<option name="draw" type="button">
+			<_short>Draw</_short>
+			<_long>Begin drawing on workspace.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; BTN_LEFT</default>
+		</option>
+		<option name="clear_workspace" type="activator">
+			<_short>Clear Workspace</_short>
+			<_long>Clear workspace.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; KEY_C</default>
+		</option>
+		<option name="stroke_color" type="color">
+			<_short>Stroke Color</_short>
+			<_long>Color used for drawing.</_long>
+			<default>1 0 0 1</default>
+		</option>
+		<option name="method" type="string">
+			<_short>Drawing Method</_short>
+			<_long>Method used for drawing.</_long>
+			<default>draw</default>
+			<desc>
+				<value>draw</value>
+				<_name>Free Draw</_name>
+			</desc>
+			<desc>
+				<value>line</value>
+				<_name>Line</_name>
+			</desc>
+			<desc>
+				<value>rectangle</value>
+				<_name>Rectangle</_name>
+			</desc>
+			<desc>
+				<value>circle</value>
+				<_name>Circle</_name>
+			</desc>
+		</option>
+		<option name="line_width" type="double">
+			<_short>Line Width</_short>
+			<_long>Line width used for drawing.</_long>
+			<default>3.0</default>
+			<min>1.0</min>
+			<precision>1.0</precision>
+		</option>
+		<option name="from_center" type="bool">
+			<_short>Draw Shapes From Center</_short>
+			<_long>Draw shapes from center of drag point.</_long>
+			<default>true</default>
+		</option>
+	</plugin>
+</wayfire>
