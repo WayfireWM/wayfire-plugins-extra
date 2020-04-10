@@ -84,9 +84,33 @@ class wayfire_background_view : public wf::plugin_interface_t
             procs[output].view->close();
             kill(procs[output].pid, SIGINT);
         }
+        /* Insert exec between environment variables and command.
+         * This is needed for shells that fork on -c by default
+         * because we are matching the pid and fork increments
+         * the pid. We could just check for the pid and pid + 1
+         * but this wouldn't work for pid wrap around. For example,
+         * if /bin/sh is bash, this is not needed because bash -c
+         * execs the command and thus doesn't increment the pid.
+         * However if /bin/sh is dash, -c will fork by default and
+         * increment the pid unless exec is passed in the command.
+         */
+        std::stringstream stream(command);
+        std::string arg;
+        std::string cmd;
+        bool arg0_found = false;
+        while (std::getline(stream, arg, ' '))
+        {
+            if (!arg0_found && arg.find('=') == std::string::npos)
+            {
+                arg0_found = true;
+                cmd += "exec ";
+            }
+            cmd += arg + " ";
+        }
+        cmd.pop_back();
 
         procs[output].view = nullptr;
-        procs[output].pid = wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
+        procs[output].pid = wf::get_core().run(std::string(cmd) + add_arg_if_not_empty(file));
     };
 
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
