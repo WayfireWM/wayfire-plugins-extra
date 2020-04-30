@@ -28,97 +28,73 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/view-transform.hpp>
+#include <wayfire/compositor-view.hpp>
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/signal-definitions.hpp>
 
-class fullscreen_transformer : public wf::view_2D
+class fullscreen_subsurface : public wf::surface_interface_t, public wf::compositor_surface_t
 {
-    wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
-
   public:
-    bool fullscreen;
-    wayfire_view view;
-    wf::point_t workspace;
-    wlr_box output_geometry;
-    wf::geometry_t saved_geometry;
+    bool _mapped = true;
+    wf::geometry_t geometry;
 
-    fullscreen_transformer(wayfire_view view) : wf::view_2D(view)
+    fullscreen_subsurface(wayfire_view view)
+        : wf::surface_interface_t(), wf::compositor_surface_t() {}
+
+    ~fullscreen_subsurface()
     {
-        this->view = view;
-        fullscreen = false;
+        _mapped = false;
+        wf::emit_map_state_change(this);
     }
 
-    ~fullscreen_transformer() { }
-
-    void setup_transform(wlr_box og)
+    bool accepts_input(int32_t sx, int32_t sy) override
     {
-        auto vg = view->get_wm_geometry();
+        if (sx < geometry.x || sx > geometry.x + geometry.width ||
+            sy < geometry.y || sy > geometry.y + geometry.height)
+            return false;
 
-        output_geometry = og;
-        scale_x = (double) og.width / vg.width;
-        scale_y = (double) og.height / vg.height;
-        translation_x = (og.width - vg.width) / 2.0;
-        translation_y = (og.height - vg.height) / 2.0;
+        return true;
     }
 
-    wf::point_t get_workspace(wlr_box og)
+    bool is_mapped() const override
     {
-        wf::point_t ws;
-        auto vg = view->get_output_geometry();
-        wf::pointf_t center{vg.x + vg.width / 2.0, vg.y + vg.height / 2.0};
-
-        ws.x = std::floor(center.x / og.width);
-        ws.y = std::floor(center.y / og.height);
-
-        return ws;
+        return _mapped;
     }
 
-    wlr_box get_workspace_geometry(wlr_box og)
+    wf::point_t get_offset() override
     {
-        wf::point_t ws = workspace = get_workspace(og);
-
-        og.x += ws.x * og.width;
-        og.y += ws.y * og.height;
-
-        return og;
+        return {geometry.x, geometry.y};
     }
 
-    wlr_box get_bounding_box(wf::geometry_t view, wlr_box region) override
+    wf::dimensions_t get_size() const override
     {
-        return get_workspace_geometry(output_geometry);
+        return {geometry.width, geometry.height};
     }
 
-    void render_box(wf::texture_t src_tex, wlr_box src_box,
-        wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
+    void simple_render(const wf::framebuffer_t& fb, int x, int y,
+        const wf::region_t& damage) override
     {
-        wf::pointf_t saved_scale;
-
-        OpenGL::render_begin(target_fb);
-        target_fb.logic_scissor(scissor_box);
-        OpenGL::clear({0, 0, 0, 1});
+        OpenGL::render_begin(fb);
+        for (const auto& box : damage)
+        {
+            fb.logic_scissor(wlr_box_from_pixman_box(box));
+            OpenGL::clear({0, 0, 0, 1});
+        }
         OpenGL::render_end();
-
-        if (preserve_aspect)
-        {
-            saved_scale = wf::pointf_t{scale_x, scale_y};
-            if (scale_x > scale_y)
-            {
-                scale_x = scale_y;
-            }
-            else if (scale_x < scale_y)
-            {
-                scale_y = scale_x;
-            }
-        }
-
-        wf::view_2D::render_box(src_tex, src_box, scissor_box, target_fb);
-
-        if (preserve_aspect)
-        {
-            scale_x = saved_scale.x;
-            scale_y = saved_scale.y;
-        }
     }
+};
+
+class fullscreen_background
+{
+  public:
+    wf::view_2D *transformer;
+    wf::geometry_t saved_geometry;
+    fullscreen_subsurface *subsurface_a = nullptr;
+    fullscreen_subsurface *subsurface_b = nullptr;
+
+    fullscreen_background(wayfire_view view) {}
+
+    ~fullscreen_background() {}
 };
 
 class wayfire_force_fullscreen;
@@ -127,8 +103,8 @@ std::map<wf::output_t*, wayfire_force_fullscreen*> wayfire_force_fullscreen_inst
 
 class wayfire_force_fullscreen : public wf::plugin_interface_t
 {
-    std::string transformer_name;
-    std::unordered_multiset<fullscreen_transformer*> transformers;
+    std::string background_name;
+    std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
     wf::option_wrapper_t<wf::keybinding_t> key_toggle_fullscreen{"force-fullscreen/key_toggle_fullscreen"};
 
@@ -137,53 +113,125 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     {
         this->grab_interface->name = "force-fullscreen";
         this->grab_interface->capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR;
-        transformer_name = this->grab_interface->name;
+        background_name = this->grab_interface->name;
 
         output->add_key(key_toggle_fullscreen, &on_toggle_fullscreen);
         preserve_aspect.set_callback(preserve_aspect_option_changed);
         wayfire_force_fullscreen_instances[output] = this;
     }
 
-    fullscreen_transformer *get_transformer(wf::point_t workspace)
+    void create_subsurfaces(wayfire_view view)
     {
-        for (auto t : transformers)
+        auto pair = backgrounds.find(view);
+
+        if (pair == backgrounds.end())
         {
-            if (t->workspace == workspace)
-            {
-                return t;
-            }
+            return;
         }
 
-        return nullptr;
+        auto& background = pair->second;
+
+        if (!background->subsurface_a)
+        {
+            std::unique_ptr<fullscreen_subsurface> subsurface_a = std::make_unique<fullscreen_subsurface>(view);
+            nonstd::observer_ptr<fullscreen_subsurface> ptr{subsurface_a};
+            view->add_subsurface(std::move(subsurface_a), true);
+            background->subsurface_a = ptr.get();
+        }
+        if (!background->subsurface_b)
+        {
+            std::unique_ptr<fullscreen_subsurface> subsurface_b = std::make_unique<fullscreen_subsurface>(view);
+            nonstd::observer_ptr<fullscreen_subsurface> ptr{subsurface_b};
+            view->add_subsurface(std::move(subsurface_b), true);
+            background->subsurface_b = ptr.get();
+        }
     }
 
-    fullscreen_transformer *get_transformer(wayfire_view view)
+    void destroy_subsurfaces(wayfire_view view)
     {
-        for (auto t : transformers)
+        auto pair = backgrounds.find(view);
+
+        if (pair == backgrounds.end())
         {
-            if (t->view == view)
-            {
-                return t;
-            }
+            return;
         }
 
-        return nullptr;
+        auto& background = pair->second;
+
+        if (background->subsurface_a)
+        {
+            view->remove_subsurface(background->subsurface_a);
+            background->subsurface_a = nullptr;
+        }
+        if (background->subsurface_b)
+        {
+            view->remove_subsurface(background->subsurface_b);
+            background->subsurface_b = nullptr;
+        }
     }
 
-    void setup_transform(fullscreen_transformer *transformer)
+    void setup_transform(wayfire_view view)
     {
         auto og = output->get_relative_geometry();
+        auto vg = view->get_wm_geometry();
+        wf::geometry_t subsurface_a;
+        wf::geometry_t subsurface_b;
 
-        transformer->setup_transform(og);
-        transformer->view->damage();
+        double scale_x = (double) og.width / vg.width;
+        double scale_y = (double) og.height / vg.height;
+        double translation_x = (og.width - vg.width) / 2.0;
+        double translation_y = (og.height - vg.height) / 2.0;
+
+        if (preserve_aspect)
+        {
+            if (scale_x > scale_y)
+            {
+                scale_x = scale_y;
+                subsurface_a.width = ((og.width * (1.0 / scale_x)) - vg.width) / 2.0 + 1;
+                subsurface_a.height = vg.height;
+                subsurface_a.x = -subsurface_a.width;
+                subsurface_a.y = 0;
+                subsurface_b = subsurface_a;
+                subsurface_b.x = vg.width;
+                subsurface_b.y = 0;
+            }
+            else if (scale_x < scale_y)
+            {
+                scale_y = scale_x;
+                subsurface_a.width = vg.width;
+                subsurface_a.height = ((og.height * (1.0 / scale_y)) - vg.height) / 2.0 + 1;
+                subsurface_a.x = 0;
+                subsurface_a.y = -subsurface_a.height;
+                subsurface_b = subsurface_a;
+                subsurface_b.x = 0;
+                subsurface_b.y = vg.height;
+            }
+
+            create_subsurfaces(view);
+            backgrounds[view]->subsurface_a->geometry = subsurface_a;
+            backgrounds[view]->subsurface_b->geometry = subsurface_b;
+        }
+
+        backgrounds[view]->transformer->scale_x = scale_x;
+        backgrounds[view]->transformer->scale_y = scale_y;
+        backgrounds[view]->transformer->translation_x = translation_x;
+        backgrounds[view]->transformer->translation_y = translation_y;
+
+        view->damage();
+    }
+
+    void update_backgrounds()
+    {
+	for (auto& b : backgrounds)
+	{
+            destroy_subsurfaces(b.first);
+            setup_transform(b.first);
+	}
     }
 
     wf::config::option_base_t::updated_callback_t preserve_aspect_option_changed = [=] ()
     {
-        for (auto& t : transformers)
-        {
-            setup_transform(t);
-        }
+        update_backgrounds();
     };
 
     bool toggle_fullscreen(wayfire_view view)
@@ -193,28 +241,14 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return false;
         }
 
-        auto transformer = get_transformer(view);
-        wlr_box saved_geometry;
-        bool fullscreen;
+        wlr_box saved_geometry = view->get_wm_geometry();
 
-        fullscreen = transformer ? false : true;
-
-        wlr_box vg = view->get_output_geometry();
-
-        if (fullscreen)
-        {
-            saved_geometry = vg;
-        }
+        auto background = backgrounds.find(view);
+        bool fullscreen = background == backgrounds.end() ? true : false;
 
         view->set_fullscreen(fullscreen);
 
-        if (fullscreen)
-        {
-            vg = view->get_wm_geometry();
-            saved_geometry.width = vg.width;
-            saved_geometry.height = vg.height;
-        }
-        else
+        if (!fullscreen)
         {
             deactivate(view);
             return true;
@@ -222,9 +256,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         activate(view);
 
-        transformer = get_transformer(view);
-        transformer->fullscreen = true;
-        transformer->saved_geometry = saved_geometry;
+        background = backgrounds.find(view);
+        if (background != backgrounds.end())
+        {
+            background->second->saved_geometry = saved_geometry;
+        }
 
         return true;
     }
@@ -232,15 +268,14 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     wf::key_callback on_toggle_fullscreen = [=] (uint32_t key)
     {
         auto view = output->get_active_view();
-        auto ws = output->workspace->get_current_workspace();
-        auto transformer = get_transformer(ws);
+        auto background = backgrounds.find(view);
 
         if (!view)
         {
             return false;
         }
 
-        if (transformer && transformer->fullscreen && view != transformer->view)
+        if (background != backgrounds.end() && view != background->first)
         {
             return false;
         }
@@ -251,39 +286,43 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     void activate(wayfire_view view)
     {
         view->move(0, 0);
-        fullscreen_transformer *transformer = new fullscreen_transformer(view);
-        view->add_transformer(std::unique_ptr<fullscreen_transformer>(transformer), transformer_name);
+        backgrounds[view] = std::make_unique<fullscreen_background>(view);
+        backgrounds[view]->transformer = new wf::view_2D(view);
+        view->add_transformer(std::unique_ptr<wf::view_2D>(backgrounds[view]->transformer), background_name);
         output->connect_signal("output-configuration-changed", &output_config_changed);
         wf::get_core().connect_signal("view-move-to-output", &view_output_changed);
         output->connect_signal("view-fullscreen-request", &view_fullscreened);
         view->connect_signal("geometry-changed", &view_geometry_changed);
         output->connect_signal("unmap-view", &view_unmapped);
         output->deactivate_plugin(grab_interface);
-        transformers.insert(transformer);
-        setup_transform(transformer);
+        setup_transform(view);
     }
 
     void deactivate(wayfire_view view)
     {
         output->deactivate_plugin(grab_interface);
-        auto transformer = get_transformer(view);
+        auto background = backgrounds.find(view);
 
-        if (!transformer)
+        if (background == backgrounds.end())
         {
             return;
         }
 
-        view_geometry_changed.disconnect();
-        output_config_changed.disconnect();
-        view_output_changed.disconnect();
-        view_fullscreened.disconnect();
-        view_unmapped.disconnect();
-        view->move(transformer->saved_geometry.x, transformer->saved_geometry.y);
-        transformers.erase(transformer);
-        if (view->get_transformer(transformer_name))
+        if (backgrounds.size() == 1)
         {
-            view->pop_transformer(transformer_name);
+            view_geometry_changed.disconnect();
+            output_config_changed.disconnect();
+            view_output_changed.disconnect();
+            view_fullscreened.disconnect();
+            view_unmapped.disconnect();
         }
+        view->move(background->second->saved_geometry.x, background->second->saved_geometry.y);
+        if (view->get_transformer(background_name))
+        {
+            view->pop_transformer(background_name);
+        }
+        destroy_subsurfaces(view);
+        backgrounds.erase(view);
     }
 
     wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
@@ -301,27 +340,21 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return;
         }
 
-        for (auto& t : transformers)
-        {
-            setup_transform(t);
-        }
+        update_backgrounds();
     }};
 
     wf::signal_connection_t view_output_changed{[this] (wf::signal_data_t *data)
     {
         auto signal = static_cast<wf::view_move_to_output_signal*> (data);
         auto view = signal->view;
-        auto transformer = get_transformer(view);
+        auto background = backgrounds.find(view);
 
-        if (!transformer)
+        if (background == backgrounds.end())
         {
             return;
         }
 
-        if (transformer->fullscreen)
-        {
-            toggle_fullscreen(view);
-        }
+        toggle_fullscreen(view);
 
         auto instance = wayfire_force_fullscreen_instances[signal->new_output];
         instance->toggle_fullscreen(view);
@@ -330,26 +363,23 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     wf::signal_connection_t view_unmapped{[this] (wf::signal_data_t *data)
     {
         auto view = get_signaled_view(data);
-        auto transformer = get_transformer(view);
+        auto background = backgrounds.find(view);
 
-        if (!transformer)
+        if (background == backgrounds.end())
         {
             return;
         }
 
-        if (transformer->fullscreen)
-        {
-            toggle_fullscreen(view);
-        }
+        toggle_fullscreen(view);
     }};
 
     wf::signal_connection_t view_fullscreened{[this] (wf::signal_data_t *data)
     {
         auto signal = static_cast<view_fullscreen_signal*> (data);
         auto view = signal->view;
-        auto transformer = get_transformer(view);
+        auto background = backgrounds.find(view);
 
-        if (!transformer)
+        if (background == backgrounds.end())
         {
             return;
         }
@@ -359,10 +389,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return;
         }
 
-        if (transformer->fullscreen)
-        {
-            toggle_fullscreen(view);
-        }
+        toggle_fullscreen(view);
 
         signal->carried_out = true;
     }};
@@ -370,21 +397,26 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     wf::signal_connection_t view_geometry_changed{[this] (wf::signal_data_t *data)
     {
         auto view = get_signaled_view(data);
-        auto transformer = get_transformer(view);
+        auto background = backgrounds.find(view);
 
-        if (!transformer)
+        if (background == backgrounds.end())
         {
             return;
         }
 
-        view->resize(transformer->saved_geometry.width, transformer->saved_geometry.height);
-        setup_transform(transformer);
+        view->resize(background->second->saved_geometry.width, background->second->saved_geometry.height);
+        setup_transform(view);
     }};
 
     void fini() override
     {
         output->rem_binding(&on_toggle_fullscreen);
         wayfire_force_fullscreen_instances.erase(output);
+
+        for (auto& b : backgrounds)
+        {
+            toggle_fullscreen(b.first);
+        }
     }
 };
 
