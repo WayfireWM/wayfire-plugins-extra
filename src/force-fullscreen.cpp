@@ -374,7 +374,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     {
         auto view = output->get_active_view();
 
-        if (!view)
+        if (!view || view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
         {
             return false;
         }
