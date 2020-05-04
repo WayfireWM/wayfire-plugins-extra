@@ -394,8 +394,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wf::get_core().connect_signal("view-move-to-output", &view_output_changed);
         output->connect_signal("view-fullscreen-request", &view_fullscreened);
         view->connect_signal("geometry-changed", &view_geometry_changed);
-            output->connect_signal("focus-view", &view_focused);
         output->connect_signal("unmap-view", &view_unmapped);
+        output->connect_signal("focus-view", &view_focused);
         output->deactivate_plugin(grab_interface);
         if (constraint_pointer)
         {
