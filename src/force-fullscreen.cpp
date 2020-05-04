@@ -40,6 +40,7 @@ class fullscreen_subsurface : public wf::surface_interface_t, public wf::composi
 {
   public:
     bool _mapped = true;
+
     fullscreen_subsurface(wayfire_view view)
         : wf::surface_interface_t(), wf::compositor_surface_t() {}
 
@@ -215,8 +216,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     double saved_wrot_angle;
     std::string background_name;
     wf::view_2D *wrot_transformer;
+    bool motion_connected = false;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
+    wf::option_wrapper_t<bool> constraint_pointer{"force-fullscreen/constraint_pointer"};
     wf::option_wrapper_t<bool> transparent_behind_views{"force-fullscreen/transparent_behind_views"};
     wf::option_wrapper_t<wf::keybinding_t> key_toggle_fullscreen{"force-fullscreen/key_toggle_fullscreen"};
 
@@ -228,9 +231,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         background_name = this->grab_interface->name;
 
         output->add_key(key_toggle_fullscreen, &on_toggle_fullscreen);
-        preserve_aspect.set_callback(option_changed);
         transparent_behind_views.set_callback(option_changed);
         wayfire_force_fullscreen_instances[output] = this;
+        constraint_pointer.set_callback(constraint_pointer_option_changed);
+        preserve_aspect.set_callback(option_changed);
     }
 
     void ensure_subsurface(wayfire_view view)
@@ -332,11 +336,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
     }
 
-    wf::config::option_base_t::updated_callback_t option_changed = [=] ()
-    {
-        update_backgrounds();
-    };
-
     bool toggle_fullscreen(wayfire_view view)
     {
         if (!output->activate_plugin(grab_interface))
@@ -395,8 +394,13 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wf::get_core().connect_signal("view-move-to-output", &view_output_changed);
         output->connect_signal("view-fullscreen-request", &view_fullscreened);
         view->connect_signal("geometry-changed", &view_geometry_changed);
+            output->connect_signal("focus-view", &view_focused);
         output->connect_signal("unmap-view", &view_unmapped);
         output->deactivate_plugin(grab_interface);
+        if (constraint_pointer)
+        {
+            connect_motion_signal();
+        }
 
         if (view->get_transformer("wrot"))
         {
@@ -423,6 +427,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             view_output_changed.disconnect();
             view_fullscreened.disconnect();
             view_unmapped.disconnect();
+            disconnect_motion_signal();
+            view_focused.disconnect();
         }
         auto og = output->get_relative_geometry();
         auto ws = background->second->transformer->get_workspace(og);
@@ -441,6 +447,64 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         destroy_subsurface(view);
         backgrounds.erase(view);
     }
+
+    void connect_motion_signal()
+    {
+        if (motion_connected)
+        {
+            return;
+        }
+        wf::get_core().connect_signal("pointer_motion", &on_motion_event);
+        on_motion_event(nullptr);
+        motion_connected = true;
+    }
+
+    void disconnect_motion_signal()
+    {
+        if (!motion_connected)
+        {
+            return;
+        }
+        wf::get_core().disconnect_signal("pointer_motion", &on_motion_event);
+        motion_connected = false;
+    }
+
+    void update_motion_signal(wayfire_view view)
+    {
+        if (view && view->get_output() == output && constraint_pointer &&
+            backgrounds.find(view) != backgrounds.end())
+        {
+            connect_motion_signal();
+            return;
+        }
+        disconnect_motion_signal();
+    }
+
+    wf::config::option_base_t::updated_callback_t constraint_pointer_option_changed = [=] ()
+    {
+        auto view = output->get_active_view();
+
+        update_motion_signal(view);
+    };
+
+    wf::config::option_base_t::updated_callback_t option_changed = [=] ()
+    {
+        update_backgrounds();
+    };
+
+    wf::signal_callback_t on_motion_event = [=] (wf::signal_data_t *data)
+    {
+        auto cursor = wf::get_core().get_cursor_position();
+        auto og = output->get_layout_geometry();
+
+        if (og & wf::pointf_t{cursor.x, cursor.y})
+        {
+            return;
+        }
+
+        wlr_box_closest_point(&og, cursor.x, cursor.y, &cursor.x, &cursor.y);
+        wf::get_core().warp_cursor(cursor.x, cursor.y);
+    };
 
     wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
     {
@@ -475,6 +539,13 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         auto instance = wayfire_force_fullscreen_instances[signal->new_output];
         instance->toggle_fullscreen(view);
+    }};
+
+    wf::signal_connection_t view_focused{[this] (wf::signal_data_t *data)
+    {
+        auto view = get_signaled_view(data);
+
+        update_motion_signal(view);
     }};
 
     wf::signal_connection_t view_unmapped{[this] (wf::signal_data_t *data)

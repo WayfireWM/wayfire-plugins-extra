@@ -8,6 +8,10 @@
 	</option>
 	<option name="preserve_aspect" type="bool">
 		<_short>Preserve Aspect Ratio</_short>
+		<default>true</default>
+	</option>
+	<option name="constraint_pointer" type="bool">
+		<_short>Constrain Mouse Pointer to Output</_short>
 		<default>false</default>
 	</option>
 	<option name="transparent_behind_views" type="bool">
