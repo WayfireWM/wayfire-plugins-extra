@@ -455,7 +455,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return;
         }
         wf::get_core().connect_signal("pointer_motion", &on_motion_event);
-        on_motion_event(nullptr);
         motion_connected = true;
     }
 
