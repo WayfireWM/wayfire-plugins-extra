@@ -217,6 +217,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     std::string background_name;
     wf::view_2D *wrot_transformer;
     bool motion_connected = false;
+    wf::wl_idle_call idle_warp_cursor;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
     wf::option_wrapper_t<bool> constraint_pointer{"force-fullscreen/constraint_pointer"};
@@ -493,16 +494,19 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     wf::signal_callback_t on_motion_event = [=] (wf::signal_data_t *data)
     {
-        auto cursor = wf::get_core().get_cursor_position();
-        auto og = output->get_layout_geometry();
-
-        if (og & wf::pointf_t{cursor.x, cursor.y})
+        idle_warp_cursor.run_once([&] ()
         {
-            return;
-        }
+            auto cursor = wf::get_core().get_cursor_position();
+            auto og = output->get_layout_geometry();
 
-        wlr_box_closest_point(&og, cursor.x, cursor.y, &cursor.x, &cursor.y);
-        wf::get_core().warp_cursor(cursor.x, cursor.y);
+            if (og & wf::pointf_t{cursor.x, cursor.y})
+            {
+                return;
+            }
+
+            wlr_box_closest_point(&og, cursor.x, cursor.y, &cursor.x, &cursor.y);
+            wf::get_core().warp_cursor(cursor.x, cursor.y);
+        });
     };
 
     wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
