@@ -278,10 +278,13 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         auto og = output->get_relative_geometry();
         auto vg = view->get_wm_geometry();
 
-        double scale_x = (double) og.width / (vg.width - 1);
+        vg.width--;
+        vg.height--;
+
+        double scale_x = (double) og.width / vg.width;
         double scale_y = (double) og.height / vg.height;
-        double translation_x = (og.width - vg.width - 1) / 2.0;
-        double translation_y = (og.height - vg.height - 1) / 2.0;
+        double translation_x = (og.width - vg.width - 2) / 2.0;
+        double translation_y = (og.height - vg.height - 2) / 2.0;
 
         if (preserve_aspect)
         {
@@ -292,8 +295,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wlr_box box;
         if (transparent_behind_views)
         {
-            box.width = (vg.width - 1) * scale_x;
-            box.height = (vg.height - 1) * scale_y;
+            box.width = vg.width * scale_x;
+            box.height = vg.height * scale_y;
             box.x = (og.width - box.width) / 2.0;
             box.y = (og.height - box.height) / 2.0;
         }
