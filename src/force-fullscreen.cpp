@@ -198,9 +198,11 @@ class fullscreen_transformer : public wf::view_2D
 class fullscreen_background
 {
   public:
+    double saved_wrot_angle;
     wf::geometry_t saved_geometry;
     wf::geometry_t undecorated_geometry;
     fullscreen_transformer *transformer;
+    wf::view_2D *wrot_transformer = nullptr;
     fullscreen_subsurface *black_border = nullptr;
 
     fullscreen_background(wayfire_view view) {}
@@ -214,9 +216,7 @@ std::map<wf::output_t*, wayfire_force_fullscreen*> wayfire_force_fullscreen_inst
 
 class wayfire_force_fullscreen : public wf::plugin_interface_t
 {
-    double saved_wrot_angle;
     std::string background_name;
-    wf::view_2D *wrot_transformer;
     bool motion_connected = false;
     wf::wl_idle_call idle_warp_cursor;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
@@ -252,7 +252,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (!background->black_border)
         {
-            std::unique_ptr<fullscreen_subsurface> subsurface = std::make_unique<fullscreen_subsurface>(view);
+            std::unique_ptr<fullscreen_subsurface> subsurface =
+                std::make_unique<fullscreen_subsurface>(view);
             nonstd::observer_ptr<fullscreen_subsurface> ptr{subsurface};
             view->add_subsurface(std::move(subsurface), true);
             background->black_border = ptr.get();
@@ -363,11 +364,15 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         activate(view);
 
         background = backgrounds.find(view);
-        if (background != backgrounds.end())
+        if (background == backgrounds.end())
         {
-            background->second->undecorated_geometry = undecorated_geometry;
-            background->second->saved_geometry = saved_geometry;
+            /* Should never happen */
+            deactivate(view);
+            return true;
         }
+
+        background->second->undecorated_geometry = undecorated_geometry;
+        background->second->saved_geometry = saved_geometry;
 
         setup_transform(view);
 
@@ -391,7 +396,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         view->move(0, 0);
         backgrounds[view] = std::make_unique<fullscreen_background>(view);
         backgrounds[view]->transformer = new fullscreen_transformer(view);
-        view->add_transformer(std::unique_ptr<fullscreen_transformer>(backgrounds[view]->transformer), background_name);
+        view->add_transformer(std::unique_ptr<fullscreen_transformer>
+            (backgrounds[view]->transformer), background_name);
         output->connect_signal("output-configuration-changed", &output_config_changed);
         wf::get_core().connect_signal("view-move-to-output", &view_output_changed);
         output->connect_signal("view-fullscreen-request", &view_fullscreened);
@@ -406,9 +412,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (view->get_transformer("wrot"))
         {
-            wrot_transformer = dynamic_cast<wf::view_2D*> (view->get_transformer("wrot").get());
-            saved_wrot_angle = wrot_transformer->angle;
-            wrot_transformer->angle = 0.0;
+            backgrounds[view]->wrot_transformer =
+                dynamic_cast<wf::view_2D*> (view->get_transformer("wrot").get());
+            backgrounds[view]->saved_wrot_angle = backgrounds[view]->wrot_transformer->angle;
+            backgrounds[view]->wrot_transformer->angle = 0.0;
         }
     }
 
@@ -442,9 +449,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             view->pop_transformer(background_name);
         }
 
-        if (view->get_transformer("wrot"))
+        if (background->second->wrot_transformer)
         {
-            wrot_transformer->angle = saved_wrot_angle;
+            background->second->wrot_transformer->angle =
+                background->second->saved_wrot_angle;
+            background->second->wrot_transformer = nullptr;
         }
         destroy_subsurface(view);
         backgrounds.erase(view);
