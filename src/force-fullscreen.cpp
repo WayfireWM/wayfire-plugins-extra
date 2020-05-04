@@ -127,6 +127,7 @@ class fullscreen_transformer : public wf::view_2D
             return bbox;
         }
     }
+
     wlr_box get_relative_transformed_view_box(wlr_box& og)
     {
         auto ws = get_workspace(og);
@@ -420,7 +421,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             view_fullscreened.disconnect();
             view_unmapped.disconnect();
         }
-        view->move(background->second->saved_geometry.x, background->second->saved_geometry.y);
+        auto og = output->get_relative_geometry();
+        auto ws = background->second->transformer->get_workspace(og);
+        view->move(
+            background->second->saved_geometry.x + ws.x * og.width,
+            background->second->saved_geometry.y + ws.y * og.height);
         if (view->get_transformer(background_name))
         {
             view->pop_transformer(background_name);
