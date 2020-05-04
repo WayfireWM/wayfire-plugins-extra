@@ -499,14 +499,18 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         {
             auto cursor = wf::get_core().get_cursor_position();
             auto og = output->get_layout_geometry();
-
-            if (og & wf::pointf_t{cursor.x, cursor.y})
+            for (auto& b : backgrounds)
             {
-                return;
+                auto view = output->get_active_view();
+                if (b.first == view &&
+                    !(og & wf::pointf_t{cursor.x, cursor.y}))
+                {
+                    wlr_box_closest_point(&og, cursor.x, cursor.y,
+                        &cursor.x, &cursor.y);
+                    wf::get_core().warp_cursor(cursor.x, cursor.y);
+                    return;
+                }
             }
-
-            wlr_box_closest_point(&og, cursor.x, cursor.y, &cursor.x, &cursor.y);
-            wf::get_core().warp_cursor(cursor.x, cursor.y);
         });
     };
 
