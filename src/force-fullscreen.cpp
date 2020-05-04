@@ -33,8 +33,6 @@
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/signal-definitions.hpp>
 
-#include <glm/gtc/matrix_transform.hpp>
-
 
 class fullscreen_subsurface : public wf::surface_interface_t, public wf::compositor_surface_t
 {
@@ -118,11 +116,14 @@ class fullscreen_transformer : public wf::view_2D
         wf::point_t subsurface = {wm.x - 1, wm.y};
         auto og = output->get_relative_geometry();
         auto ws = get_workspace(og);
-        if (box & subsurface) {
+        if (box & subsurface)
+        {
             og.x += ws.x * og.width;
             og.y += ws.y * og.height;
             return og;
-        } else {
+        }
+        else
+        {
             bbox.x += ws.x * og.width;
             bbox.y += ws.y * og.height;
             return bbox;
