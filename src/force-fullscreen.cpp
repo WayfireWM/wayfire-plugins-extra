@@ -79,6 +79,7 @@ class fullscreen_transformer : public wf::view_2D
   public:
     wayfire_view view;
     wlr_box transformed_view_box;
+    wf::option_wrapper_t<bool> transparent_behind_views{"force-fullscreen/transparent_behind_views"};
 
     fullscreen_transformer(wayfire_view view) : wf::view_2D(view)
     {
@@ -129,7 +130,7 @@ class fullscreen_transformer : public wf::view_2D
         }
     }
 
-    wlr_box get_relative_transformed_view_box(wlr_box& og)
+    wlr_box get_relative_transformed_view(wlr_box& og)
     {
         auto ws = get_workspace(og);
         auto bbox = transformed_view_box;
@@ -152,7 +153,7 @@ class fullscreen_transformer : public wf::view_2D
         }
 
         auto og = output->get_relative_geometry();
-        auto bbox = get_relative_transformed_view_box(og);
+        auto bbox = get_relative_transformed_view(og);
 
         if (!(bbox & point))
         {
@@ -178,10 +179,14 @@ class fullscreen_transformer : public wf::view_2D
         }
 
         auto og = output->get_relative_geometry();
-        auto bbox = get_relative_transformed_view_box(og);
-        wf::region_t vr{bbox};
         wf::region_t scissor_region{scissor_box};
-        scissor_region ^= vr;
+
+        if (transparent_behind_views)
+        {
+            auto bbox = get_relative_transformed_view(og);
+            scissor_region ^= wf::region_t{bbox};
+        }
+
         for (auto& b : scissor_region)
         {
             OpenGL::render_begin(target_fb);
@@ -217,10 +222,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 {
     std::string background_name;
     bool motion_connected = false;
-    wf::wl_idle_call idle_warp_cursor;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
-    wf::option_wrapper_t<bool> constraint_pointer{"force-fullscreen/constraint_pointer"};
+    wf::option_wrapper_t<bool> constrain_pointer{"force-fullscreen/constrain_pointer"};
+    wf::option_wrapper_t<std::string> constraint_area{"force-fullscreen/constraint_area"};
     wf::option_wrapper_t<bool> transparent_behind_views{"force-fullscreen/transparent_behind_views"};
     wf::option_wrapper_t<wf::keybinding_t> key_toggle_fullscreen{"force-fullscreen/key_toggle_fullscreen"};
 
@@ -234,7 +239,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         output->add_key(key_toggle_fullscreen, &on_toggle_fullscreen);
         transparent_behind_views.set_callback(option_changed);
         wayfire_force_fullscreen_instances[output] = this;
-        constraint_pointer.set_callback(constraint_pointer_option_changed);
+        constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
     }
 
@@ -289,8 +294,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         double scale_x = (double) og.width / vg.width;
         double scale_y = (double) og.height / vg.height;
-        double translation_x = (og.width - vg.width - 2) / 2.0;
-        double translation_y = (og.height - vg.height - 2) / 2.0;
+        double translation_x = (og.width - vg.width) / 2.0 - 1;
+        double translation_y = (og.height - vg.height) / 2.0;
 
         if (preserve_aspect)
         {
@@ -299,17 +304,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
 
         wlr_box box;
-        if (transparent_behind_views)
-        {
-            box.width = vg.width * scale_x;
-            box.height = vg.height * scale_y;
-            box.x = (og.width - box.width) / 2.0;
-            box.y = (og.height - box.height) / 2.0;
-        }
-        else
-        {
-            box = {0, 0, 0, 0};
-        }
+        box.width = vg.width * (scale_x + 1.0 / og.width);
+        box.height = vg.height * (scale_y + 1.0 / og.height);
+        box.x = (og.width - box.width) / 2.0;
+        box.y = (og.height - box.height) / 2.0;
 
         backgrounds[view]->transformer->transformed_view_box = box;
         backgrounds[view]->transformer->scale_x = scale_x;
@@ -404,7 +402,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         output->connect_signal("unmap-view", &view_unmapped);
         output->connect_signal("focus-view", &view_focused);
         output->deactivate_plugin(grab_interface);
-        if (constraint_pointer)
+        if (constrain_pointer)
         {
             connect_motion_signal();
         }
@@ -480,7 +478,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     void update_motion_signal(wayfire_view view)
     {
-        if (view && view->get_output() == output && constraint_pointer &&
+        if (view && view->get_output() == output && constrain_pointer &&
             backgrounds.find(view) != backgrounds.end())
         {
             connect_motion_signal();
@@ -489,7 +487,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         disconnect_motion_signal();
     }
 
-    wf::config::option_base_t::updated_callback_t constraint_pointer_option_changed = [=] ()
+    wf::config::option_base_t::updated_callback_t constrain_pointer_option_changed = [=] ()
     {
         auto view = output->get_active_view();
 
@@ -503,23 +501,48 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     wf::signal_callback_t on_motion_event = [=] (wf::signal_data_t *data)
     {
-        idle_warp_cursor.run_once([&] ()
+        auto ev = static_cast<
+            wf::input_event_signal<wlr_event_pointer_motion>*>(data);
+
+        auto cursor = wf::get_core().get_cursor_position();
+        auto og = output->get_layout_geometry();
+        cursor.x += ev->event->delta_x;
+        cursor.y += ev->event->delta_y;
+        for (auto& b : backgrounds)
         {
-            auto cursor = wf::get_core().get_cursor_position();
-            auto og = output->get_layout_geometry();
-            for (auto& b : backgrounds)
+            wlr_box box;
+            if (std::string(constraint_area) == "view")
             {
-                auto view = output->get_active_view();
-                if (b.first == view &&
-                    !(og & wf::pointf_t{cursor.x, cursor.y}))
-                {
-                    wlr_box_closest_point(&og, cursor.x, cursor.y,
-                        &cursor.x, &cursor.y);
-                    wf::get_core().warp_cursor(cursor.x, cursor.y);
-                    return;
-                }
+                box = b.second->transformer->transformed_view_box;
+                box.x += og.x;
+                box.y += og.y;
             }
-        });
+            else if (std::string(constraint_area) == "output")
+            {
+                box = og;
+            }
+            else
+            {
+                box = og;
+            }
+            auto view = output->get_active_view();
+            if (b.first == view &&
+                !(box & wf::pointf_t{cursor.x, cursor.y}))
+            {
+                if (ev->event->unaccel_dx < box.x || ev->event->unaccel_dx > box.x + box.width)
+                {
+                    ev->event->delta_x = 0;
+                }
+                if (ev->event->unaccel_dy < box.y || ev->event->unaccel_dy > box.y + box.height)
+                {
+                    ev->event->delta_y = 0;
+                }
+                wlr_box_closest_point(&box, cursor.x, cursor.y,
+                    &cursor.x, &cursor.y);
+                wf::get_core().warp_cursor(cursor.x, cursor.y);
+                return;
+            }
+        }
     };
 
     wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)

@@ -10,13 +10,26 @@
 		<_short>Preserve Aspect Ratio</_short>
 		<default>true</default>
 	</option>
-	<option name="constraint_pointer" type="bool">
-		<_short>Constrain Mouse Pointer to Output</_short>
-		<default>false</default>
-	</option>
 	<option name="transparent_behind_views" type="bool">
 		<_short>Transparent Behind Views</_short>
 		<default>true</default>
+	</option>
+	<option name="constrain_pointer" type="bool">
+		<_short>Constrain Mouse Pointer</_short>
+		<default>false</default>
+	</option>
+	<option name="constraint_area" type="string">
+		<_short>Constraint Area</_short>
+		<_long>If constrain pointer is enabled, constrain to this area.</_long>
+		<default>view</default>
+		<desc>
+			<value>view</value>
+			<_name>View</_name>
+		</desc>
+		<desc>
+			<value>output</value>
+			<_name>Output</_name>
+		</desc>
 	</option>
 	</plugin>
 </wayfire>
