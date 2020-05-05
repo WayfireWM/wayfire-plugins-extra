@@ -510,36 +510,35 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         cursor.y += ev->event->delta_y;
         for (auto& b : backgrounds)
         {
-            wlr_box box;
-            if (std::string(constraint_area) == "view")
-            {
-                box = b.second->transformer->transformed_view_box;
-                box.x += og.x;
-                box.y += og.y;
-            }
-            else if (std::string(constraint_area) == "output")
-            {
-                box = og;
-            }
-            else
-            {
-                box = og;
-            }
             auto view = output->get_active_view();
+            wlr_box box;
+
+            box = b.second->transformer->transformed_view_box;
+            box.x += og.x;
+            box.y += og.y;
+
+            if (std::string(constraint_area) == "output")
+            {
+                box = og;
+            }
+
             if (b.first == view &&
                 !(box & wf::pointf_t{cursor.x, cursor.y}))
             {
-                if (ev->event->unaccel_dx < box.x || ev->event->unaccel_dx > box.x + box.width)
+                if (ev->event->unaccel_dx < box.x ||
+                    ev->event->unaccel_dx > box.x + box.width)
                 {
                     ev->event->delta_x = 0;
                 }
-                if (ev->event->unaccel_dy < box.y || ev->event->unaccel_dy > box.y + box.height)
+                if (ev->event->unaccel_dy < box.y ||
+                    ev->event->unaccel_dy > box.y + box.height)
                 {
                     ev->event->delta_y = 0;
                 }
                 wlr_box_closest_point(&box, cursor.x, cursor.y,
                     &cursor.x, &cursor.y);
                 wf::get_core().warp_cursor(cursor.x, cursor.y);
+
                 return;
             }
         }
