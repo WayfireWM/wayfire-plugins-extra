@@ -514,8 +514,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             wlr_box box;
 
             box = b.second->transformer->transformed_view_box;
-            box.x += og.x;
-            box.y += og.y;
+            box.x += og.x + 1;
+            box.y += og.y + 1;
+            box.width -= 2;
+            box.height -= 2;
 
             if (std::string(constraint_area) == "output")
             {
