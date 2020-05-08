@@ -18,6 +18,10 @@ joinviews = shared_module('join-views', 'join-views.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+follow_focus = shared_module('follow-focus', 'follow-focus.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 if get_option('enable_nk')
     subdir('network-keyboard')
 endif
