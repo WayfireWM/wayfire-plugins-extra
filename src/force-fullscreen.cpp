@@ -299,15 +299,14 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (preserve_aspect)
         {
-            scale_x = std::min(scale_x, scale_y);
-            scale_y = std::min(scale_x, scale_y);
+            scale_x = scale_y = std::min(scale_x, scale_y);
         }
 
         wlr_box box;
-        box.width = vg.width * (scale_x + 1.0 / og.width);
-        box.height = vg.height * (scale_y + 1.0 / og.height);
-        box.x = (og.width - box.width) / 2.0;
-        box.y = (og.height - box.height) / 2.0;
+        box.width = std::ceil(vg.width * scale_x);
+        box.height = std::ceil(vg.height * scale_y);
+        box.x = std::floor((og.width - box.width) / 2.0);
+        box.y = std::floor((og.height - box.height) / 2.0);
 
         backgrounds[view]->transformer->transformed_view_box = box;
         backgrounds[view]->transformer->scale_x = scale_x;
