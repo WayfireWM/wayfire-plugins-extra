@@ -78,12 +78,12 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     guint watch_id;
     wf::activator_callback on_rotate_left = [=] (wf::activator_source_t src, int32_t)
     {
-        return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
     };
     wf::activator_callback on_rotate_right =
         [=] (wf::activator_source_t src, int32_t)
     {
-        return on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
+        return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
     };
     wf::activator_callback on_rotate_up = [=] (wf::activator_source_t src, int32_t)
     {
@@ -229,8 +229,8 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         static const std::map<std::string, wl_output_transform> transform_by_name =
         {
             {"normal", WL_OUTPUT_TRANSFORM_NORMAL},
-            {"left-up", WL_OUTPUT_TRANSFORM_270},
-            {"right-up", WL_OUTPUT_TRANSFORM_90},
+            {"left-up", WL_OUTPUT_TRANSFORM_90},
+            {"right-up", WL_OUTPUT_TRANSFORM_270},
             {"bottom-up", WL_OUTPUT_TRANSFORM_180},
         };
 
