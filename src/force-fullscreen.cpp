@@ -91,8 +91,9 @@ class fullscreen_transformer : public wf::view_2D
     wf::point_t get_workspace(wlr_box og)
     {
         wf::point_t ws;
-        auto vg = view->get_output_geometry();
-        wf::pointf_t center{vg.x + vg.width / 2.0, vg.y + vg.height / 2.0};
+        auto vg = view->get_wm_geometry();
+        auto tg = transformed_view_box;
+        wf::pointf_t center{vg.x + tg.width / 2.0, vg.y + tg.height / 2.0};
 
         ws.x = std::floor(center.x / og.width);
         ws.y = std::floor(center.y / og.height);
@@ -289,12 +290,9 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         auto og = output->get_relative_geometry();
         auto vg = view->get_wm_geometry();
 
-        vg.width--;
-        vg.height--;
-
         double scale_x = (double) og.width / vg.width;
         double scale_y = (double) og.height / vg.height;
-        double translation_x = (og.width - vg.width) / 2.0 - 1;
+        double translation_x = (og.width - vg.width) / 2.0;
         double translation_y = (og.height - vg.height) / 2.0;
 
         if (preserve_aspect)
@@ -303,25 +301,30 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
 
         wlr_box box;
-        box.width = std::ceil(vg.width * scale_x);
-        box.height = std::ceil(vg.height * scale_y);
+        box.width = std::floor(vg.width * scale_x);
+        box.height = std::floor(vg.height * scale_y);
         box.x = std::floor((og.width - box.width) / 2.0);
         box.y = std::floor((og.height - box.height) / 2.0);
+
+        scale_x += 1.0 / vg.width;
+        scale_y += 1.0 / vg.height;
+
+        if (preserve_aspect)
+        {
+            ensure_subsurface(view);
+            scale_x += 1.0 / vg.width;
+            translation_x -= 1.0;
+        }
+        else
+        {
+            destroy_subsurface(view);
+        }
 
         backgrounds[view]->transformer->transformed_view_box = box;
         backgrounds[view]->transformer->scale_x = scale_x;
         backgrounds[view]->transformer->scale_y = scale_y;
         backgrounds[view]->transformer->translation_x = translation_x;
         backgrounds[view]->transformer->translation_y = translation_y;
-
-        if (preserve_aspect)
-        {
-            ensure_subsurface(view);
-        }
-        else
-        {
-            destroy_subsurface(view);
-        }
 
         view->damage();
     }
@@ -503,6 +506,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         auto ev = static_cast<
             wf::input_event_signal<wlr_event_pointer_motion>*>(data);
 
+        if (output->is_plugin_active("cube"))
+        {
+             return;
+        }
+
         auto cursor = wf::get_core().get_cursor_position();
         auto og = output->get_layout_geometry();
         cursor.x += ev->event->delta_x;
@@ -524,16 +532,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             if (b.first == view &&
                 !(box & wf::pointf_t{cursor.x, cursor.y}))
             {
-                if (ev->event->unaccel_dx < box.x ||
-                    ev->event->unaccel_dx > box.x + box.width)
-                {
-                    ev->event->delta_x = 0;
-                }
-                if (ev->event->unaccel_dy < box.y ||
-                    ev->event->unaccel_dy > box.y + box.height)
-                {
-                    ev->event->delta_y = 0;
-                }
+                ev->event->delta_x = 0;
+                ev->event->delta_y = 0;
                 wlr_box_closest_point(&box, cursor.x, cursor.y,
                     &cursor.x, &cursor.y);
                 wf::get_core().warp_cursor(cursor.x, cursor.y);
