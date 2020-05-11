@@ -3,5 +3,15 @@
 	<plugin name="follow-focus">
 		<_short>Focus follows mouse</_short>
 		<category>Desktop</category>
+		<option name="change_view" type="bool">
+			<_short>View focus follows mouse</_short>
+			<_long>When the mouse pointer is moved, the view focus changes to the view under the pointer.</_long>
+			<default>true</default>
+		</option>
+		<option name="change_output" type="bool">
+			<_short>Output focus follows mouse</_short>
+			<_long>When the mouse pointer is moved, the output focus changes to the output that the pointer is currently on.</_long>
+			<default>true</default>
+		</option>
 	</plugin>
 </wayfire>

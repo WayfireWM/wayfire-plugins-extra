@@ -22,6 +22,9 @@
 
 #include <wayfire/plugin.hpp>
 #include <wayfire/core.hpp>
+#include <wayfire/option-wrapper.hpp>
+#include <wayfire/output.hpp>
+#include <wayfire/output-layout.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
 
@@ -29,12 +32,35 @@
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
    private:
-    wf::wl_idle_call change_active_view;
+    wf::wl_idle_call change_focus;
+
+    wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
+    wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
+
+    void change_view()
+    {
+        auto view = wf::get_core().get_cursor_focus_view();
+        wf::get_core().set_active_view(view);
+    }
+
+    void change_output()
+    {
+        auto coord = wf::get_core().get_cursor_position();
+        for (auto output : wf::get_core().output_layout->get_outputs()) {
+            if (output->get_layout_geometry() & coord) {
+                wf::get_core().focus_output(output);
+                return;
+            }
+        }
+    }
 
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
-        change_active_view.run_once( [] () {
-            auto view = wf::get_core().get_cursor_focus_view();
-            wf::get_core().set_active_view(view);
+        change_focus.run_once([=] () {
+            if (should_change_view)
+                change_view();
+
+            if (should_change_output)
+                change_output();
         });
     };
 
@@ -50,7 +76,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     void fini() override
     {
         wf::get_core().disconnect_signal("pointer_motion", &pointer_motion);
-        change_active_view.disconnect();
+        change_focus.disconnect();
     }
 };
 
