@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <wayfire>
-  <plugin name="follow-focus">
-    <_short>Focus follows mouse</_short>
-    <category>Desktop</category>
-  </plugin>
+	<plugin name="follow-focus">
+		<_short>Focus follows mouse</_short>
+		<category>Desktop</category>
+	</plugin>
 </wayfire>
