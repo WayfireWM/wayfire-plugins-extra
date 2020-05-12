@@ -22,6 +22,7 @@
 
 #include <wayfire/plugin.hpp>
 #include <wayfire/core.hpp>
+#include <wayfire/geometry.hpp>
 #include <wayfire/option-wrapper.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/output-layout.hpp>
@@ -34,9 +35,13 @@ class wayfire_follow_focus : public wf::plugin_interface_t
    private:
     wf::wl_timer change_focus;
 
+    wf::point_t last_coords;
+    double distance;
+
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
     wf::option_wrapper_t<int> focus_delay{"follow-focus/focus_delay"};
+    wf::option_wrapper_t<int> threshold{"follow-focus/threshold"};
 
     void change_view()
     {
@@ -46,9 +51,9 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
     void change_output()
     {
-        auto coord = wf::get_core().get_cursor_position();
+        auto coords = wf::get_core().get_cursor_position();
         for (auto output : wf::get_core().output_layout->get_outputs()) {
-            if (output->get_layout_geometry() & coord) {
+            if (output->get_layout_geometry() & coords) {
                 wf::get_core().focus_output(output);
                 return;
             }
@@ -58,8 +63,22 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
         change_focus.disconnect();
 
+        /* Update how much the cursor moved this time */
+        auto cpf = wf::get_core().get_cursor_position();
+        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+        if (distance == -1)
+            distance = 0;
+        else
+            distance += abs(coords - last_coords);
+        last_coords = coords;
+
         /* Restart the timeout */
         change_focus.set_timeout(focus_delay, [=] () {
+            /* Check if we had enough pointer movement, otherwise ignore this timer */
+            if (distance < threshold)
+                return;
+            distance = -1;
+
             if (should_change_view)
                 change_view();
 
@@ -75,6 +94,8 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         grab_interface->capabilities = 0;
 
         wf::get_core().connect_signal("pointer_motion", &pointer_motion);
+
+        distance = -1;
     }
 
     void fini() override
