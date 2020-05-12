@@ -19,5 +19,11 @@
 			<default>50</default>
 			<min>5</min>
 		</option>
+		<option name="threshold" type="int">
+			<_short>Minimum cursor movement</_short>
+			<_long>The distance (x+y) the cursor should be moved at least before the plugin gets activated</_long>
+			<default>10</default>
+			<min>0</min>
+		</option>
 	</plugin>
 </wayfire>
