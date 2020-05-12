@@ -32,10 +32,11 @@
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
    private:
-    wf::wl_idle_call change_focus;
+    wf::wl_timer change_focus;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
+    wf::option_wrapper_t<int> focus_delay{"follow-focus/focus_delay"};
 
     void change_view()
     {
@@ -55,7 +56,10 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     }
 
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
-        change_focus.run_once([=] () {
+        change_focus.disconnect();
+
+        /* Restart the timeout */
+        change_focus.set_timeout(focus_delay, [=] () {
             if (should_change_view)
                 change_view();
 

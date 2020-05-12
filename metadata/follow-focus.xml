@@ -13,5 +13,11 @@
 			<_long>When the mouse pointer is moved, the output focus changes to the output that the pointer is currently on.</_long>
 			<default>true</default>
 		</option>
+		<option name="focus_delay" type="int">
+			<_short>Delay (in ms) before focus change will be triggered</_short>
+			<_long>The delay in ms before the plugin will trigger a focus change after the movement finished.</_long>
+			<default>50</default>
+			<min>5</min>
+		</option>
 	</plugin>
 </wayfire>
