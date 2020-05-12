@@ -42,11 +42,16 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
     wf::option_wrapper_t<int> focus_delay{"follow-focus/focus_delay"};
     wf::option_wrapper_t<int> threshold{"follow-focus/threshold"};
+    wf::option_wrapper_t<bool> raise_on_top{"follow-focus/raise_on_top"};
 
     void change_view()
     {
         auto view = wf::get_core().get_cursor_focus_view();
-        wf::get_core().set_active_view(view);
+
+        if (raise_on_top)
+            wf::get_core().focus_view(view);
+        else
+            wf::get_core().set_active_view(view);
     }
 
     void change_output()

@@ -25,5 +25,10 @@
 			<default>10</default>
 			<min>0</min>
 		</option>
+		<option name="raise_on_top" type="bool">
+			<_short>Raise the focused view to the top</_short>
+			<_long>If disabled the focused view will only get keyboard focus, but will not be raised to the top.</_long>
+			<default>true</default>
+		</option>
 	</plugin>
 </wayfire>
