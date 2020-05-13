@@ -60,7 +60,6 @@ class fullscreen_subsurface : public wf::surface_interface_t, public wf::composi
 
     wf::point_t get_offset() override
     {
-        /* TODO: support below the surface as well, if wider than screen */
         return {-1, 0};
     }
 
@@ -301,13 +300,10 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
 
         wlr_box box;
-        box.width = std::floor(vg.width * scale_x);
-        box.height = std::floor(vg.height * scale_y);
-        box.x = std::floor((og.width - box.width) / 2.0);
-        box.y = std::floor((og.height - box.height) / 2.0);
-
-        scale_x += 1.0 / vg.width;
-        scale_y += 1.0 / vg.height;
+        box.width = std::floor((vg.width - 2) * scale_x);
+        box.height = std::floor((vg.height - 2) * scale_y);
+        box.x = std::ceil((og.width - box.width) / 2.0);
+        box.y = std::ceil((og.height - box.height) / 2.0);
 
         if (preserve_aspect)
         {
