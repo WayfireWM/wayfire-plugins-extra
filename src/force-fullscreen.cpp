@@ -202,11 +202,9 @@ class fullscreen_transformer : public wf::view_2D
 class fullscreen_background
 {
   public:
-    double saved_wrot_angle;
     wf::geometry_t saved_geometry;
     wf::geometry_t undecorated_geometry;
     fullscreen_transformer *transformer;
-    wf::view_2D *wrot_transformer = nullptr;
     fullscreen_subsurface *black_border = nullptr;
 
     fullscreen_background(wayfire_view view) {}
@@ -221,6 +219,7 @@ std::map<wf::output_t*, wayfire_force_fullscreen*> wayfire_force_fullscreen_inst
 class wayfire_force_fullscreen : public wf::plugin_interface_t
 {
     std::string background_name;
+    wf::pointf_t last_cursor;
     bool motion_connected = false;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
@@ -233,7 +232,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     void init() override
     {
         this->grab_interface->name = "force-fullscreen";
-        this->grab_interface->capabilities = 0;
+        this->grab_interface->capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR;
         background_name = this->grab_interface->name;
 
         output->add_key(key_toggle_fullscreen, &on_toggle_fullscreen);
@@ -241,6 +240,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wayfire_force_fullscreen_instances[output] = this;
         constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
+        last_cursor = wf::get_core().get_cursor_position();
     }
 
     void ensure_subsurface(wayfire_view view)
@@ -336,7 +336,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     bool toggle_fullscreen(wayfire_view view)
     {
-        if (!output->activate_plugin(grab_interface))
+        if (!output->can_activate_plugin(grab_interface))
         {
             return false;
         }
@@ -399,24 +399,14 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         view->connect_signal("geometry-changed", &view_geometry_changed);
         output->connect_signal("unmap-view", &view_unmapped);
         output->connect_signal("focus-view", &view_focused);
-        output->deactivate_plugin(grab_interface);
         if (constrain_pointer)
         {
             connect_motion_signal();
-        }
-
-        if (view->get_transformer("wrot"))
-        {
-            backgrounds[view]->wrot_transformer =
-                dynamic_cast<wf::view_2D*> (view->get_transformer("wrot").get());
-            backgrounds[view]->saved_wrot_angle = backgrounds[view]->wrot_transformer->angle;
-            backgrounds[view]->wrot_transformer->angle = 0.0;
         }
     }
 
     void deactivate(wayfire_view view)
     {
-        output->deactivate_plugin(grab_interface);
         auto background = backgrounds.find(view);
 
         if (background == backgrounds.end())
@@ -442,13 +432,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         if (view->get_transformer(background_name))
         {
             view->pop_transformer(background_name);
-        }
-
-        if (background->second->wrot_transformer)
-        {
-            background->second->wrot_transformer->angle =
-                background->second->saved_wrot_angle;
-            background->second->wrot_transformer = nullptr;
         }
         destroy_subsurface(view);
         backgrounds.erase(view);
@@ -502,9 +485,9 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         auto ev = static_cast<
             wf::input_event_signal<wlr_event_pointer_motion>*>(data);
 
-        if (output->is_plugin_active("cube"))
+        if (!output->can_activate_plugin(grab_interface))
         {
-             return;
+            return;
         }
 
         auto cursor = wf::get_core().get_cursor_position();
@@ -530,9 +513,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             {
                 ev->event->delta_x = 0;
                 ev->event->delta_y = 0;
+                ev->event->unaccel_dx = cursor.x - last_cursor.x;
+                ev->event->unaccel_dy = cursor.y - last_cursor.y;
                 wlr_box_closest_point(&box, cursor.x, cursor.y,
                     &cursor.x, &cursor.y);
-                wf::get_core().warp_cursor(cursor.x, cursor.y);
+                wf::get_core().warp_cursor(wf::pointf_t{cursor.x, cursor.y});
 
                 return;
             }
