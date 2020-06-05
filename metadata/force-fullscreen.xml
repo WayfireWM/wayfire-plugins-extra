@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="force-fullscreen">
+	<_short>Fullscreen Window</_short>
+	<option name="key_toggle_fullscreen" type="key">
+		<_short>Key Toggle Fullscreen</_short>
+		<default>&lt;super&gt; &lt;alt&gt; KEY_F</default>
+	</option>
+	<option name="preserve_aspect" type="bool">
+		<_short>Preserve Aspect Ratio</_short>
+		<default>true</default>
+	</option>
+	<option name="transparent_behind_views" type="bool">
+		<_short>Transparent Behind Views</_short>
+		<default>true</default>
+	</option>
+	<option name="constrain_pointer" type="bool">
+		<_short>Constrain Mouse Pointer</_short>
+		<default>false</default>
+	</option>
+	<option name="constraint_area" type="string">
+		<_short>Constraint Area</_short>
+		<_long>If constrain pointer is enabled, constrain to this area.</_long>
+		<default>view</default>
+		<desc>
+			<value>view</value>
+			<_name>View</_name>
+		</desc>
+		<desc>
+			<value>output</value>
+			<_name>Output</_name>
+		</desc>
+	</option>
+	</plugin>
+</wayfire>
