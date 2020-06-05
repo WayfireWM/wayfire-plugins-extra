@@ -483,6 +483,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         auto ev = static_cast<
             wf::input_event_signal<wlr_event_pointer_motion>*>(data);
 
+        if (wf::get_core().get_active_output() != output)
+        {
+            return;
+        }
+
         if (!output->can_activate_plugin(grab_interface))
         {
             return;
