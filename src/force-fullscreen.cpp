@@ -219,7 +219,6 @@ std::map<wf::output_t*, wayfire_force_fullscreen*> wayfire_force_fullscreen_inst
 class wayfire_force_fullscreen : public wf::plugin_interface_t
 {
     std::string background_name;
-    wf::pointf_t last_cursor;
     bool motion_connected = false;
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
@@ -240,7 +239,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wayfire_force_fullscreen_instances[output] = this;
         constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
-        last_cursor = wf::get_core().get_cursor_position();
     }
 
     void ensure_subsurface(wayfire_view view)
@@ -491,9 +489,12 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
 
         auto cursor = wf::get_core().get_cursor_position();
+        auto last_cursor = cursor;
         auto og = output->get_layout_geometry();
+
         cursor.x += ev->event->delta_x;
         cursor.y += ev->event->delta_y;
+
         for (auto& b : backgrounds)
         {
             auto view = output->get_active_view();
@@ -511,13 +512,12 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             if (b.first == view &&
                 !(box & wf::pointf_t{cursor.x, cursor.y}))
             {
-                ev->event->delta_x = 0;
-                ev->event->delta_y = 0;
-                ev->event->unaccel_dx = cursor.x - last_cursor.x;
-                ev->event->unaccel_dy = cursor.y - last_cursor.y;
                 wlr_box_closest_point(&box, cursor.x, cursor.y,
                     &cursor.x, &cursor.y);
-                wf::get_core().warp_cursor(wf::pointf_t{cursor.x, cursor.y});
+                ev->event->delta_x = ev->event->unaccel_dx =
+                    cursor.x - last_cursor.x;
+                ev->event->delta_y = ev->event->unaccel_dy =
+                    cursor.y - last_cursor.y;
 
                 return;
             }
