@@ -1,0 +1,31 @@
+name: CI
+
+on: [push, pull_request]
+jobs:
+  test_musl_gcc:
+    name: "Test with with GCC/musl/libstdc++/BFD on Alpine Linux"
+    runs-on: ubuntu-latest
+    container: alpine:edge
+    steps:
+    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev eudev-dev libxml2-dev libexecinfo-dev glibmm-dev
+    - run: git clone https://github.com/WayfireWM/wayfire
+    - run: cd wayfire && git submodule sync --recursive && git submodule update --init --force --recursive && meson build && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
+    - run: git clone https://github.com/WayfireWM/wayfire-plugins-extra
+    - run: cd wayfire-plugins-extra && meson build && ninja -v -Cbuild && ninja -v -Cbuild install
+  test_glibc_llvm:
+    name: "Test with clang/glibc/libc++/lld on Arch Linux"
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      CC: clang
+      CXX: clang++
+      CXXFLAGS: "-stdlib=libc++"
+      LDFLAGS: "-fuse-ld=lld -stdlib=libc++"
+    steps:
+    - run: pacman-key --recv-key EA50C866329648EE && echo "[andontie-aur]" >> /etc/pacman.conf && echo "Server = https://aur.andontie.net/\$arch" >> /etc/pacman.conf && echo "SigLevel = Never" >> /etc/pacman.conf
+    - run: pacman --noconfirm --noprogressbar -Syyu
+    - run: pacman --noconfirm --noprogressbar -Sy git clang lld libc++ pkgconf meson ninja wayland wayland-protocols libinput libxkbcommon pixman glm libdrm libglvnd cairo glibmm
+    - run: git clone https://github.com/WayfireWM/wayfire
+    - run: cd wayfire && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
+    - run: git clone https://github.com/WayfireWM/wayfire-plugins-extra
+    - run: cd wayfire-plugins-extra && meson build && ninja -v -Cbuild && ninja -v -Cbuild install
