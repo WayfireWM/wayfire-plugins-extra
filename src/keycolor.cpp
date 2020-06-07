@@ -73,7 +73,14 @@ void main()
 }
 )";
 
-OpenGL::program_t program;
+static const std::string program_name = "keycolor_shader_program";
+static int program_ref_count;
+
+class keycolor_custom_data_t : public wf::custom_data_t
+{
+  public:
+    OpenGL::program_t program;
+};
 
 class wf_keycolor : public wf::view_transformer_t
 {
@@ -127,6 +134,9 @@ class wf_keycolor : public wf::view_transformer_t
 
         float x = src_box.x, y = src_box.y, w = src_box.width, h = src_box.height;
 
+        nonstd::observer_ptr<keycolor_custom_data_t> data =
+            wf::get_core().get_data<keycolor_custom_data_t>(program_name);
+
         static const float vertexData[] = {
             -1.0f, -1.0f,
              1.0f, -1.0f,
@@ -148,13 +158,13 @@ class wf_keycolor : public wf::view_transformer_t
             ((wf::color_t)color).g,
             ((wf::color_t)color).b,
             (double)opacity};
-        program.use(src_tex.type);
-        program.uniform4f("color", color_data);
-        program.uniform1f("threshold", threshold);
-        program.attrib_pointer("position", 2, 0, vertexData);
-        program.attrib_pointer("texcoord", 2, 0, texCoords);
+        data->program.use(src_tex.type);
+        data->program.uniform4f("color", color_data);
+        data->program.uniform1f("threshold", threshold);
+        data->program.attrib_pointer("position", 2, 0, vertexData);
+        data->program.attrib_pointer("texcoord", 2, 0, texCoords);
         GL_CALL(glActiveTexture(GL_TEXTURE0));
-        program.set_active_texture(src_tex);
+        data->program.set_active_texture(src_tex);
 
         /* Render it to target_fb */
         target_fb.bind();
@@ -172,7 +182,7 @@ class wf_keycolor : public wf::view_transformer_t
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
-        program.deactivate();
+        data->program.deactivate();
         OpenGL::render_end();
     }
 
@@ -216,9 +226,18 @@ class wayfire_keycolor : public wf::plugin_interface_t
         grab_interface->name = transformer_name;
         grab_interface->capabilities = 0;
 
-        OpenGL::render_begin();
-        program.compile(vertex_shader, fragment_shader);
-        OpenGL::render_end();
+        if (!wf::get_core().get_data<keycolor_custom_data_t>(program_name))
+        {
+            std::unique_ptr<keycolor_custom_data_t> data =
+                std::make_unique<keycolor_custom_data_t>();
+
+            OpenGL::render_begin();
+            data->program.compile(vertex_shader, fragment_shader);
+            OpenGL::render_end();
+
+            wf::get_core().store_data(std::move(data), program_name);
+        }
+        program_ref_count++;
 
         output->connect_signal("attach-view", &view_attached);
 
@@ -249,9 +268,22 @@ class wayfire_keycolor : public wf::plugin_interface_t
     void fini() override
     {
         remove_transformers();
+
+        program_ref_count--;
+
+        if (program_ref_count)
+        {
+            return;
+        }
+
+        nonstd::observer_ptr<keycolor_custom_data_t> data =
+            wf::get_core().get_data<keycolor_custom_data_t>(program_name);
+
         OpenGL::render_begin();
-        program.free_resources();
+        data->program.free_resources();
         OpenGL::render_end();
+
+        wf::get_core().erase_data(program_name);
     }
 };
 
