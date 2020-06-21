@@ -83,7 +83,13 @@ class wayfire_background_view : public wf::plugin_interface_t
         {
             procs[output].view->close();
             kill(procs[output].pid, SIGINT);
+            procs[output].view = nullptr;
         }
+        if (std::string(command).empty())
+        {
+            return;
+        }
+
         /* Insert exec between environment variables and command.
          * This is needed for shells that fork on -c by default
          * because we are matching the pid and fork increments
