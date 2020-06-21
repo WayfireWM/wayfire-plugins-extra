@@ -104,7 +104,14 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         {
             update_names();
         }
+
+        wf::get_core().connect_signal("reload-config", &reload_config);
     }
+
+    wf::signal_connection_t reload_config{[this] (wf::signal_data_t *data)
+    {
+        update_names();
+    }};
 
     wf::config::option_base_t::updated_callback_t show_options_changed = [=] ()
     {
