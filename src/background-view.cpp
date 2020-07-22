@@ -153,7 +153,7 @@ class wayfire_background_view : public wf::plugin_interface_t
                 view->set_decoration(nullptr);
 
                 /* Move to the respective output */
-                wf::get_core().move_view_to_output(view, o);
+                wf::get_core().move_view_to_output(view, o, false);
 
                 /* A client should be used that can be resized to any size.
                  * If we set it fullscreen, the screensaver would be inhibited
