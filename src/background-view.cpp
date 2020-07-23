@@ -31,17 +31,17 @@
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/output-layout.hpp>
 
+#include <wayfire/config.h>
+#if WF_HAS_XWAYLAND
 extern "C"
 {
-#include <wlr/config.h>
-#if WLR_HAS_XWAYLAND
  #define class class_t
  #define static
  #include <wlr/xwayland.h>
  #undef static
  #undef class
-#endif
 }
+#endif
 
 struct process
 {
@@ -126,7 +126,7 @@ class wayfire_background_view : public wf::plugin_interface_t
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
         {
             auto view = get_signaled_view(data);
-#if WLR_HAS_XWAYLAND
+#if WF_HAS_XWAYLAND
             wlr_surface *wlr_surface = view->get_wlr_surface();
             bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
 #endif
@@ -147,7 +147,7 @@ class wayfire_background_view : public wf::plugin_interface_t
                  * and running xscreensavers directly.
                  */
                 if (procs[o].pid == view_pid
-#if WLR_HAS_XWAYLAND
+#if WF_HAS_XWAYLAND
                     || (is_xwayland_surface &&
                         /* For this match to work, the client must set _NET_WM_PID */
                         procs[o].pid ==
