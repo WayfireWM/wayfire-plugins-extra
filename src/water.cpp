@@ -33,8 +33,8 @@
 #include <wayfire/util/duration.hpp>
 #include <wayfire/render-manager.hpp>
 
-static const char* vertex_shader =
-R"(
+static const char *vertex_shader =
+    R"(
 #version 100
 
 attribute mediump vec2 position;
@@ -49,8 +49,8 @@ void main()
 }
 )";
 
-static const char* fragment_shader_a =
-R"(
+static const char *fragment_shader_a =
+    R"(
 #version 100
 precision mediump float;
 
@@ -78,8 +78,8 @@ void main()
 }
 )";
 
-static const char* fragment_shader_b =
-R"(
+static const char *fragment_shader_b =
+    R"(
 #version 100
 precision mediump float;
 
@@ -120,8 +120,8 @@ void main()
 }
 )";
 
-static const char* fragment_shader_c =
-R"(
+static const char *fragment_shader_c =
+    R"(
 #version 100
 precision mediump float;
 
@@ -191,9 +191,10 @@ class wayfire_water_screen : public wf::plugin_interface_t
     wf::framebuffer_t buffer[2];
     wf::pointf_t last_cursor;
     bool button_down = false;
-    bool hook_set = false;
+    bool hook_set    = false;
     wf::wl_timer timer;
     int points_loc;
+
   public:
     void init() override
     {
@@ -241,11 +242,13 @@ class wayfire_water_screen : public wf::plugin_interface_t
             output->render->add_post(&render);
             hook_set = true;
         }
+
         last_cursor = output->get_cursor_position();
         animation.animate(animation, 1);
         grab_interface->grab();
         timer.disconnect();
         button_down = true;
+
         return true;
     };
 
@@ -256,11 +259,11 @@ class wayfire_water_screen : public wf::plugin_interface_t
     };
 
     wf::post_hook_t render = [=] (const wf::framebuffer_base_t& source,
-        const wf::framebuffer_base_t& destination)
+                                  const wf::framebuffer_base_t& destination)
     {
         auto transform = output->render->get_target_framebuffer().transform;
         auto cursor_position = output->get_cursor_position();
-        auto og = output->get_relative_geometry();
+        auto og  = output->get_relative_geometry();
         auto fbg = output->render->get_target_framebuffer().
             framebuffer_box_from_geometry_box(og);
         transform = glm::inverse(transform);
@@ -268,8 +271,8 @@ class wayfire_water_screen : public wf::plugin_interface_t
         static const float vertexData[] = {
             -1.0f, -1.0f,
             1.0f, -1.0f,
-            1.0f,  1.0f,
-            -1.0f,  1.0f
+            1.0f, 1.0f,
+            -1.0f, 1.0f
         };
 
         static const float coordData[] = {
@@ -297,7 +300,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
 
             float x = p.x / og.width;
             float y = p.y / og.height;
-	    
+
             /* Apply transform to cursor position */
             glm::vec4 point{x - center.x, y - center.y, 1.0, 1.0};
             glm::vec4 result = transform * point;
@@ -307,6 +310,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
             points.push_back(x);
             points.push_back(y);
         }
+
         last_cursor = cursor_position;
 
         /* First pass */
@@ -317,12 +321,14 @@ class wayfire_water_screen : public wf::plugin_interface_t
             buffer[0].geometry = fbg;
             OpenGL::clear({0, 0, 0, 1});
         }
+
         if (buffer[1].allocate(fbg.width, fbg.height))
         {
             buffer[1].bind();
             buffer[1].geometry = fbg;
             OpenGL::clear({0, 0, 0, 1});
         }
+
         buffer[0].bind();
         program[0].use(wf::TEXTURE_TYPE_RGBA);
         program[0].attrib_pointer("position", 2, 0, vertexData);
@@ -334,7 +340,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
         GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[1].tex));
 
         GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays (GL_TRIANGLE_FAN, 0, 4));
+        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
         GL_CALL(glEnable(GL_BLEND));
 
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -351,7 +357,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
         GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[0].tex));
 
         GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays (GL_TRIANGLE_FAN, 0, 4));
+        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
         GL_CALL(glEnable(GL_BLEND));
 
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -372,7 +378,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
         GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[1].tex));
 
         GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays (GL_TRIANGLE_FAN, 0, 4));
+        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
         GL_CALL(glEnable(GL_BLEND));
 
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));

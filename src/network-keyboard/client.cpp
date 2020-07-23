@@ -29,13 +29,13 @@ struct Modifiers
     uint32_t locked;
     uint32_t group;
 
-    bool operator == (const Modifiers& other)
+    bool operator ==(const Modifiers& other)
     {
         return depressed == other.depressed && latched == other.latched &&
-            locked == other.locked && group == other.group;
+               locked == other.locked && group == other.group;
     }
 
-    bool operator != (const Modifiers& other)
+    bool operator !=(const Modifiers& other)
     {
         return !(*this == other);
     }
@@ -47,18 +47,17 @@ class VirtualKeyboardDevice
     void send_keymap()
     {
         /* The keymap string is defined in keymap.tpp, it is keymap_normal */
-        #include "keymap.tpp"
+#include "keymap.tpp"
 
         size_t keymap_size = strlen(keymap) + 1;
         int keymap_fd = os_create_anonymous_file(keymap_size);
-        void *ptr = mmap(NULL, keymap_size, PROT_READ | PROT_WRITE, MAP_SHARED,
+        void *ptr     = mmap(NULL, keymap_size, PROT_READ | PROT_WRITE, MAP_SHARED,
             keymap_fd, 0);
 
         std::strcpy((char*)ptr, keymap);
         zwp_virtual_keyboard_v1_keymap(vk, WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1,
             keymap_fd, keymap_size);
     }
-
 
   public:
     VirtualKeyboardDevice(WaylandDisplay *display)
@@ -79,22 +78,21 @@ class VirtualKeyboardDevice
         zwp_virtual_keyboard_v1_modifiers(vk, mod.depressed,
             mod.latched, mod.locked, mod.group);
     }
-
 };
 
 // listeners
 static void registry_add_object(void *data, struct wl_registry *registry,
     uint32_t name, const char *interface, uint32_t version)
 {
-    auto display = static_cast<WaylandDisplay*> (data);
+    auto display = static_cast<WaylandDisplay*>(data);
     if (strcmp(interface, zwp_virtual_keyboard_manager_v1_interface.name) == 0)
     {
         display->vk_manager = (zwp_virtual_keyboard_manager_v1*)
             wl_registry_bind(registry, name,
-                &zwp_virtual_keyboard_manager_v1_interface, 1u);
+            &zwp_virtual_keyboard_manager_v1_interface, 1u);
     }
 
-    if (!display->seat && strcmp(interface, wl_seat_interface.name) == 0)
+    if (!display->seat && (strcmp(interface, wl_seat_interface.name) == 0))
     {
         display->seat = (wl_seat*)
             wl_registry_bind(registry, name, &wl_seat_interface, 1u);
@@ -122,7 +120,7 @@ class NetworkKeyboardClient
     /* Do not allow long press, double press or whatever */
     std::set<uint32_t> pressed_keys;
     Modifiers last_modifiers = {0, 0, 0, 0};
-    uint32_t last_timestamp = 0;
+    uint32_t last_timestamp  = 0;
 
     void process_event(uint32_t time, uint32_t key, uint32_t state)
     {
@@ -162,20 +160,23 @@ class NetworkKeyboardClient
             bool current_state = pressed_keys.count(keycode) > 0;
             if (current_state != state)
             {
-                std::cout << "Received " << time << " " << keycode
-                    << " " << state << std::endl;
+                std::cout << "Received " << time << " " << keycode <<
+                    " " << state << std::endl;
                 process_event(time, keycode, state);
 
-                if (state) {
+                if (state)
+                {
                     pressed_keys.insert(keycode);
-                } else {
+                } else
+                {
                     pressed_keys.erase(keycode);
                 }
             }
         }
     }
 
-    struct {
+    struct
+    {
         xkb_context *ctx;
         xkb_keymap *keymap;
         xkb_state *state;
@@ -183,8 +184,8 @@ class NetworkKeyboardClient
 
     void setup_xkb_state()
     {
-        #include "keymap.tpp"
-        xkb.ctx = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+#include "keymap.tpp"
+        xkb.ctx    = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
         xkb.keymap = xkb_keymap_new_from_string(xkb.ctx, keymap,
             XKB_KEYMAP_FORMAT_TEXT_V1, XKB_KEYMAP_COMPILE_NO_FLAGS);
         xkb.state = xkb_state_new(xkb.keymap);
@@ -210,7 +211,7 @@ class NetworkKeyboardClient
             std::exit(-1);
         }
 
-        device = std::make_unique<VirtualKeyboardDevice> (&disp);
+        device = std::make_unique<VirtualKeyboardDevice>(&disp);
 
         wl_display_flush(disp.display);
         wl_display_roundtrip(disp.display);
@@ -222,7 +223,9 @@ class NetworkKeyboardClient
     {
         device->send_modifiers({0, 0, 0, 0});
         for (auto& key : pressed_keys)
+        {
             device->send_key(last_timestamp, key, 0);
+        }
 
         wl_display_flush(disp.display);
     }
@@ -264,6 +267,7 @@ int main(int argc, char **argv)
     if (argc < 3)
     {
         std::cout << "Usage: wf-nk-client <server ip> <port>" << std::endl;
+
         return -1;
     }
 
@@ -278,7 +282,7 @@ int main(int argc, char **argv)
     socket.connect(endpoint);
 
     NetworkKeyboardClient client;
-    while(true)
+    while (true)
     {
         boost::array<char, 128> buf;
         boost::system::error_code error;
@@ -287,9 +291,12 @@ int main(int argc, char **argv)
         client.process_input(std::string{buf.data(), len});
 
         if (error == boost::asio::error::eof)
+        {
             break; // Connection closed cleanly by peer.
-        else if (error)
+        } else if (error)
+        {
             break; // Some other error
+        }
 
         client.spin_some();
     }

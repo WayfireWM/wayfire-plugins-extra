@@ -34,7 +34,8 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
 
-enum annotate_draw_method {
+enum annotate_draw_method
+{
     ANNOTATE_METHOD_DRAW,
     ANNOTATE_METHOD_LINE,
     ANNOTATE_METHOD_RECTANGLE,
@@ -43,7 +44,7 @@ enum annotate_draw_method {
 
 class anno_ws_overlay
 {
-    public:
+  public:
     cairo_t *cr = nullptr;
     cairo_surface_t *cairo_surface;
     std::unique_ptr<wf::simple_texture_t> texture;
@@ -63,9 +64,10 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     wf::option_wrapper_t<bool> shapes_from_center{"annotate/from_center"};
     wf::option_wrapper_t<wf::color_t> stroke_color{"annotate/stroke_color"};
     wf::option_wrapper_t<wf::buttonbinding_t> draw_binding{"annotate/draw"};
-    wf::option_wrapper_t<wf::activatorbinding_t> clear_binding{"annotate/clear_workspace"};
+    wf::option_wrapper_t<wf::activatorbinding_t> clear_binding{
+        "annotate/clear_workspace"};
 
-    public:
+  public:
     void init() override
     {
         grab_interface->name = "annotate";
@@ -85,13 +87,14 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         grab_interface->callbacks.pointer.button = [=] (uint32_t b, uint32_t s)
         {
-            if (b == button && s == WL_POINTER_BUTTON_STATE_RELEASED)
+            if ((b == button) && (s == WL_POINTER_BUTTON_STATE_RELEASED))
             {
                 draw_end();
             }
         };
 
-        output->connect_signal("output-configuration-changed", &output_config_changed);
+        output->connect_signal("output-configuration-changed",
+            &output_config_changed);
         output->connect_signal("viewport-changed", &viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
@@ -104,20 +107,16 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         if (std::string(method) == "draw")
         {
             draw_method = ANNOTATE_METHOD_DRAW;
-        }
-        else if (std::string(method) == "line")
+        } else if (std::string(method) == "line")
         {
             draw_method = ANNOTATE_METHOD_LINE;
-        }
-        else if (std::string(method) == "rectangle")
+        } else if (std::string(method) == "rectangle")
         {
             draw_method = ANNOTATE_METHOD_RECTANGLE;
-        }
-        else if (std::string(method) == "circle")
+        } else if (std::string(method) == "circle")
         {
             draw_method = ANNOTATE_METHOD_CIRCLE;
-        }
-        else
+        } else
         {
             draw_method = ANNOTATE_METHOD_DRAW;
         }
@@ -126,18 +125,20 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     anno_ws_overlay& get_current_overlay()
     {
         auto ws = output->workspace->get_current_workspace();
+
         return overlays[ws.x][ws.y];
     }
 
     wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
-    {
-        output->render->damage_whole();
-    }};
+        {
+            output->render->damage_whole();
+        }
+    };
 
     wf::button_callback draw_begin = [=] (uint32_t b, int x, int y)
     {
         grab_point = last_cursor = wf::get_core().get_cursor_position();
-        button = b;
+        button     = b;
 
         grab();
 
@@ -153,18 +154,21 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         switch (draw_method)
         {
-            case ANNOTATE_METHOD_LINE:
-                cairo_draw_line(ol, wf::get_core().get_cursor_position());
-                break;
-            case ANNOTATE_METHOD_RECTANGLE:
-                cairo_draw_rectangle(ol, last_cursor);
-                break;
-            case ANNOTATE_METHOD_CIRCLE:
-                cairo_draw_circle(ol, last_cursor);
-                break;
-            default:
-                break;
-	}
+          case ANNOTATE_METHOD_LINE:
+            cairo_draw_line(ol, wf::get_core().get_cursor_position());
+            break;
+
+          case ANNOTATE_METHOD_RECTANGLE:
+            cairo_draw_rectangle(ol, last_cursor);
+            break;
+
+          case ANNOTATE_METHOD_CIRCLE:
+            cairo_draw_circle(ol, last_cursor);
+            break;
+
+          default:
+            break;
+        }
     }
 
     void pointer_moved()
@@ -172,24 +176,27 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         auto current_cursor = wf::get_core().get_cursor_position();
         auto& ol = get_current_overlay();
 
-
         switch (draw_method)
         {
-            case ANNOTATE_METHOD_DRAW:
-                cairo_draw(ol, last_cursor, current_cursor);
-                break;
-            case ANNOTATE_METHOD_LINE:
-                cairo_draw_line(shape_overlay, current_cursor);
-                break;
-            case ANNOTATE_METHOD_RECTANGLE:
-                cairo_draw_rectangle(shape_overlay, current_cursor);
-                break;
-            case ANNOTATE_METHOD_CIRCLE:
-                cairo_draw_circle(shape_overlay, current_cursor);
-                break;
-            default:
-                return;
-	}
+          case ANNOTATE_METHOD_DRAW:
+            cairo_draw(ol, last_cursor, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_LINE:
+            cairo_draw_line(shape_overlay, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_RECTANGLE:
+            cairo_draw_rectangle(shape_overlay, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_CIRCLE:
+            cairo_draw_circle(shape_overlay, current_cursor);
+            break;
+
+          default:
+            return;
+        }
 
         last_cursor = current_cursor;
 
@@ -216,13 +223,17 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
 
         if (all_workspaces_clear)
+        {
             disconnect_ws_stream_post();
+        }
     }
 
     void overlay_clear(anno_ws_overlay& ol)
     {
         if (!ol.cr)
+        {
             return;
+        }
 
         cairo_clear(ol.cr);
     }
@@ -230,7 +241,9 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     void overlay_destroy(anno_ws_overlay& ol)
     {
         if (!ol.cr)
+        {
             return;
+        }
 
         ol.texture.reset();
         cairo_surface_destroy(ol.cairo_surface);
@@ -249,26 +262,28 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     }
 
     wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
-    {
-        wf::output_configuration_changed_signal *signal =
-            static_cast<wf::output_configuration_changed_signal*>(data);
-
-        if (!signal->changed_fields)
         {
-            return;
-        }
+            wf::output_configuration_changed_signal *signal =
+                static_cast<wf::output_configuration_changed_signal*>(data);
 
-        if (signal->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
-        {
-            return;
-        }
+            if (!signal->changed_fields)
+            {
+                return;
+            }
 
-        clear();
-    }};
+            if (signal->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
+            {
+                return;
+            }
+
+            clear();
+        }
+    };
 
     wf::activator_callback clear_workspace = [=] (wf::activator_source_t, uint32_t)
     {
         clear();
+
         return true;
     };
 
@@ -277,12 +292,15 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         auto og = output->get_relative_geometry();
 
         if (ol.cr)
+        {
             return;
+        }
 
-        ol.cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, og.width, og.height);
+        ol.cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, og.width,
+            og.height);
         ol.cr = cairo_create(ol.cairo_surface);
 
-        ol.texture = std::make_unique<wf::simple_texture_t> ();
+        ol.texture = std::make_unique<wf::simple_texture_t>();
     }
 
     void cairo_clear(cairo_t *cr)
@@ -293,7 +311,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     }
 
     /* GLESv2 doesn't support GL_BGRA */
-    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b, double a)
+    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b,
+        double a)
     {
         cairo_set_source_rgba(cr, b, g, r, a);
     }
@@ -304,8 +323,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         from.x -= og.x;
         from.y -= og.y;
-        to.x -= og.x;
-        to.y -= og.y;
+        to.x   -= og.x;
+        to.y   -= og.y;
 
         cairo_init(ol);
         cairo_t *cr = ol.cr;
@@ -326,8 +345,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         wlr_box bbox;
         int padding = line_width + 1;
-        bbox.x = std::min(from.x, to.x) - padding;
-        bbox.y = std::min(from.y, to.y) - padding;
+        bbox.x     = std::min(from.x, to.x) - padding;
+        bbox.y     = std::min(from.y, to.y) - padding;
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
         output->render->damage(bbox);
@@ -335,18 +354,18 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
     bool should_damage_last()
     {
-        return shape_overlay.texture && shape_overlay.texture->tex != (uint32_t) -1;
+        return shape_overlay.texture && shape_overlay.texture->tex != (uint32_t)-1;
     }
 
     void cairo_draw_line(anno_ws_overlay& ol, wf::pointf_t to)
     {
-        auto og = output->get_layout_geometry();
+        auto og   = output->get_layout_geometry();
         auto from = grab_point;
 
         from.x -= og.x;
         from.y -= og.y;
-        to.x -= og.x;
-        to.y -= og.y;
+        to.x   -= og.x;
+        to.y   -= og.y;
 
         bool damage_last_bbox = should_damage_last();
         overlay_clear(shape_overlay);
@@ -370,8 +389,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         wlr_box bbox;
         int padding = line_width + 1;
-        bbox.x = std::min(from.x, to.x) - padding;
-        bbox.y = std::min(from.y, to.y) - padding;
+        bbox.x     = std::min(from.x, to.x) - padding;
+        bbox.y     = std::min(from.y, to.y) - padding;
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
         output->render->damage(bbox);
@@ -379,6 +398,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         {
             output->render->damage(last_bbox);
         }
+
         last_bbox = bbox;
     }
 
@@ -390,8 +410,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         from.x -= og.x;
         from.y -= og.y;
-        to.x -= og.x;
-        to.y -= og.y;
+        to.x   -= og.x;
+        to.y   -= og.y;
 
         bool damage_last_bbox = should_damage_last();
         overlay_clear(shape_overlay);
@@ -404,12 +424,11 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         if (shapes_from_center)
         {
-            x = from.x - w;
-            y = from.y - h;
+            x  = from.x - w;
+            y  = from.y - h;
             w *= 2;
             h *= 2;
-        }
-        else
+        } else
         {
             x = std::min(from.x, to.x);
             y = std::min(from.y, to.y);
@@ -430,8 +449,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         wlr_box bbox;
         int padding = line_width + 1;
-        bbox.x = x - padding;
-        bbox.y = y - padding;
+        bbox.x     = x - padding;
+        bbox.y     = y - padding;
         bbox.width = w + padding * 2;
         bbox.height = h + padding * 2;
         output->render->damage(bbox);
@@ -439,18 +458,19 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         {
             output->render->damage(last_bbox);
         }
+
         last_bbox = bbox;
     }
 
     void cairo_draw_circle(anno_ws_overlay& ol, wf::pointf_t to)
     {
-        auto og = output->get_layout_geometry();
+        auto og   = output->get_layout_geometry();
         auto from = grab_point;
 
         from.x -= og.x;
         from.y -= og.y;
-        to.x -= og.x;
-        to.y -= og.y;
+        to.x   -= og.x;
+        to.y   -= og.y;
 
         bool damage_last_bbox = should_damage_last();
         overlay_clear(shape_overlay);
@@ -458,7 +478,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_init(ol);
         cairo_t *cr = ol.cr;
 
-        auto radius = glm::distance(glm::vec2(from.x, from.y), glm::vec2(to.x, to.y));
+        auto radius =
+            glm::distance(glm::vec2(from.x, from.y), glm::vec2(to.x, to.y));
 
         if (!shapes_from_center)
         {
@@ -482,8 +503,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         wlr_box bbox;
         int padding = line_width + 1;
-        bbox.x = (from.x - radius) - padding;
-        bbox.y = (from.y - radius) - padding;
+        bbox.x     = (from.x - radius) - padding;
+        bbox.y     = (from.y - radius) - padding;
         bbox.width = (radius * 2) + padding * 2;
         bbox.height = (radius * 2) + padding * 2;
         output->render->damage(bbox);
@@ -491,36 +512,40 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         {
             output->render->damage(last_bbox);
         }
+
         last_bbox = bbox;
     }
 
     wf::signal_connection_t workspace_stream_post{[this] (wf::signal_data_t *data)
-    {
-        const auto& workspace = static_cast<wf::stream_signal_t*>(data);
-        auto& ol = overlays[workspace->ws.x][workspace->ws.y];
-        auto og = workspace->fb.geometry;
-        auto damage = output->render->get_scheduled_damage() &
-            output->render->get_ws_box(workspace->ws);
-
-        OpenGL::render_begin(workspace->fb);
-        for (auto& box : damage)
         {
-            workspace->fb.logic_scissor(wlr_box_from_pixman_box(box));
-            if (ol.cr)
+            const auto& workspace = static_cast<wf::stream_signal_t*>(data);
+            auto& ol    = overlays[workspace->ws.x][workspace->ws.y];
+            auto og     = workspace->fb.geometry;
+            auto damage = output->render->get_scheduled_damage() &
+                output->render->get_ws_box(workspace->ws);
+
+            OpenGL::render_begin(workspace->fb);
+            for (auto& box : damage)
             {
-                OpenGL::render_texture(wf::texture_t{ol.texture->tex},
-                    workspace->fb, og, glm::vec4(1.0),
-                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                workspace->fb.logic_scissor(wlr_box_from_pixman_box(box));
+                if (ol.cr)
+                {
+                    OpenGL::render_texture(wf::texture_t{ol.texture->tex},
+                        workspace->fb, og, glm::vec4(1.0),
+                        OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                }
+
+                if (shape_overlay.cr)
+                {
+                    OpenGL::render_texture(wf::texture_t{shape_overlay.texture->tex},
+                        workspace->fb, og, glm::vec4(1.0),
+                        OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                }
             }
-            if (shape_overlay.cr)
-            {
-                OpenGL::render_texture(wf::texture_t{shape_overlay.texture->tex},
-                    workspace->fb, og, glm::vec4(1.0),
-                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-            }
+
+            OpenGL::render_end();
         }
-        OpenGL::render_end();
-    }};
+    };
 
     void grab()
     {
@@ -528,6 +553,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         {
             return;
         }
+
         grab_interface->grab();
     }
 
@@ -540,16 +566,21 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     void connect_ws_stream_post()
     {
         if (hook_set)
+        {
             return;
+        }
 
-        output->render->connect_signal("workspace-stream-post", &workspace_stream_post);
+        output->render->connect_signal("workspace-stream-post",
+            &workspace_stream_post);
         hook_set = true;
     }
 
     void disconnect_ws_stream_post()
     {
         if (!hook_set)
+        {
             return;
+        }
 
         workspace_stream_post.disconnect();
         hook_set = false;
@@ -570,6 +601,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
                 overlay_destroy(ol);
             }
         }
+
         output->render->damage_whole();
     }
 };

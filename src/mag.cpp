@@ -54,12 +54,12 @@ class mag_view_t : public wf::color_rect_view_t
   public:
     wf::framebuffer_t mag_tex;
 
-    mag_view_t(wf::output_t *output, float aspect)
-        : wf::color_rect_view_t()
+    mag_view_t(wf::output_t *output, float aspect) :
+        wf::color_rect_view_t()
     {
         set_output(output);
 
-        set_geometry({100, 100, (int) (default_height * aspect), default_height});
+        set_geometry({100, 100, (int)(default_height * aspect), default_height});
 
         this->role = wf::VIEW_ROLE_TOPLEVEL;
         output->workspace->add_view(self(), wf::LAYER_TOP);
@@ -70,7 +70,7 @@ class mag_view_t : public wf::color_rect_view_t
         auto vg = get_wm_geometry();
 
         /* Allow move and resize */
-        if (0 < sx && sx < vg.width && 0 < sy && sy < vg.height)
+        if ((0 < sx) && (sx < vg.width) && (0 < sy) && (sy < vg.height))
         {
             return true;
         }
@@ -83,8 +83,8 @@ class mag_view_t : public wf::color_rect_view_t
     {
         OpenGL::render_begin(fb);
         auto vg = get_wm_geometry();
-        gl_geometry src_geometry = {(float) vg.x, (float) vg.y,
-            (float) vg.x + vg.width, (float) vg.y + vg.height};
+        gl_geometry src_geometry = {(float)vg.x, (float)vg.y,
+            (float)vg.x + vg.width, (float)vg.y + vg.height};
         for (const auto& box : damage)
         {
             fb.logic_scissor(wlr_box_from_pixman_box(box));
@@ -92,12 +92,12 @@ class mag_view_t : public wf::color_rect_view_t
                 fb.get_orthographic_projection(),
                 glm::vec4(1.0), 0);
         }
+
         OpenGL::render_end();
     }
 
     virtual ~mag_view_t()
-    {
-    }
+    {}
 };
 
 class wayfire_magnifier : public wf::plugin_interface_t
@@ -115,15 +115,15 @@ class wayfire_magnifier : public wf::plugin_interface_t
         if (active)
         {
             return activate();
-        }
-        else
+        } else
         {
             deactivate();
+
             return true;
         }
     };
 
-    public:
+  public:
     void init() override
     {
         grab_interface->name = transformer_name;
@@ -140,8 +140,9 @@ class wayfire_magnifier : public wf::plugin_interface_t
             return;
         }
 
-        auto og = output->get_relative_geometry();
-        auto view = std::make_unique<mag_view_t>(output, (float) og.width / og.height);
+        auto og   = output->get_relative_geometry();
+        auto view =
+            std::make_unique<mag_view_t>(output, (float)og.width / og.height);
 
         mag_view = {view};
 
@@ -167,7 +168,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
         return true;
     }
 
-    wf::effect_hook_t post_hook = [=]()
+    wf::effect_hook_t post_hook = [=] ()
     {
         wlr_dmabuf_attributes dmabuf_attribs;
 
@@ -178,16 +179,17 @@ class wayfire_magnifier : public wf::plugin_interface_t
             LOGE("Failed reading output contents");
             deactivate();
             active = false;
+
             return;
         }
 
         auto cursor_position = output->get_cursor_position();
         auto og = output->get_relative_geometry();
-        gl_geometry src_geometry = {0, 0, (float) og.width, (float) og.height};
+        gl_geometry src_geometry = {0, 0, (float)og.width, (float)og.height};
         auto transform = output->render->get_target_framebuffer().transform;
         transform = glm::inverse(transform);
 
-        width = og.width;
+        width  = og.width;
         height = og.height;
         /* x,y range 0.0 - 1.0 */
         float x = cursor_position.x / width;
@@ -204,8 +206,8 @@ class wayfire_magnifier : public wf::plugin_interface_t
          * The min is 0.5 and means no zoom, half the screen on either side
          * of the pointer. max is 0.01 and means this much of the screen
          * on either side, which is about the maximum reasonable zoom level. */
-        float min = 0.5;
-        float max = 0.01;
+        float min   = 0.5;
+        float max   = 0.01;
         float range = min - max;
         float level = (1.0 - (zoom_level / 100.0)) * range + max;
 
@@ -223,22 +225,25 @@ class wayfire_magnifier : public wf::plugin_interface_t
         if (zoom_box.x1 < 0.0)
         {
             zoom_box.x2 -= zoom_box.x1;
-            zoom_box.x1 = 0.0;
+            zoom_box.x1  = 0.0;
         }
+
         if (zoom_box.y1 < 0.0)
         {
             zoom_box.y2 -= zoom_box.y1;
-            zoom_box.y1 = 0.0;
+            zoom_box.y1  = 0.0;
         }
+
         if (zoom_box.x2 > 1.0)
         {
             zoom_box.x1 += 1.0 - zoom_box.x2;
-            zoom_box.x2 = 1.0;
+            zoom_box.x2  = 1.0;
         }
+
         if (zoom_box.y2 > 1.0)
         {
             zoom_box.y1 += 1.0 - zoom_box.y2;
-            zoom_box.y2 = 1.0;
+            zoom_box.y2  = 1.0;
         }
 
         /* Copy zoom_box part of the output to our own texture to be
@@ -254,7 +259,8 @@ class wayfire_magnifier : public wf::plugin_interface_t
         mag_view->mag_tex.bind();
 
         OpenGL::render_transformed_texture(texture, src_geometry, zoom_box,
-            transform * mag_view->mag_tex.get_orthographic_projection(), glm::vec4(1.0),
+            transform * mag_view->mag_tex.get_orthographic_projection(),
+            glm::vec4(1.0),
             OpenGL::TEXTURE_USE_TEX_GEOMETRY | OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
         OpenGL::render_end();
 
