@@ -40,7 +40,9 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         for (auto iconnector : integrated_connectors)
         {
             if (output_connector.find(iconnector) != iconnector.npos)
+            {
                 return true;
+            }
         }
 
         return false;
@@ -49,7 +51,9 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     wf::signal_callback_t on_input_devices_changed = [=] (void*)
     {
         if (!is_autorotate_enabled())
+        {
             return;
+        }
 
         auto devices = wf::get_core().get_input_devices();
         for (auto& dev : devices)
@@ -64,24 +68,29 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     };
 
     wf::option_wrapper_t<wf::activatorbinding_t>
-        rotate_up_opt{"autorotate-iio/rotate_up"},
-        rotate_left_opt{"autorotate-iio/rotate_left"},
-        rotate_down_opt{"autorotate-iio/rotate_down"},
-        rotate_right_opt{"autorotate-iio/rotate_right"};
+    rotate_up_opt{"autorotate-iio/rotate_up"},
+    rotate_left_opt{"autorotate-iio/rotate_left"},
+    rotate_down_opt{"autorotate-iio/rotate_down"},
+    rotate_right_opt{"autorotate-iio/rotate_right"};
     wf::option_wrapper_t<bool>
-        config_rotation_locked{"autorotate-iio/lock_rotation"};
+    config_rotation_locked{"autorotate-iio/lock_rotation"};
 
     guint watch_id;
-    wf::activator_callback on_rotate_left = [=] (wf::activator_source_t src, int32_t) {
+    wf::activator_callback on_rotate_left = [=] (wf::activator_source_t src, int32_t)
+    {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_270);
     };
-    wf::activator_callback on_rotate_right = [=] (wf::activator_source_t src, int32_t) {
+    wf::activator_callback on_rotate_right =
+        [=] (wf::activator_source_t src, int32_t)
+    {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_90);
     };
-    wf::activator_callback on_rotate_up = [=] (wf::activator_source_t src, int32_t) {
+    wf::activator_callback on_rotate_up = [=] (wf::activator_source_t src, int32_t)
+    {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_NORMAL);
     };
-    wf::activator_callback on_rotate_down = [=] (wf::activator_source_t src, int32_t) {
+    wf::activator_callback on_rotate_down = [=] (wf::activator_source_t src, int32_t)
+    {
         return on_rotate_binding(WL_OUTPUT_TRANSFORM_180);
     };
 
@@ -94,29 +103,35 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     bool on_rotate_binding(int32_t target_rotation)
     {
         if (!output->can_activate_plugin(grab_interface))
+        {
             return false;
+        }
 
         /* If the user presses the same rotation binding twice, this means
          * unlock the rotation. Otherwise, just use the new rotation. */
         if (target_rotation == user_rotation)
         {
             user_rotation = -1;
-        } else {
+        } else
+        {
             user_rotation = target_rotation;
         }
 
         return update_transform();
-    };
+    }
 
     /** Calculate the transform based on user and sensor data, and apply it */
     bool update_transform()
     {
         wl_output_transform transform_to_use;
-        if (user_rotation >= 0) {
+        if (user_rotation >= 0)
+        {
             transform_to_use = (wl_output_transform)user_rotation;
-        } else if (sensor_transform >= 0 && !config_rotation_locked) {
+        } else if ((sensor_transform >= 0) && !config_rotation_locked)
+        {
             transform_to_use = (wl_output_transform)sensor_transform;
-        } else {
+        } else
+        {
             /* No user rotation set, and no sensor data */
             return false;
         }
@@ -124,7 +139,9 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         auto configuration =
             wf::get_core().output_layout->get_current_configuration();
         if (configuration[output->handle].transform == transform_to_use)
+        {
             return false;
+        }
 
         configuration[output->handle].transform = transform_to_use;
         wf::get_core().output_layout->apply_configuration(configuration);
@@ -138,7 +155,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     };
     Glib::RefPtr<Glib::MainLoop> loop;
 
-    public:
+  public:
     void init() override
     {
         output->add_activator(rotate_left_opt, &on_rotate_left);
@@ -156,7 +173,9 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     void init_iio_sensors()
     {
         if (!is_autorotate_enabled())
+        {
             return;
+        }
 
         Glib::init();
         Gio::init();
@@ -180,6 +199,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         if (!iio_proxy)
         {
             LOGE("Failed to connect to iio-proxy.");
+
             return;
         }
 
@@ -188,7 +208,8 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         iio_proxy->call_sync("ClaimAccelerometer");
     }
 
-    void on_properties_changed(const Gio::DBus::Proxy::MapChangedProperties& properties,
+    void on_properties_changed(
+        const Gio::DBus::Proxy::MapChangedProperties& properties,
         const std::vector<Glib::ustring>& invalidated)
     {
         update_orientation();
@@ -197,7 +218,9 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     void update_orientation()
     {
         if (!iio_proxy)
+        {
             return;
+        }
 
         Glib::Variant<Glib::ustring> orientation;
         iio_proxy->get_cached_property(orientation, "AccelerometerOrientation");

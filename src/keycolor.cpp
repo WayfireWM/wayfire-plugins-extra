@@ -31,8 +31,8 @@
 #include <wayfire/signal-definitions.hpp>
 
 
-static const char* vertex_shader =
-R"(
+static const char *vertex_shader =
+    R"(
 #version 100
 
 attribute mediump vec2 position;
@@ -47,8 +47,8 @@ void main() {
 }
 )";
 
-static const char* fragment_shader =
-R"(
+static const char *fragment_shader =
+    R"(
 #version 100
 @builtin_ext@
 @builtin@
@@ -107,7 +107,7 @@ class wf_keycolor : public wf::view_transformer_t
         return point;
     }
 
-    public:
+  public:
 
     wf_keycolor(wayfire_view view) : wf::view_transformer_t()
     {
@@ -127,7 +127,7 @@ class wf_keycolor : public wf::view_transformer_t
         wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
     {
         auto src_box = _src_box;
-        int fb_h = target_fb.viewport_height;
+        int fb_h     = target_fb.viewport_height;
 
         src_box.x -= target_fb.geometry.x;
         src_box.y -= target_fb.geometry.y;
@@ -139,15 +139,15 @@ class wf_keycolor : public wf::view_transformer_t
 
         static const float vertexData[] = {
             -1.0f, -1.0f,
-             1.0f, -1.0f,
-             1.0f,  1.0f,
-            -1.0f,  1.0f
+            1.0f, -1.0f,
+            1.0f, 1.0f,
+            -1.0f, 1.0f
         };
         static const float texCoords[] = {
-             0.0f, 0.0f,
-             1.0f, 0.0f,
-             1.0f, 1.0f,
-             0.0f, 1.0f
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f
         };
 
         OpenGL::render_begin(target_fb);
@@ -186,7 +186,8 @@ class wf_keycolor : public wf::view_transformer_t
         OpenGL::render_end();
     }
 
-    virtual ~wf_keycolor() {}
+    virtual ~wf_keycolor()
+    {}
 };
 
 class wayfire_keycolor : public wf::plugin_interface_t
@@ -200,7 +201,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
             return;
         }
 
-        view->add_transformer(std::make_unique<wf_keycolor> (view),
+        view->add_transformer(std::make_unique<wf_keycolor>(view),
             transformer_name);
     }
 
@@ -220,7 +221,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
         }
     }
 
-    public:
+  public:
     void init() override
     {
         grab_interface->name = transformer_name;
@@ -237,6 +238,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
 
             wf::get_core().store_data(std::move(data), program_name);
         }
+
         program_ref_count++;
 
         output->connect_signal("attach-view", &view_attached);
@@ -253,17 +255,20 @@ class wayfire_keycolor : public wf::plugin_interface_t
     }
 
     wf::signal_connection_t view_attached{[this] (wf::signal_data_t *data)
-    {
-        auto view = get_signaled_view(data);
-
-        if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
         {
-            return;
-        }
+            auto view = get_signaled_view(data);
 
-        if(!view->get_transformer(transformer_name))
-            add_transformer(view);
-    }};
+            if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
+            {
+                return;
+            }
+
+            if (!view->get_transformer(transformer_name))
+            {
+                add_transformer(view);
+            }
+        }
+    };
 
     void fini() override
     {

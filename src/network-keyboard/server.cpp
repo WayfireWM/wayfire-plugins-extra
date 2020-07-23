@@ -29,6 +29,7 @@ class KeyServer
     static KeyServer& get()
     {
         static KeyServer instance(server_port);
+
         return instance;
     }
 
@@ -43,14 +44,17 @@ class KeyServer
     {
         /* Check whether to exit */
         update_modifiers(keycode, state);
-        if (keycode == KEY_Q && state && has_ctrl && has_alt && has_shift)
+        if ((keycode == KEY_Q) && state && has_ctrl && has_alt && has_shift)
         {
             Gtk::Application::get_default()->quit();
+
             return;
         }
 
         if (!connection_alive)
+        {
             return;
+        }
 
         std::string data =
             std::to_string(time) + " " +
@@ -69,18 +73,26 @@ class KeyServer
     }
 
   private:
-    bool has_ctrl = false;
+    bool has_ctrl  = false;
     bool has_shift = false;
-    bool has_alt = false;
+    bool has_alt   = false;
 
     void update_modifiers(uint32_t key, uint32_t state)
     {
-        if (key == KEY_LEFTCTRL || key == KEY_RIGHTCTRL)
+        if ((key == KEY_LEFTCTRL) || (key == KEY_RIGHTCTRL))
+        {
             this->has_ctrl = state;
-        if (key == KEY_LEFTALT || key == KEY_RIGHTALT)
+        }
+
+        if ((key == KEY_LEFTALT) || (key == KEY_RIGHTALT))
+        {
             this->has_alt = state;
-        if (key == KEY_LEFTSHIFT || key == KEY_RIGHTSHIFT)
+        }
+
+        if ((key == KEY_LEFTSHIFT) || (key == KEY_RIGHTSHIFT))
+        {
             this->has_shift = state;
+        }
     }
 
     static std::unique_ptr<KeyServer> instance;
@@ -91,7 +103,9 @@ class KeyServer
         assert(!connection_alive);
 
         if (socket.is_open())
+        {
             socket.close();
+        }
 
         /* Unlock screen while waiting for next connection */
         if (screen_lock)
@@ -146,12 +160,14 @@ class ServerWindow : public Gtk::Window
          * subtract it back to get the real keycode */
 #define HW_OFFSET 8
 
-        this->signal_key_press_event().connect_notify([=] (GdkEventKey *ev) {
+        this->signal_key_press_event().connect_notify([=] (GdkEventKey *ev)
+        {
             KeyServer::get().handle_key(ev->time,
                 ev->hardware_keycode - HW_OFFSET, 1);
         });
 
-        this->signal_key_release_event().connect_notify([=] (GdkEventKey *ev) {
+        this->signal_key_release_event().connect_notify([=] (GdkEventKey *ev)
+        {
             KeyServer::get().handle_key(ev->time,
                 ev->hardware_keycode - HW_OFFSET, 0);
         });
@@ -162,10 +178,9 @@ class ServerWindow : public Gtk::Window
 static void registry_add_object(void *data, struct wl_registry *registry,
     uint32_t name, const char *interface, uint32_t version)
 {
-
     if (strcmp(interface, zwlr_input_inhibit_manager_v1_interface.name) == 0)
     {
-        inhibitor_manager = (zwlr_input_inhibit_manager_v1*) wl_registry_bind(
+        inhibitor_manager = (zwlr_input_inhibit_manager_v1*)wl_registry_bind(
             registry, name, &zwlr_input_inhibit_manager_v1_interface, 1u);
     }
 }
@@ -188,6 +203,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         std::cout << "Usage: wf-nk-server <port>" << std::endl;
+
         return 0;
     }
 
@@ -195,7 +211,8 @@ int main(int argc, char **argv)
     std::cout << "Using port " << server_port << std::endl;
 
     auto app = Gtk::Application::create();
-    app->signal_activate().connect([=] () {
+    app->signal_activate().connect([=] ()
+    {
         app->hold();
 
         /* Load input inhibit protocol */
@@ -221,5 +238,6 @@ int main(int argc, char **argv)
     });
 
     KeyServer::get(); // wait for client
+
     return app->run();
 }

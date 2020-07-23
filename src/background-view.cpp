@@ -35,11 +35,11 @@ extern "C"
 {
 #include <wlr/config.h>
 #if WLR_HAS_XWAYLAND
-#define class class_t
-#define static
-#include <wlr/xwayland.h>
-#undef static
-#undef class
+ #define class class_t
+ #define static
+ #include <wlr/xwayland.h>
+ #undef static
+ #undef class
 #endif
 }
 
@@ -49,7 +49,7 @@ struct process
     pid_t pid;
 };
 
-static std::map<wf::output_t *, struct process> procs;
+static std::map<wf::output_t*, struct process> procs;
 
 class wayfire_background_view : public wf::plugin_interface_t
 {
@@ -63,7 +63,7 @@ class wayfire_background_view : public wf::plugin_interface_t
      */
     wf::option_wrapper_t<std::string> file{"background-view/file"};
 
-    public:
+  public:
     void init() override
     {
         grab_interface->name = transformer_name;
@@ -85,6 +85,7 @@ class wayfire_background_view : public wf::plugin_interface_t
             kill(procs[output].pid, SIGINT);
             procs[output].view = nullptr;
         }
+
         if (std::string(command).empty())
         {
             return;
@@ -106,81 +107,85 @@ class wayfire_background_view : public wf::plugin_interface_t
         bool arg0_found = false;
         while (std::getline(stream, arg, ' '))
         {
-            if (!arg0_found && arg.find('=') == std::string::npos)
+            if (!arg0_found && (arg.find('=') == std::string::npos))
             {
                 arg0_found = true;
                 cmd += "exec ";
             }
+
             cmd += arg + " ";
         }
+
         cmd.pop_back();
 
         procs[output].view = nullptr;
-        procs[output].pid = wf::get_core().run(std::string(cmd) + add_arg_if_not_empty(file));
+        procs[output].pid  = wf::get_core().run(std::string(
+            cmd) + add_arg_if_not_empty(file));
     };
 
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
-    {
-        auto view = get_signaled_view(data);
-#if WLR_HAS_XWAYLAND
-        wlr_surface *wlr_surface = view->get_wlr_surface();
-        bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
-#endif
-        /* Get pid for view */
-        pid_t view_pid;
-        wl_client_get_credentials(view->get_client(), &view_pid, 0, 0);
-
-        for (auto& o : wf::get_core().output_layout->get_outputs())
         {
-            /* This condition attempts to match the pid that we got from run()
-             * to the client pid. This will not work in all cases. Naturally,
-             * not every command will spawn a view. This wont work well for gtk
-             * apps because it has a system where the client will defer to an
-             * existing instance with the same app-id and have that instance
-             * spawn a new view but have the same pid, meaning when we compare
-             * the pids, they wont match unless we happen to be the first to run
-             * the app. This does work well with clients such as mpv, projectM
-             * and running xscreensavers directly.
-             */
-            if (procs[o].pid == view_pid
+            auto view = get_signaled_view(data);
 #if WLR_HAS_XWAYLAND
-                || (is_xwayland_surface &&
-                /* For this match to work, the client must set _NET_WM_PID */
-                procs[o].pid == wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid)
+            wlr_surface *wlr_surface = view->get_wlr_surface();
+            bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
+#endif
+            /* Get pid for view */
+            pid_t view_pid;
+            wl_client_get_credentials(view->get_client(), &view_pid, 0, 0);
+
+            for (auto& o : wf::get_core().output_layout->get_outputs())
+            {
+                /* This condition attempts to match the pid that we got from run()
+                 * to the client pid. This will not work in all cases. Naturally,
+                 * not every command will spawn a view. This wont work well for gtk
+                 * apps because it has a system where the client will defer to an
+                 * existing instance with the same app-id and have that instance
+                 * spawn a new view but have the same pid, meaning when we compare
+                 * the pids, they wont match unless we happen to be the first to run
+                 * the app. This does work well with clients such as mpv, projectM
+                 * and running xscreensavers directly.
+                 */
+                if (procs[o].pid == view_pid
+#if WLR_HAS_XWAYLAND
+                    || (is_xwayland_surface &&
+                        /* For this match to work, the client must set _NET_WM_PID */
+                        procs[o].pid ==
+                        wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid)
 #endif
                 )
-            {
-                view->set_decoration(nullptr);
+                {
+                    view->set_decoration(nullptr);
 
-                /* Move to the respective output */
-                wf::get_core().move_view_to_output(view, o, false);
+                    /* Move to the respective output */
+                    wf::get_core().move_view_to_output(view, o, false);
 
-                /* A client should be used that can be resized to any size.
-                 * If we set it fullscreen, the screensaver would be inhibited
-                 * so we send a resize request that is the size of the output
-                 */
-                view->set_geometry(o->get_relative_geometry());
+                    /* A client should be used that can be resized to any size.
+                     * If we set it fullscreen, the screensaver would be inhibited
+                     * so we send a resize request that is the size of the output
+                     */
+                    view->set_geometry(o->get_relative_geometry());
 
-                /* Set it as the background */
-                o->workspace->add_view(view, wf::LAYER_BACKGROUND);
+                    /* Set it as the background */
+                    o->workspace->add_view(view, wf::LAYER_BACKGROUND);
 
-                /* Make it show on all workspaces */
-                view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
+                    /* Make it show on all workspaces */
+                    view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
 
-                procs[o].view = view;
+                    procs[o].view = view;
 
-                break;
+                    break;
+                }
             }
         }
-    }};
+    };
 
     std::string add_arg_if_not_empty(std::string in)
     {
         if (!in.empty())
         {
             return " \"" + in + "\"";
-        }
-        else
+        } else
         {
             return in;
         }

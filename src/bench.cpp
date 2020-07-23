@@ -57,7 +57,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     wf::option_wrapper_t<int> average_frames{"bench/average_frames"};
     wf::option_wrapper_t<int> frames_per_update{"bench/frames_per_update"};
 
-    public:
+  public:
     void init() override
     {
         grab_interface->name = "bench";
@@ -89,16 +89,17 @@ class wayfire_bench_screen : public wf::plugin_interface_t
             cr = cairo_create(cairo_surface);
         }
 
-        cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL,
+            CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, font_size);
 
         cairo_text_extents(cr, "234.5", &text_extents);
 
         widget_xc = text_extents.width / 2 + text_extents.x_bearing + WIDGET_PADDING;
-        text_y = text_extents.height + WIDGET_PADDING;
+        text_y    = text_extents.height + WIDGET_PADDING;
         widget_radius = og.height * 0.04;
 
-        cairo_geometry.width = text_extents.width + WIDGET_PADDING * 2;
+        cairo_geometry.width  = text_extents.width + WIDGET_PADDING * 2;
         cairo_geometry.height = text_extents.height + widget_radius +
             (widget_radius * sin(M_PI / 8)) + WIDGET_PADDING * 2;
 
@@ -110,7 +111,8 @@ class wayfire_bench_screen : public wf::plugin_interface_t
             cairo_geometry.width, cairo_geometry.height);
         cr = cairo_create(cairo_surface);
 
-        cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+        cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL,
+            CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, font_size);
     }
 
@@ -120,42 +122,51 @@ class wayfire_bench_screen : public wf::plugin_interface_t
 
         cairo_recreate();
 
-        if ((std::string) position == "top_left")
+        if ((std::string)position == "top_left")
         {
             cairo_geometry.x = workarea.x;
             cairo_geometry.y = workarea.y;
-        } else if ((std::string) position == "top_center")
+        } else if ((std::string)position == "top_center")
         {
-            cairo_geometry.x = workarea.x + (workarea.width / 2 - cairo_geometry.width / 2);
+            cairo_geometry.x = workarea.x +
+                (workarea.width / 2 - cairo_geometry.width / 2);
             cairo_geometry.y = workarea.y;
-        } else if ((std::string) position == "top_right")
+        } else if ((std::string)position == "top_right")
         {
             cairo_geometry.x = workarea.x + (workarea.width - cairo_geometry.width);
             cairo_geometry.y = workarea.y;
-        } else if ((std::string) position == "center_left")
+        } else if ((std::string)position == "center_left")
         {
             cairo_geometry.x = workarea.x;
-            cairo_geometry.y = workarea.y + (workarea.height / 2 - cairo_geometry.height / 2);
-        } else if ((std::string) position == "center")
+            cairo_geometry.y = workarea.y +
+                (workarea.height / 2 - cairo_geometry.height / 2);
+        } else if ((std::string)position == "center")
         {
-            cairo_geometry.x = workarea.x + (workarea.width / 2 - cairo_geometry.width / 2);
-            cairo_geometry.y = workarea.y + (workarea.height / 2 - cairo_geometry.height / 2);
-        } else if ((std::string) position == "center_right")
+            cairo_geometry.x = workarea.x +
+                (workarea.width / 2 - cairo_geometry.width / 2);
+            cairo_geometry.y = workarea.y +
+                (workarea.height / 2 - cairo_geometry.height / 2);
+        } else if ((std::string)position == "center_right")
         {
             cairo_geometry.x = workarea.x + (workarea.width - cairo_geometry.width);
-            cairo_geometry.y = workarea.y + (workarea.height / 2 - cairo_geometry.height / 2);
-        } else if ((std::string) position == "bottom_left")
+            cairo_geometry.y = workarea.y +
+                (workarea.height / 2 - cairo_geometry.height / 2);
+        } else if ((std::string)position == "bottom_left")
         {
             cairo_geometry.x = workarea.x;
-            cairo_geometry.y = workarea.y + (workarea.height - cairo_geometry.height);
-        } else if ((std::string) position == "bottom_center")
+            cairo_geometry.y = workarea.y +
+                (workarea.height - cairo_geometry.height);
+        } else if ((std::string)position == "bottom_center")
         {
-            cairo_geometry.x = workarea.x + (workarea.width / 2 - cairo_geometry.width / 2);
-            cairo_geometry.y = workarea.y + (workarea.height - cairo_geometry.height);
-        } else if ((std::string) position == "bottom_right")
+            cairo_geometry.x = workarea.x +
+                (workarea.width / 2 - cairo_geometry.width / 2);
+            cairo_geometry.y = workarea.y +
+                (workarea.height - cairo_geometry.height);
+        } else if ((std::string)position == "bottom_right")
         {
             cairo_geometry.x = workarea.x + (workarea.width - cairo_geometry.width);
-            cairo_geometry.y = workarea.y + (workarea.height - cairo_geometry.height);
+            cairo_geometry.y = workarea.y +
+                (workarea.height - cairo_geometry.height);
         } else
         {
             cairo_geometry.x = workarea.x;
@@ -166,9 +177,10 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     }
 
     wf::signal_connection_t workarea_changed{[this] (wf::signal_data_t *data)
-    {
-        update_texture_position();
-    }};
+        {
+            update_texture_position();
+        }
+    };
 
     void cairo_clear(cairo_t *cr)
     {
@@ -178,18 +190,19 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     }
 
     /* GLESv2 doesn't support GL_BGRA */
-    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b, double a)
+    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b,
+        double a)
     {
         cairo_set_source_rgba(cr, b, g, r, a);
     }
 
     void render_bench()
     {
-        double xc = widget_xc;
-        double yc = widget_radius + WIDGET_PADDING;
+        double xc     = widget_xc;
+        double yc     = widget_radius + WIDGET_PADDING;
         double radius = widget_radius;
-        double min_angle = M_PI / 8;
-        double max_angle = M_PI - M_PI / 8;
+        double min_angle    = M_PI / 8;
+        double max_angle    = M_PI - M_PI / 8;
         double target_angle = 2 * M_PI - M_PI / 8;
         double fps_angle;
         char fps_buf[128];
@@ -198,24 +211,27 @@ class wayfire_bench_screen : public wf::plugin_interface_t
             last_frame_times.begin(), last_frame_times.end(), 0.0);
         average /= last_frame_times.size();
 
-        current_fps = (double) 1000 / average;
+        current_fps = (double)1000 / average;
 
         if (current_fps > max_fps)
+        {
             max_fps = current_fps;
-        else
+        } else
+        {
             max_fps -= 1;
+        }
 
         sprintf(fps_buf, "%.1f", current_fps);
 
         if (output->handle->current_mode)
         {
             fps_angle = max_angle + (current_fps /
-                ((double) output->handle->current_mode->refresh / 1000)) *
+                ((double)output->handle->current_mode->refresh / 1000)) *
                 (target_angle - max_angle);
-        }
-        else
+        } else
         {
-            fps_angle = max_angle + (current_fps / max_fps) * (target_angle - max_angle);
+            fps_angle = max_angle + (current_fps / max_fps) *
+                (target_angle - max_angle);
         }
 
         cairo_clear(cr);
@@ -237,9 +253,12 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         cairo_fill(cr);
 
         if (output->handle->current_mode)
+        {
             cairo_set_source_rgba_swizzle(cr, 0, 0, 1, 1);
-        else
+        } else
+        {
             cairo_set_source_rgba_swizzle(cr, 1, 1, 0, 1);
+        }
 
         cairo_text_extents(cr, fps_buf, &text_extents);
         cairo_move_to(cr,
@@ -258,14 +277,17 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         uint32_t current_time = wf::get_current_time();
         uint32_t elapsed = current_time - last_time;
 
-        while ((int) last_frame_times.size() >= average_frames)
+        while ((int)last_frame_times.size() >= average_frames)
+        {
             last_frame_times.pop_front();
+        }
+
         last_frame_times.push_back(elapsed);
 
         if (++frames_since_last_update >= frames_per_update)
         {
-             render_bench();
-             frames_since_last_update = 0;
+            render_bench();
+            frames_since_last_update = 0;
         }
 
         last_time = current_time;

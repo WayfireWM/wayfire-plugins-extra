@@ -1,18 +1,18 @@
 /*
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2020 Scott Moreau
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -41,7 +41,7 @@ class wayfire_showrepaint : public wf::plugin_interface_t
     bool active, egl_swap_buffers_with_damage;
     wf::framebuffer_base_t last_buffer;
 
-    public:
+  public:
     void init() override
     {
         active = false;
@@ -64,13 +64,13 @@ class wayfire_showrepaint : public wf::plugin_interface_t
         if (active)
         {
             output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
-        }
-        else
+        } else
         {
             output->render->rem_effect(&overlay_hook);
         }
 
         output->render->damage_whole();
+
         return true;
     };
 
@@ -78,7 +78,8 @@ class wayfire_showrepaint : public wf::plugin_interface_t
     {
         OpenGL::render_begin();
         EGLDisplay egl_display = eglGetCurrentDisplay();
-        std::string extensions = std::string(eglQueryString(egl_display, EGL_EXTENSIONS));
+        std::string extensions =
+            std::string(eglQueryString(egl_display, EGL_EXTENSIONS));
         OpenGL::render_end();
 
         size_t pos = extensions.find(ext);
@@ -93,16 +94,19 @@ class wayfire_showrepaint : public wf::plugin_interface_t
 
     void get_random_color(wf::color_t& color)
     {
-        color.r = 0.15 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 0.25));
-        color.g = 0.15 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 0.25));
-        color.b = 0.15 + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 0.25));
+        color.r = 0.15 + static_cast<float>(rand()) /
+            (static_cast<float>(RAND_MAX / 0.25));
+        color.g = 0.15 + static_cast<float>(rand()) /
+            (static_cast<float>(RAND_MAX / 0.25));
+        color.b = 0.15 + static_cast<float>(rand()) /
+            (static_cast<float>(RAND_MAX / 0.25));
         color.a = 0.25;
     }
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
         wf::framebuffer_t target_fb = output->render->get_target_framebuffer();
-        wf::region_t swap_damage = output->render->get_swap_damage();
+        wf::region_t swap_damage    = output->render->get_swap_damage();
         wf::region_t scheduled_damage = output->render->get_scheduled_damage();
         auto fbg = target_fb.geometry;
         wf::region_t output_region{fbg};
@@ -124,24 +128,31 @@ class wayfire_showrepaint : public wf::plugin_interface_t
         for (const auto& b : damage)
         {
             wlr_box box{b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1};
-            OpenGL::render_rectangle(box, color, target_fb.get_orthographic_projection());
+            OpenGL::render_rectangle(box, color,
+                target_fb.get_orthographic_projection());
         }
+
         if (reduce_flicker)
         {
             /* Show swap damage. It might be possible that we blit right over this
              * but in the case of cube and expo, it shows client and swap damage in
              * contrast. This makes sense since the idea is to show damage as colored
-             * regions. We don't do this if the reduce_flicker option isn't set because
-             * we don't repaint the inverted damage from the last buffer in this case,
-             * so we would keep painting it with different colors until it is white. */
+             * regions. We don't do this if the reduce_flicker option isn't set
+             * because
+             * we don't repaint the inverted damage from the last buffer in this
+             * case,
+             * so we would keep painting it with different colors until it is white.
+             * */
             get_random_color(color);
             inverted_damage = output_region ^ damage;
             for (const auto& b : inverted_damage)
             {
                 wlr_box box{b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1};
-                OpenGL::render_rectangle(box, color, target_fb.get_orthographic_projection());
+                OpenGL::render_rectangle(box, color,
+                    target_fb.get_orthographic_projection());
             }
         }
+
         OpenGL::render_end();
 
         /* If swap_buffers_with_damage is supported, we do not need the
@@ -157,7 +168,7 @@ class wayfire_showrepaint : public wf::plugin_interface_t
             return;
         }
 
-        fbg.width = target_fb.viewport_width;
+        fbg.width  = target_fb.viewport_width;
         fbg.height = target_fb.viewport_height;
 
         OpenGL::render_begin();
@@ -176,8 +187,8 @@ class wayfire_showrepaint : public wf::plugin_interface_t
         OpenGL::render_begin(target_fb);
         GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, last_buffer.fb));
         damage = swap_damage.empty() ? scheduled_damage : swap_damage;
-        output_region *= target_fb.scale;
-        inverted_damage = output_region ^ damage;
+        output_region   *= target_fb.scale;
+        inverted_damage  = output_region ^ damage;
         inverted_damage *= 1.0 / target_fb.scale;
         for (const auto& rect : inverted_damage)
         {
@@ -191,6 +202,7 @@ class wayfire_showrepaint : public wf::plugin_interface_t
                 b.x2, fbg.height - b.y1,
                 GL_COLOR_BUFFER_BIT, GL_LINEAR));
         }
+
         OpenGL::render_end();
 
         /* Save the current buffer to last buffer so we can render the
