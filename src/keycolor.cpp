@@ -241,7 +241,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
 
         program_ref_count++;
 
-        output->connect_signal("attach-view", &view_attached);
+        output->connect_signal("view-attached", &view_attached);
 
         for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
         {

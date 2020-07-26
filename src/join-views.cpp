@@ -36,7 +36,7 @@ class JoinViewsSingleton
 
     void handle_new_output(wf::output_t *output)
     {
-        output->connect_signal("map-view", &on_view_map);
+        output->connect_signal("view-mapped", &on_view_map);
     }
 
     JoinViewsSingleton()
