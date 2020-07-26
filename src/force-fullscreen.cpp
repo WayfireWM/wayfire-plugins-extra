@@ -576,7 +576,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     wf::signal_connection_t view_output_changed{[this] (wf::signal_data_t *data)
         {
-            auto signal = static_cast<wf::view_moved_to_output_signal*>(data);
+            auto signal = static_cast<wf::view_pre_moved_to_output_signal*>(data);
             auto view   = signal->view;
             auto background = backgrounds.find(view);
 
