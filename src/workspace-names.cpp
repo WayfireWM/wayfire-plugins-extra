@@ -89,7 +89,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             workspaces[x].resize(wsize.height);
         }
 
-        output->connect_signal("reserved-workarea", &workarea_changed);
+        output->connect_signal("workarea-changed", &workarea_changed);
         output->connect_signal("viewport-changed", &viewport_changed);
         font.set_callback(option_changed);
         position.set_callback(option_changed);

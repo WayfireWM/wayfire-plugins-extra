@@ -410,11 +410,12 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             view]->transformer), background_name);
         output->connect_signal("output-configuration-changed",
             &output_config_changed);
-        wf::get_core().connect_signal("view-move-to-output", &view_output_changed);
+        wf::get_core().connect_signal("view-pre-moved-to-output",
+            &view_output_changed);
         output->connect_signal("view-fullscreen-request", &view_fullscreened);
         view->connect_signal("geometry-changed", &view_geometry_changed);
-        output->connect_signal("unmap-view", &view_unmapped);
-        output->connect_signal("focus-view", &view_focused);
+        output->connect_signal("view-unmapped", &view_unmapped);
+        output->connect_signal("view-focused", &view_focused);
         if (constrain_pointer)
         {
             connect_motion_signal();
@@ -575,7 +576,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     wf::signal_connection_t view_output_changed{[this] (wf::signal_data_t *data)
         {
-            auto signal = static_cast<wf::view_move_to_output_signal*>(data);
+            auto signal = static_cast<wf::view_moved_to_output_signal*>(data);
             auto view   = signal->view;
             auto background = backgrounds.find(view);
 
@@ -615,7 +616,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     wf::signal_connection_t view_fullscreened{[this] (wf::signal_data_t *data)
         {
-            auto signal = static_cast<view_fullscreen_signal*>(data);
+            auto signal = static_cast<wf::view_fullscreen_signal*>(data);
             auto view   = signal->view;
             auto background = backgrounds.find(view);
 

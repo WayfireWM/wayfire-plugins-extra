@@ -67,7 +67,7 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
         output->render->set_redraw_always();
 
-        output->connect_signal("reserved-workarea", &workarea_changed);
+        output->connect_signal("workarea-changed", &workarea_changed);
         position.set_callback(position_changed);
         update_texture_position();
     }

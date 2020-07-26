@@ -72,7 +72,7 @@ class wayfire_background_view : public wf::plugin_interface_t
         command.set_callback(option_changed);
         file.set_callback(option_changed);
 
-        output->connect_signal("map-view", &view_mapped);
+        output->connect_signal("view-mapped", &view_mapped);
 
         option_changed();
     }
