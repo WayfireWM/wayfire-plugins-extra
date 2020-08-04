@@ -95,7 +95,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         output->connect_signal("output-configuration-changed",
             &output_config_changed);
-        output->connect_signal("viewport-changed", &viewport_changed);
+        output->connect_signal("workspace-changed", &viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
         output->add_activator(clear_binding, &clear_workspace);

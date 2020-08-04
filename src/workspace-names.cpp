@@ -90,7 +90,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         }
 
         output->connect_signal("workarea-changed", &workarea_changed);
-        output->connect_signal("viewport-changed", &viewport_changed);
+        output->connect_signal("workspace-changed", &viewport_changed);
         font.set_callback(option_changed);
         position.set_callback(option_changed);
         background_color.set_callback(option_changed);
@@ -127,7 +127,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             output->render->rem_effect(&post_hook);
         } else
         {
-            output->connect_signal("viewport-changed", &viewport_changed);
+            output->connect_signal("workspace-changed", &viewport_changed);
             output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
         }
 
