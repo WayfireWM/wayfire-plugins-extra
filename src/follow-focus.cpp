@@ -29,13 +29,13 @@
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
 
-
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
    private:
     wf::wl_timer change_focus;
+    wayfire_view last_view;
 
-    wf::point_t last_coords;
+    wf::pointf_t last_coords;
     double distance;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
@@ -44,10 +44,8 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wf::option_wrapper_t<int> threshold{"follow-focus/threshold"};
     wf::option_wrapper_t<bool> raise_on_top{"follow-focus/raise_on_top"};
 
-    void change_view()
+    void change_view(wayfire_view view)
     {
-        auto view = wf::get_core().get_cursor_focus_view();
-
         if (raise_on_top)
             wf::get_core().focus_view(view);
         else
@@ -65,31 +63,35 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         }
     }
 
-    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
-        change_focus.disconnect();
+    void view_changed_cb() {
+        wayfire_view view = wf::get_core().get_cursor_focus_view();
+        if (view != last_view) { return; }
+        if (threshold) {
+            wf::pointf_t coords = wf::get_core().get_cursor_position();
+            // XXX(xaiki): this is slightly wrong because we check a square and not a circle,
+            //              but it should be good enough, and save casting twice to wf::point_t
+            if (abs(last_coords.x - coords.x) + abs(last_coords.y - coords.y) < threshold) {
+                change_focus.set_timeout(focus_delay, [=]() { view_changed_cb(); });
+                return;
+            }
+        }
+        if (should_change_view)
+            change_view(view);
 
-        /* Update how much the cursor moved this time */
-        auto cpf = wf::get_core().get_cursor_position();
-        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
-        if (distance == -1)
-            distance = 0;
-        else
-            distance += abs(coords - last_coords);
-        last_coords = coords;
+        if (should_change_output)
+            change_output();
+    }
+
+    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
+        wayfire_view view = wf::get_core().get_cursor_focus_view();
+        if (view == nullptr || view == last_view) { return; };
+        if (threshold) {
+            last_coords = wf::get_core().get_cursor_position();
+        }
+        last_view = view;
 
         /* Restart the timeout */
-        change_focus.set_timeout(focus_delay, [=] () {
-            /* Check if we had enough pointer movement, otherwise ignore this timer */
-            if (distance < threshold)
-                return;
-            distance = -1;
-
-            if (should_change_view)
-                change_view();
-
-            if (should_change_output)
-                change_output();
-        });
+        change_focus.set_timeout(focus_delay, [=]() { view_changed_cb(); });
     };
 
    public:
