@@ -32,7 +32,7 @@
 
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
-   private:
+  private:
     wf::wl_timer change_focus;
 
     wf::point_t last_coords;
@@ -49,50 +49,70 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         auto view = wf::get_core().get_cursor_focus_view();
 
         if (raise_on_top)
+        {
             wf::get_core().focus_view(view);
-        else
+        } else
+        {
             wf::get_core().set_active_view(view);
+        }
     }
 
     void change_output()
     {
         auto coords = wf::get_core().get_cursor_position();
-        for (auto output : wf::get_core().output_layout->get_outputs()) {
-            if (output->get_layout_geometry() & coords) {
+        for (auto output : wf::get_core().output_layout->get_outputs())
+        {
+            if (output->get_layout_geometry() & coords)
+            {
                 wf::get_core().focus_output(output);
+
                 return;
             }
         }
     }
 
-    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
+    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    {
         change_focus.disconnect();
 
         /* Update how much the cursor moved this time */
         auto cpf = wf::get_core().get_cursor_position();
         wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
         if (distance == -1)
+        {
             distance = 0;
-        else
+        } else
+        {
             distance += abs(coords - last_coords);
+        }
+
         last_coords = coords;
 
         /* Restart the timeout */
-        change_focus.set_timeout(focus_delay, [=] () {
-            /* Check if we had enough pointer movement, otherwise ignore this timer */
+        change_focus.set_timeout(focus_delay, [=] ()
+        {
+            /* Check if we had enough pointer movement, otherwise ignore this timer
+             * */
             if (distance < threshold)
+            {
                 return;
+            }
+
             distance = -1;
 
             if (should_change_view)
+            {
                 change_view();
+            }
 
             if (should_change_output)
+            {
                 change_output();
+            }
         });
     };
 
-   public:
+  public:
     void init() override
     {
         grab_interface->name = "follow-focus";
