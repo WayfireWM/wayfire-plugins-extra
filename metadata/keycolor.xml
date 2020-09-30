@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="keycolor">
+	<_short>Keycolor</_short>
+	<category>Effects</category>
+	<option name="color" type="color">
+		<_short>Key Color</_short>
+		<default>0 0 0 1</default>
+	</option>
+	<option name="opacity" type="double">
+		<_short>Opacity</_short>
+		<default>0.25</default>
+	</option>
+	<option name="threshold" type="double">
+		<_short>Threshold</_short>
+		<default>0.5</default>
+	</option>
+	</plugin>
+</wayfire>

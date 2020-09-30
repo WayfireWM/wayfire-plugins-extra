@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="mag">
+	<_short>Magnifier</_short>
+	<category>Accessibility</category>
+	<option name="toggle" type="activator">
+		<_short>Toggle</_short>
+		<default>&lt;super&gt; &lt;alt&gt; KEY_M</default>
+	</option>
+	<option name="zoom_level" type="int">
+		<_short>Zoom Level</_short>
+		<min>0</min>
+		<max>100</max>
+		<default>75</default>
+	</option>
+	<option name="default_height" type="int">
+		<_short>Default View Height</_short>
+		<min>100</min>
+		<default>500</default>
+	</option>
+	</plugin>
+</wayfire>

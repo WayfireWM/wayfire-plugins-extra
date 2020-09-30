@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="workspace-names">
+		<_short>Workspace Names</_short>
+		<_long>Name workspaces.</_long>
+		<category>Utility</category>
+		<option name="display_duration" type="int">
+			<_short>Display Duration</_short>
+			<_long>How long the name is displayed.</_long>
+			<default>500</default>
+			<min>1</min>
+		</option>
+		<option name="position" type="string">
+			<_short>Position</_short>
+			<_long>Position of rendering.</_long>
+			<default>center</default>
+			<desc>
+				<value>top_left</value>
+				<_name>Top Left</_name>
+			</desc>
+			<desc>
+				<value>top_center</value>
+				<_name>Top Center</_name>
+			</desc>
+			<desc>
+				<value>top_right</value>
+				<_name>Top Right</_name>
+			</desc>
+			<desc>
+				<value>center_left</value>
+				<_name>Center Left</_name>
+			</desc>
+			<desc>
+				<value>center</value>
+				<_name>Center</_name>
+			</desc>
+			<desc>
+				<value>center_right</value>
+				<_name>Center Right</_name>
+			</desc>
+			<desc>
+				<value>bottom_left</value>
+				<_name>Bottom Left</_name>
+			</desc>
+			<desc>
+				<value>bottom_center</value>
+				<_name>Bottom Center</_name>
+			</desc>
+			<desc>
+				<value>bottom_right</value>
+				<_name>Bottom Right</_name>
+			</desc>
+		</option>
+		<option name="background_color" type="color">
+			<_short>Background Color</_short>
+			<_long>Background color for text.</_long>
+			<default>0.2 0.2 0.2 0.7</default>
+		</option>
+		<option name="text_color" type="color">
+			<_short>Text Color</_short>
+			<_long>Text color.</_long>
+			<default>1 1 1 1</default>
+		</option>
+		<option name="font" type="string">
+			<_short>Text Font</_short>
+			<_long>Font used for text rendering.</_long>
+			<default>sans-serif</default>
+		</option>
+		<option name="show_option_names" type="bool">
+			<_short>Show Option Names</_short>
+			<_long>Display option names on screen for convenience.</_long>
+			<default>false</default>
+		</option>
+	</plugin>
+</wayfire>

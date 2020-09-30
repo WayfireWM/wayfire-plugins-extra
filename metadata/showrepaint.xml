@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="showrepaint">
+		<_short>Show Repaint</_short>
+		<_long>Show repainted areas on the screen.</_long>
+		<category>Utility</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle</_short>
+			<_long>Toggles the plugin state.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; KEY_S</default>
+		</option>
+		<option name="reduce_flicker" type="bool">
+			<_short>Reduce Flicker</_short>
+			<_long>Reduce flicker by copying the client damage region from the last frame to the current frame. This means that only the the damage region for all surfaces of the frame are painted and the rest of the output is painted with the contents of the last frame.</_long>
+			<default>true</default>
+		</option>
+	</plugin>
+</wayfire>
