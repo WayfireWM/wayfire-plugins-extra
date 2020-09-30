@@ -33,8 +33,8 @@
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
   private:
+    wayfire_view last_view = nullptr;
     wf::wl_timer change_focus;
-
     wf::point_t last_coords;
     double distance;
 
@@ -75,6 +75,13 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     {
         change_focus.disconnect();
 
+        auto view = wf::get_core().get_cursor_focus_view();
+        if (view != last_view)
+        {
+            distance  = -1;
+            last_view = view;
+        }
+
         /* Update how much the cursor moved this time */
         auto cpf = wf::get_core().get_cursor_position();
         wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
@@ -99,7 +106,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
             }
 
             distance = -1;
-
             if (should_change_view)
             {
                 change_view();
