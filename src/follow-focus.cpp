@@ -31,7 +31,7 @@
 
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
-   private:
+  private:
     wf::wl_timer change_focus;
     wayfire_view last_view;
 
@@ -47,54 +47,83 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     void change_view(wayfire_view view)
     {
         if (raise_on_top)
+        {
             wf::get_core().focus_view(view);
-        else
+        } else
+        {
             wf::get_core().set_active_view(view);
+        }
     }
 
     void change_output()
     {
         auto coords = wf::get_core().get_cursor_position();
-        for (auto output : wf::get_core().output_layout->get_outputs()) {
-            if (output->get_layout_geometry() & coords) {
+        for (auto output : wf::get_core().output_layout->get_outputs())
+        {
+            if (output->get_layout_geometry() & coords)
+            {
                 wf::get_core().focus_output(output);
+
                 return;
             }
         }
     }
 
-    void view_changed_cb() {
+    void view_changed_cb()
+    {
         wayfire_view view = wf::get_core().get_cursor_focus_view();
-        if (view != last_view) { return; }
-        if (threshold) {
+        if (view != last_view)
+        {
+            return;
+        }
+
+        if (threshold)
+        {
             wf::pointf_t coords = wf::get_core().get_cursor_position();
-            // XXX(xaiki): this is slightly wrong because we check a square and not a circle,
-            //              but it should be good enough, and save casting twice to wf::point_t
-            if (abs(last_coords.x - coords.x) + abs(last_coords.y - coords.y) < threshold) {
-                change_focus.set_timeout(focus_delay, [=]() { view_changed_cb(); });
+            // XXX(xaiki): this is slightly wrong because we check a square and not a
+            // circle, but it should be good enough, and save casting twice to
+            // wf::point_t
+
+            if (abs(last_coords.x - coords.x) + abs(last_coords.y - coords.y) <
+                threshold)
+            {
+                change_focus.set_timeout(focus_delay, [=] () { view_changed_cb(); });
+
                 return;
             }
         }
+
         if (should_change_view)
+        {
             change_view(view);
+        }
 
         if (should_change_output)
+        {
             change_output();
+        }
     }
 
-    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t * /*data*/) {
+    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    {
         wayfire_view view = wf::get_core().get_cursor_focus_view();
-        if (view == nullptr || view == last_view) { return; };
-        if (threshold) {
+        if ((view == nullptr) || (view == last_view))
+        {
+            return;
+        }
+
+        if (threshold)
+        {
             last_coords = wf::get_core().get_cursor_position();
         }
+
         last_view = view;
 
         /* Restart the timeout */
-        change_focus.set_timeout(focus_delay, [=]() { view_changed_cb(); });
+        change_focus.set_timeout(focus_delay, [=] () { view_changed_cb(); });
     };
 
-   public:
+  public:
     void init() override
     {
         grab_interface->name = "follow-focus";
