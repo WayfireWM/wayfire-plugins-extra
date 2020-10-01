@@ -36,7 +36,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wayfire_view last_view     = nullptr;
     bool waiting_for_threshold = false;
 
-    wf::pointf_t last_coords;
+    wf::point_t last_coords;
     double distance;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
@@ -80,17 +80,15 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
         if (threshold)
         {
-            wf::pointf_t coords = wf::get_core().get_cursor_position();
-            // XXX(xaiki): this is slightly wrong because we check a square and not a
-            // circle, but it should be good enough, and save casting twice to
-            // wf::point_t
-
-            if (abs(last_coords.x - coords.x) + abs(last_coords.y - coords.y) <
-                threshold)
+            auto cpf = wf::get_core().get_cursor_position();
+            wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+            if (abs(coords - last_coords) < threshold)
             {
                 waiting_for_threshold = true;
+
                 return;
             }
+
             waiting_for_threshold = false;
         }
 
@@ -123,7 +121,10 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         {
             if (threshold)
             {
-                last_coords = wf::get_core().get_cursor_position();
+                auto cpf = wf::get_core().get_cursor_position();
+                wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+
+                last_coords = coords;
             }
 
             // only update the view if we're not waiting_for_threshold
