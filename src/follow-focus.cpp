@@ -93,6 +93,12 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
         auto view = wf::get_core().get_cursor_focus_view();
 
+        if (!view || (view->role != wf::VIEW_ROLE_TOPLEVEL) ||
+            (output->workspace->get_view_layer(view) != wf::LAYER_WORKSPACE))
+        {
+            return;
+        }
+
         if (view != last_view)
         {
             distance  = -1;
