@@ -26,6 +26,7 @@
 #include <wayfire/option-wrapper.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/output-layout.hpp>
+#include <wayfire/workspace-manager.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
 
@@ -71,11 +72,27 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         }
     }
 
+    void do_actions()
+    {
+        if (should_change_view)
+        {
+            change_view();
+        }
+
+        if (should_change_output)
+        {
+            change_output();
+        }
+
+        distance = -1;
+    }
+
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
     {
         change_focus.disconnect();
 
         auto view = wf::get_core().get_cursor_focus_view();
+
         if (view != last_view)
         {
             distance  = -1;
@@ -95,26 +112,23 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
         last_coords = coords;
 
+        /* If there wasn't enough pointer movement, don't do the actions. */
+        if (distance < threshold)
+        {
+            return;
+        }
+
+        if (!focus_delay)
+        {
+            do_actions();
+
+            return;
+        }
+
         /* Restart the timeout */
         change_focus.set_timeout(focus_delay, [=] ()
         {
-            /* Check if we had enough pointer movement, otherwise ignore this timer
-             * */
-            if (distance < threshold)
-            {
-                return;
-            }
-
-            distance = -1;
-            if (should_change_view)
-            {
-                change_view();
-            }
-
-            if (should_change_output)
-            {
-                change_output();
-            }
+            do_actions();
         });
     };
 

@@ -17,7 +17,7 @@
 			<_short>Delay (in ms) before focus change will be triggered</_short>
 			<_long>The delay in ms before the plugin will trigger a focus change after the movement finished.</_long>
 			<default>50</default>
-			<min>5</min>
+			<min>0</min>
 		</option>
 		<option name="threshold" type="int">
 			<_short>Minimum cursor movement</_short>
