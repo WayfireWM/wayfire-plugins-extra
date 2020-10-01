@@ -33,7 +33,8 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 {
   private:
     wf::wl_timer change_focus;
-    wayfire_view last_view;
+    wayfire_view last_view     = nullptr;
+    bool waiting_for_threshold = false;
 
     wf::pointf_t last_coords;
     double distance;
@@ -87,10 +88,10 @@ class wayfire_follow_focus : public wf::plugin_interface_t
             if (abs(last_coords.x - coords.x) + abs(last_coords.y - coords.y) <
                 threshold)
             {
-                change_focus.set_timeout(focus_delay, [=] () { view_changed_cb(); });
-
+                waiting_for_threshold = true;
                 return;
             }
+            waiting_for_threshold = false;
         }
 
         if (should_change_view)
@@ -107,17 +108,27 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
     {
         wayfire_view view = wf::get_core().get_cursor_focus_view();
-        if ((view == nullptr) || (view == last_view))
+        if (view == nullptr)
         {
             return;
         }
 
-        if (threshold)
+        if (waiting_for_threshold)
         {
-            last_coords = wf::get_core().get_cursor_position();
-        }
+            // pass
+        } else if (view == last_view)
+        {
+            return;
+        } else
+        {
+            if (threshold)
+            {
+                last_coords = wf::get_core().get_cursor_position();
+            }
 
-        last_view = view;
+            // only update the view if we're not waiting_for_threshold
+            last_view = view;
+        }
 
         /* Restart the timeout */
         change_focus.set_timeout(focus_delay, [=] () { view_changed_cb(); });
