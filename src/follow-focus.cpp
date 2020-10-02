@@ -37,7 +37,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wayfire_view last_view = nullptr;
     wf::wl_timer change_focus;
     wf::point_t last_coords;
-    double distance;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
@@ -83,8 +82,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         {
             change_output();
         }
-
-        distance = -1;
     }
 
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
@@ -99,28 +96,15 @@ class wayfire_follow_focus : public wf::plugin_interface_t
             return;
         }
 
-        if (view != last_view)
-        {
-            distance  = -1;
-            last_view = view;
-        }
-
-        /* Update how much the cursor moved this time */
         auto cpf = wf::get_core().get_cursor_position();
         wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
-        if (distance == -1)
+        if (view != last_view)
         {
-            distance = 0;
-        } else
+            last_coords = coords;
+            last_view   = view;
+        } else if (abs(coords - last_coords) < threshold)
         {
-            distance += abs(coords - last_coords);
-        }
-
-        last_coords = coords;
-
-        /* If there wasn't enough pointer movement, don't do the actions. */
-        if (distance < threshold)
-        {
+            /* If there wasn't enough pointer movement, don't do the actions. */
             return;
         }
 
@@ -145,8 +129,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         grab_interface->capabilities = 0;
 
         wf::get_core().connect_signal("pointer_motion", &pointer_motion);
-
-        distance = -1;
     }
 
     void fini() override
