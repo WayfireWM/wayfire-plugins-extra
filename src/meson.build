@@ -14,6 +14,10 @@ benchmark = shared_module('bench', 'bench.cpp',
     dependencies: [wayfire, wlroots, wfconfig, cairo],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+follow_focus = shared_module('follow-focus', 'follow-focus.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 force_fullscreen = shared_module('force-fullscreen', 'force-fullscreen.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
