@@ -31,12 +31,17 @@
 #include <wayfire/util.hpp>
 
 
+namespace follow_focus
+{
+/* Since plugin instances are per-output, we need to make this global */
+static wf::output_t *focus_output;
+
 class wayfire_follow_focus : public wf::plugin_interface_t
 {
   private:
-    wayfire_view last_view = nullptr;
-    wf::wl_timer change_focus;
-    wf::point_t last_coords;
+    wayfire_view focus_view = nullptr;
+    wf::wl_timer change_output_focus, change_view_focus;
+    wf::point_t last_output_coords, last_view_coords;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
@@ -59,36 +64,73 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
     void change_output()
     {
-        auto coords = wf::get_core().get_cursor_position();
-        for (auto output : wf::get_core().output_layout->get_outputs())
-        {
-            if (output->get_layout_geometry() & coords)
-            {
-                wf::get_core().focus_output(output);
+        auto cpf = wf::get_core().get_cursor_position();
+        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
 
-                return;
-            }
+        if (output->get_layout_geometry() & coords && (output == focus_output))
+        {
+            wf::get_core().focus_output(output);
         }
     }
 
-    void do_actions()
+    void check_output()
     {
-        if (should_change_view)
+        change_output_focus.disconnect();
+
+        if (!should_change_output)
         {
-            change_view();
+            return;
         }
 
-        if (should_change_output)
+        if (output == wf::get_core().get_active_output())
+        {
+            return;
+        }
+
+        auto cpf = wf::get_core().get_cursor_position();
+        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+
+        if (output->get_layout_geometry() & coords && (output != focus_output))
+        {
+            last_output_coords = coords;
+            focus_output = output;
+        }
+
+        if (abs(coords - last_output_coords) < threshold)
+        {
+            return;
+        }
+
+        if (!focus_delay)
         {
             change_output();
+
+            return;
         }
+
+        change_output_focus.set_timeout(focus_delay, [=] ()
+        {
+            change_output();
+        });
     }
 
-    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    void check_view()
     {
-        change_focus.disconnect();
+        change_view_focus.disconnect();
+
+        if (!should_change_view)
+        {
+            return;
+        }
 
         auto view = wf::get_core().get_cursor_focus_view();
+
+        if (raise_on_top && (view == output->get_active_view()))
+        {
+            focus_view = view;
+
+            return;
+        }
 
         if (!view || (view->role != wf::VIEW_ROLE_TOPLEVEL) ||
             (output->workspace->get_view_layer(view) != wf::LAYER_WORKSPACE))
@@ -98,28 +140,34 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
         auto cpf = wf::get_core().get_cursor_position();
         wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
-        if (view != last_view)
+        if (view != focus_view)
         {
-            last_coords = coords;
-            last_view   = view;
-        } else if (abs(coords - last_coords) < threshold)
+            last_view_coords = coords;
+            focus_view = view;
+        }
+
+        if (abs(coords - last_view_coords) < threshold)
         {
-            /* If there wasn't enough pointer movement, don't do the actions. */
             return;
         }
 
         if (!focus_delay)
         {
-            do_actions();
+            change_view();
 
             return;
         }
 
-        /* Restart the timeout */
-        change_focus.set_timeout(focus_delay, [=] ()
+        change_view_focus.set_timeout(focus_delay, [=] ()
         {
-            do_actions();
+            change_view();
         });
+    }
+
+    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    {
+        check_output();
+        check_view();
     };
 
   public:
@@ -134,9 +182,10 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     void fini() override
     {
         wf::get_core().disconnect_signal("pointer_motion", &pointer_motion);
-        change_focus.disconnect();
+        change_output_focus.disconnect();
+        change_view_focus.disconnect();
     }
 };
 
-
 DECLARE_WAYFIRE_PLUGIN(wayfire_follow_focus);
+}
