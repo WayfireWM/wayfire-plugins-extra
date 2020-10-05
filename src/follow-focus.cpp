@@ -53,13 +53,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     {
         auto view = wf::get_core().get_cursor_focus_view();
 
-        if (raise_on_top)
-        {
-            wf::get_core().focus_view(view);
-        } else
-        {
-            wf::get_core().set_active_view(view);
-        }
+        output->focus_view(view, raise_on_top);
     }
 
     void change_output()
@@ -125,7 +119,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
         auto view = wf::get_core().get_cursor_focus_view();
 
-        if (raise_on_top && (view == output->get_active_view()))
+        if (view == output->get_active_view())
         {
             focus_view = view;
 
