@@ -312,13 +312,6 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
-    /* GLESv2 doesn't support GL_BGRA */
-    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b,
-        double a)
-    {
-        cairo_set_source_rgba(cr, b, g, r, a);
-    }
-
     void render_workspace_name(workspace_name& wsn)
     {
         double xc = wsn.rect.width / 2;
@@ -333,7 +326,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         x2 = wsn.rect.width;
         y2 = wsn.rect.height;
 
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(background_color).r,
             wf::color_t(background_color).g,
             wf::color_t(background_color).b,
@@ -349,7 +342,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         cairo_close_path(cr);
         cairo_fill(cr);
 
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(text_color).r,
             wf::color_t(text_color).g,
             wf::color_t(text_color).b,

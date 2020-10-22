@@ -189,13 +189,6 @@ class wayfire_bench_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
-    /* GLESv2 doesn't support GL_BGRA */
-    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b,
-        double a)
-    {
-        cairo_set_source_rgba(cr, b, g, r, a);
-    }
-
     void render_bench()
     {
         double xc     = widget_xc;
@@ -238,26 +231,26 @@ class wayfire_bench_screen : public wf::plugin_interface_t
 
         cairo_set_line_width(cr, 5.0);
 
-        cairo_set_source_rgba_swizzle(cr, 0, 0, 0, 1);
+        cairo_set_source_rgba(cr, 0, 0, 0, 1);
         cairo_arc_negative(cr, xc, yc, radius, min_angle, max_angle);
         cairo_stroke(cr);
 
-        cairo_set_source_rgba_swizzle(cr, 0.7, 0.7, 0.7, 0.7);
+        cairo_set_source_rgba(cr, 0.7, 0.7, 0.7, 0.7);
         cairo_move_to(cr, xc, yc);
         cairo_arc_negative(cr, xc, yc, radius, min_angle, max_angle);
         cairo_fill(cr);
 
-        cairo_set_source_rgba_swizzle(cr, 1.0, 0.2, 0.2, 0.7);
+        cairo_set_source_rgba(cr, 1.0, 0.2, 0.2, 0.7);
         cairo_move_to(cr, xc, yc);
         cairo_arc_negative(cr, xc, yc, radius, fps_angle, max_angle);
         cairo_fill(cr);
 
         if (output->handle->current_mode)
         {
-            cairo_set_source_rgba_swizzle(cr, 0, 0, 1, 1);
+            cairo_set_source_rgba(cr, 0, 0, 1, 1);
         } else
         {
-            cairo_set_source_rgba_swizzle(cr, 1, 1, 0, 1);
+            cairo_set_source_rgba(cr, 1, 1, 0, 1);
         }
 
         cairo_text_extents(cr, fps_buf, &text_extents);
