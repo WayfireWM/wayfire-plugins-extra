@@ -310,13 +310,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
-    /* GLESv2 doesn't support GL_BGRA */
-    void cairo_set_source_rgba_swizzle(cairo_t *cr, double r, double g, double b,
-        double a)
-    {
-        cairo_set_source_rgba(cr, b, g, r, a);
-    }
-
     void cairo_draw(anno_ws_overlay& ol, wf::pointf_t from, wf::pointf_t to)
     {
         auto og = output->get_layout_geometry();
@@ -330,7 +323,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_t *cr = ol.cr;
 
         cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(stroke_color).r,
             wf::color_t(stroke_color).g,
             wf::color_t(stroke_color).b,
@@ -374,7 +367,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_t *cr = ol.cr;
 
         cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(stroke_color).r,
             wf::color_t(stroke_color).g,
             wf::color_t(stroke_color).b,
@@ -435,7 +428,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
 
         cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(stroke_color).r,
             wf::color_t(stroke_color).g,
             wf::color_t(stroke_color).b,
@@ -489,7 +482,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
 
         cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba_swizzle(cr,
+        cairo_set_source_rgba(cr,
             wf::color_t(stroke_color).r,
             wf::color_t(stroke_color).g,
             wf::color_t(stroke_color).b,
