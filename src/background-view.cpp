@@ -35,11 +35,11 @@
 #if WF_HAS_XWAYLAND
 extern "C"
 {
- #define class class_t
- #define static
- #include <wlr/xwayland.h>
- #undef static
- #undef class
+    #define class class_t
+    #define static
+    #include <wlr/xwayland.h>
+    #undef static
+    #undef class
 }
 #endif
 
