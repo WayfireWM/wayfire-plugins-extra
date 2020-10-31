@@ -14,6 +14,18 @@
 		<_short>Transparent Behind Views</_short>
 		<default>true</default>
 	</option>
+	<option name="x_skew" type="double">
+		<_short>Skew view width by multiplying by this factor</_short>
+		<default>0.0</default>
+		<min>0.0</min>
+		<precision>1.0</precision>
+	</option>
+	<option name="y_skew" type="double">
+		<_short>Skew view height by multiplying by this factor</_short>
+		<default>0.0</default>
+		<min>0.0</min>
+		<precision>1.0</precision>
+	</option>
 	<option name="constrain_pointer" type="bool">
 		<_short>Constrain Mouse Pointer</_short>
 		<default>false</default>
