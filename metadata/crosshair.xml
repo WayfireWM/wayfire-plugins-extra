@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="crosshair">
+		<_short>Crosshair</_short>
+		<_long>Render fullscreen mouse crosshair</_long>
+		<category>Utility</category>
+		<option name="line_width" type="int">
+			<_short>Line Width</_short>
+			<_long>Line width of crosshair</_long>
+			<default>2</default>
+			<min>1</min>
+		</option>
+		<option name="line_color" type="color">
+			<_short>Line Color</_short>
+			<_long>Color used for rendering crosshair</_long>
+			<default>1 0 0 1</default>
+		</option>
+	</plugin>
+</wayfire>
