@@ -236,6 +236,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
     wf::option_wrapper_t<bool> constrain_pointer{"force-fullscreen/constrain_pointer"};
+    wf::option_wrapper_t<double> scale_x_factor{"force-fullscreen/x_skew"};
+    wf::option_wrapper_t<double> scale_y_factor{"force-fullscreen/y_skew"};
     wf::option_wrapper_t<std::string> constraint_area{
         "force-fullscreen/constraint_area"};
     wf::option_wrapper_t<bool> transparent_behind_views{
@@ -255,6 +257,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wayfire_force_fullscreen_instances[output] = this;
         constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
+        scale_x_factor.set_callback(skew_changed);
+        scale_y_factor.set_callback(skew_changed);
     }
 
     void ensure_subsurface(wayfire_view view)
@@ -312,6 +316,9 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         {
             scale_x = scale_y = std::min(scale_x, scale_y);
         }
+
+        scale_x += (scale_x_factor * 0.01);
+        scale_y += (scale_y_factor * 0.01);
 
         wlr_box box;
         box.width  = std::floor((vg.width - 2) * scale_x);
@@ -502,6 +509,16 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
     {
         update_backgrounds();
+    };
+
+    wf::config::option_base_t::updated_callback_t skew_changed =
+        [=] ()
+    {
+        for (auto& b : backgrounds)
+        {
+            auto v = b.first;
+            setup_transform(v);
+        }
     };
 
     wf::signal_callback_t on_motion_event = [=] (wf::signal_data_t *data)
