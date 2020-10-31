@@ -82,10 +82,17 @@ class wayfire_crosshair : public wf::plugin_interface_t
         region |= geometry[1];
         region &= output->render->get_swap_damage();
 
+        auto alpha = wf::color_t(line_color).a;
+        wf::color_t color = wf::color_t{
+            wf::color_t(line_color).r * alpha,
+            wf::color_t(line_color).g * alpha,
+            wf::color_t(line_color).b * alpha,
+            alpha};
+
         OpenGL::render_begin(target_fb);
         for (auto& b : region)
         {
-            OpenGL::render_rectangle(wlr_box_from_pixman_box(b), line_color,
+            OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
                 target_fb.get_orthographic_projection());
         }
 
