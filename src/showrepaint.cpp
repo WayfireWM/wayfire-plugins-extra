@@ -57,7 +57,7 @@ class wayfire_showrepaint : public wf::plugin_interface_t
         output->render->damage_whole();
     };
 
-    wf::activator_callback toggle_cb = [=] (wf::activator_source_t, uint32_t)
+    wf::activator_callback toggle_cb = [=] (auto)
     {
         active = !active;
 
