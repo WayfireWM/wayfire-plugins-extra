@@ -214,9 +214,6 @@ class wayfire_magnifier : public wf::plugin_interface_t
         /* Compute zoom_box, forcing the zoom to stay on the output */
         gl_geometry zoom_box;
 
-        /* Y-invert */
-        y = 1.0 - y;
-
         zoom_box.x1 = x - level;
         zoom_box.y1 = y - level;
         zoom_box.x2 = x + level;
@@ -261,7 +258,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
         OpenGL::render_transformed_texture(texture, src_geometry, zoom_box,
             transform * mag_view->mag_tex.get_orthographic_projection(),
             glm::vec4(1.0),
-            OpenGL::TEXTURE_USE_TEX_GEOMETRY | OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+            OpenGL::TEXTURE_USE_TEX_GEOMETRY);
         OpenGL::render_end();
 
         wlr_texture_destroy(wlr_texture);
