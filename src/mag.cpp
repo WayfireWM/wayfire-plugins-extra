@@ -33,6 +33,7 @@
 #include "wayfire/compositor-view.hpp"
 #include "wayfire/render-manager.hpp"
 #include "wayfire/opengl.hpp"
+#include <glm/gtc/matrix_transform.hpp>
 
 extern "C"
 {
@@ -184,6 +185,21 @@ class wayfire_magnifier : public wf::plugin_interface_t
         }
 
         auto cursor_position = output->get_cursor_position();
+
+        auto ortho = output->render->get_target_framebuffer()
+            .get_orthographic_projection();
+
+        // Map from OpenGL coordinates to [0, 1]x[0, 1]
+        auto cursor_transform =
+            glm::translate(glm::mat4(1.0), glm::vec3(0.5, 0.5, 0.0)) *
+            glm::scale(glm::mat4(1.0), glm::vec3{0.5, -0.5, 1.0}) * ortho;
+
+        glm::vec4 cursor = glm::vec4(cursor_position.x, cursor_position.y, 0.0, 1.0);
+        cursor = cursor_transform * cursor;
+
+        float x = cursor.x;
+        float y = cursor.y;
+
         auto og = output->get_relative_geometry();
         gl_geometry src_geometry = {0, 0, (float)og.width, (float)og.height};
         auto transform = output->render->get_target_framebuffer().transform;
@@ -191,16 +207,6 @@ class wayfire_magnifier : public wf::plugin_interface_t
 
         width  = og.width;
         height = og.height;
-        /* x,y range 0.0 - 1.0 */
-        float x = cursor_position.x / width;
-        float y = cursor_position.y / height;
-
-        /* Apply transform */
-        wf::pointf_t center{0.5, 0.5};
-        glm::vec4 point{x - center.x, y - center.y, 1.0, 1.0};
-        glm::vec4 result = transform * point;
-        x = result.x + center.x;
-        y = result.y + center.y;
 
         /* min and max represent the distance on either side of the pointer.
          * The min is 0.5 and means no zoom, half the screen on either side
