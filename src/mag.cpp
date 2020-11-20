@@ -109,7 +109,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
     bool active, hook_set;
     int width, height;
 
-    wf::activator_callback toggle_cb = [=] (wf::activator_source_t, uint32_t)
+    wf::activator_callback toggle_cb = [=] (auto)
     {
         active = !active;
         if (active)

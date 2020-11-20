@@ -396,7 +396,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         return true;
     }
 
-    wf::key_callback on_toggle_fullscreen = [=] (uint32_t key)
+    wf::key_callback on_toggle_fullscreen = [=] (auto)
     {
         auto view = output->get_active_view();
 

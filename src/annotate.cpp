@@ -135,10 +135,10 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
     };
 
-    wf::button_callback draw_begin = [=] (uint32_t b, int x, int y)
+    wf::button_callback draw_begin = [=] (wf::buttonbinding_t btn)
     {
         grab_point = last_cursor = wf::get_core().get_cursor_position();
-        button     = b;
+        button     = btn.get_button();
 
         grab();
 
@@ -280,7 +280,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
     };
 
-    wf::activator_callback clear_workspace = [=] (wf::activator_source_t, uint32_t)
+    wf::activator_callback clear_workspace = [=] (auto)
     {
         clear();
 

@@ -227,7 +227,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
         animation.set(0, 0);
     }
 
-    wf::button_callback activate_binding = [=] (uint32_t, int, int)
+    wf::button_callback activate_binding = [=] (auto)
     {
         if (!output->is_plugin_active(grab_interface->name))
         {
