@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <wayfire>
 	<plugin name="follow-focus">
-		<_short>Focus follows mouse</_short>
+		<_short>Follow Focus</_short>
 		<category>Desktop</category>
 		<option name="change_view" type="bool">
 			<_short>View focus follows mouse</_short>
