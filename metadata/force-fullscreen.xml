@@ -2,6 +2,7 @@
 <wayfire>
 	<plugin name="force-fullscreen">
 	<_short>Fullscreen Window</_short>
+	<category>Window Management</category>
 	<option name="key_toggle_fullscreen" type="key">
 		<_short>Key Toggle Fullscreen</_short>
 		<default>&lt;super&gt; &lt;alt&gt; KEY_F</default>
