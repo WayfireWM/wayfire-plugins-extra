@@ -1,0 +1,3 @@
+[submodule "subprojects/dbus"]
+	path = subprojects/dbus
+	url = https://github.com/damianatorrpm/wayfire-plugin_dbus_interface
