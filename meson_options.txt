@@ -1,1 +1,2 @@
 option('enable_nk', type: 'boolean', value: false, description: 'Enable network-keyboard demo')
+option('enable_dbus', type: 'boolean', value: 'false', description: 'Install dbus plugin')
