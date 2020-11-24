@@ -53,3 +53,4 @@ workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
 if get_option('enable_nk')
     subdir('network-keyboard')
 endif
+

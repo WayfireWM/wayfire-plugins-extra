@@ -1,3 +1,6 @@
 [submodule "subprojects/dbus"]
 	path = subprojects/dbus
 	url = https://github.com/damianatorrpm/wayfire-plugin_dbus_interface
+[submodule "subprojects/windecor"]
+	path = subprojects/windecor
+	url = https://gitlab.com/marcusbritanicus/windecor
