@@ -46,6 +46,10 @@ water = shared_module('water', 'water.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+window_menu = shared_module('window-menu', 'window-menu.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
     dependencies: [wayfire, wlroots, wfconfig, cairo],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))

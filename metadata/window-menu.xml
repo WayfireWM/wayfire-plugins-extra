@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="window-menu">
+	<_short>Window Menu</_short>
+	<category>Window Management</category>
+	<option name="command" type="string">
+		<_short>Command</_short>
+		<default>nwgcc --name=nwgcc</default>
+	</option>
+	<option name="app_id" type="string">
+		<_short>Application Identifier Match</_short>
+		<default>nwgcc</default>
+	</option>
+	</plugin>
+</wayfire>
