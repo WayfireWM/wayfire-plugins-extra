@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="winzoom">
+		<_short>Window Zoom</_short>
+		<_long>A plugin to zoom windows.</_long>
+		<category>Window Management</category>
+		<option name="modifier" type="key">
+			<_short>Modifier</_short>
+			<_long>When the modifier key is held down, you can scroll down and up to adjust the zoom of the window.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt;</default>
+		</option>
+		<option name="zoom_step" type="double">
+			<_short>Zoom Step</_short>
+			<_long>Sets the zoom increment per binding action.</_long>
+			<default>0.1</default>
+			<min>0.01</min>
+		</option>
+		<option name="preserve_aspect" type="bool">
+			<_short>Preserve Aspect</_short>
+			<_long>Preserve the aspect ratio of the view.</_long>
+			<default>true</default>
+		</option>
+		<option name="nearest_filtering" type="bool">
+			<_short>Nearest Filtering</_short>
+			<_long>Use GL_NEAREST instead of GL_LINEAR.</_long>
+			<default>false</default>
+		</option>
+		<option name="inc_x_binding" type="activator">
+			<_short>Increment X</_short>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_RIGHT</default>
+		</option>
+		<option name="dec_x_binding" type="activator">
+			<_short>Decrement X</_short>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_LEFT</default>
+		</option>
+		<option name="inc_y_binding" type="activator">
+			<_short>Increment Y</_short>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_DOWN</default>
+		</option>
+		<option name="dec_y_binding" type="activator">
+			<_short>Decrement Y</_short>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_UP</default>
+		</option>
+	</plugin>
+</wayfire>
