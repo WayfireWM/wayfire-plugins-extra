@@ -40,9 +40,11 @@ attribute mediump vec2 texcoord;
 
 varying mediump vec2 uvpos;
 
+uniform mat4 mvp;
+
 void main() {
 
-   gl_Position = vec4(position.xy, 0.0, 1.0);
+   gl_Position = mvp * vec4(position.xy, 0.0, 1.0);
    uvpos = texcoord;
 }
 )";
@@ -123,16 +125,17 @@ class wf_keycolor : public wf::view_transformer_t
         threshold.set_callback(option_changed);
     }
 
-    void render_box(wf::texture_t src_tex, wlr_box _src_box,
-        wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
+    void render_with_damage(wf::texture_t src_tex, wlr_box src_box,
+        const wf::region_t& damage, const wf::framebuffer_t& target_fb) override
     {
-        auto src_box = _src_box;
-        int fb_h     = target_fb.viewport_height;
+        wlr_box fb_geom =
+            target_fb.framebuffer_box_from_geometry_box(target_fb.geometry);
+        auto view_box = target_fb.framebuffer_box_from_geometry_box(src_box);
+        view_box.x -= fb_geom.x;
+        view_box.y -= fb_geom.y;
 
-        src_box.x -= target_fb.geometry.x;
-        src_box.y -= target_fb.geometry.y;
-
-        float x = src_box.x, y = src_box.y, w = src_box.width, h = src_box.height;
+        float x = view_box.x, y = view_box.y, w = view_box.width,
+            h = view_box.height;
 
         nonstd::observer_ptr<keycolor_custom_data_t> data =
             wf::get_core().get_data<keycolor_custom_data_t>(program_name);
@@ -163,18 +166,22 @@ class wf_keycolor : public wf::view_transformer_t
         data->program.uniform1f("threshold", threshold);
         data->program.attrib_pointer("position", 2, 0, vertexData);
         data->program.attrib_pointer("texcoord", 2, 0, texCoords);
+        data->program.uniformMatrix4f("mvp", glm::inverse(target_fb.transform));
         GL_CALL(glActiveTexture(GL_TEXTURE0));
         data->program.set_active_texture(src_tex);
 
         /* Render it to target_fb */
         target_fb.bind();
+        GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
 
-        GL_CALL(glViewport(x, fb_h - y - h, w, h));
-        target_fb.logic_scissor(scissor_box);
         GL_CALL(glEnable(GL_BLEND));
         GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
 
-        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+        for (const auto& box : damage)
+        {
+            target_fb.logic_scissor(wlr_box_from_pixman_box(box));
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+        }
 
         /* Disable stuff */
         GL_CALL(glDisable(GL_BLEND));
