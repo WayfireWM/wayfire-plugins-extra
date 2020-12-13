@@ -166,7 +166,7 @@ class wf_keycolor : public wf::view_transformer_t
         data->program.uniform1f("threshold", threshold);
         data->program.attrib_pointer("position", 2, 0, vertexData);
         data->program.attrib_pointer("texcoord", 2, 0, texCoords);
-        data->program.uniformMatrix4f("mvp", glm::inverse(target_fb.transform));
+        data->program.uniformMatrix4f("mvp", target_fb.transform);
         GL_CALL(glActiveTexture(GL_TEXTURE0));
         data->program.set_active_texture(src_tex);
 
