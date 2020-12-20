@@ -395,8 +395,9 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
     {
         output->render->damage_whole();
         alpha_fade.animate(1.0, 0.0);
-        timer.disconnect();
         timed_out = true;
+
+        return false; // disconnect
     };
 
     wf::signal_connection_t workspace_stream_post{[this] (wf::signal_data_t *data)

@@ -255,7 +255,7 @@ class wayfire_water_screen : public wf::plugin_interface_t
     wf::wl_timer::callback_t timeout = [=] ()
     {
         animation.animate(animation, 0);
-        timer.disconnect();
+        return false; // disconnect
     };
 
     wf::post_hook_t render = [=] (const wf::framebuffer_base_t& source,

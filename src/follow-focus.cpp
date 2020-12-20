@@ -105,6 +105,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         change_output_focus.set_timeout(focus_delay, [=] ()
         {
             change_output();
+            return false; // disconnect
         });
     }
 
@@ -155,6 +156,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         change_view_focus.set_timeout(focus_delay, [=] ()
         {
             change_view();
+            return false; // disconnect
         });
     }
 
