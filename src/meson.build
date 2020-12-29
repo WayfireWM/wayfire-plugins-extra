@@ -26,6 +26,10 @@ force_fullscreen = shared_module('force-fullscreen', 'force-fullscreen.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+glib_main_loop = shared_module('glib-main-loop', 'glib-main-loop.cpp',
+    dependencies: [wayfire, wlroots, wfconfig, giomm],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 joinviews = shared_module('join-views', 'join-views.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
