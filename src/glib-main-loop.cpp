@@ -100,6 +100,7 @@ class glib_main_loop_t
                 plugin_prefixes.push_back(entry);
             }
         }
+
         plugin_prefixes.push_back(PLUGIN_PATH);
 
         std::string plugin_name = "glib-main-loop";
