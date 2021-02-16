@@ -41,10 +41,22 @@ class fullscreen_subsurface : public wf::surface_interface_t,
 
     fullscreen_subsurface(wayfire_view view) :
         wf::surface_interface_t(), wf::compositor_surface_t()
-    {}
+    {
+        view->connect_signal("subsurface-removed", &on_subsurface_removed);
+    }
 
     ~fullscreen_subsurface()
     {}
+
+    wf::signal_connection_t on_subsurface_removed = [&] (auto data)
+    {
+        auto ev = static_cast<wf::subsurface_removed_signal*>(data);
+        if ((ev->subsurface.get() == this) && _mapped)
+        {
+            _mapped = false;
+            wf::emit_map_state_change(this);
+        }
+    };
 
     void on_pointer_enter(int x, int y) override
     {
@@ -295,8 +307,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (background->black_border)
         {
-            wf::emit_map_state_change(background->black_border);
-            background->black_border->_mapped = false;
             view->remove_subsurface(background->black_border);
             background->black_border = nullptr;
         }
