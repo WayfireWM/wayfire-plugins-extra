@@ -46,6 +46,10 @@ showrepaint = shared_module('showrepaint', 'showrepaint.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+view_shot = shared_module('view-shot', 'view-shot.cpp',
+    dependencies: [wayfire, wlroots, wfconfig],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 water = shared_module('water', 'water.cpp',
     dependencies: [wayfire, wlroots, wfconfig],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
