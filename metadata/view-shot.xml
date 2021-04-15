@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="view-shot">
+	<_short>View Shot</_short>
+	<category>Utility</category>
+	<option name="capture" type="activator">
+		<_short>Capture</_short>
+		<_long>Captures the cursor focus view.</_long>
+		<default>&lt;super&gt; &lt;alt&gt; BTN_MIDDLE</default>
+	</option>
+	<option name="filename" type="string">
+		<_short>File Name</_short>
+		<default>/tmp/snapshot.png</default>
+	</option>
+	</plugin>
+</wayfire>
