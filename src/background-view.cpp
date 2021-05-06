@@ -43,13 +43,13 @@ extern "C"
 }
 #endif
 
-struct process
+struct parent_view
 {
     nonstd::observer_ptr<wf::view_interface_t> view;
     pid_t pid;
 };
 
-static std::map<wf::output_t*, struct process> procs;
+static std::map<wf::output_t*, struct parent_view> views;
 
 class wayfire_background_view : public wf::plugin_interface_t
 {
@@ -62,6 +62,11 @@ class wayfire_background_view : public wf::plugin_interface_t
      * it will be appended to the command, wrapped in double quotes.
      */
     wf::option_wrapper_t<std::string> file{"background-view/file"};
+    /* The app-id option is used to identify the application. If app-id
+     * is not set or does not match the launched app-id, the plugin will
+     * not be able to set the client surface as the background.
+     */
+    wf::option_wrapper_t<std::string> app_id{"background-view/app-id"};
 
   public:
     void init() override
@@ -79,11 +84,16 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
     {
-        if (procs[output].view)
+        if (views[output].view)
         {
-            procs[output].view->close();
-            kill(procs[output].pid, SIGINT);
-            procs[output].view = nullptr;
+            views[output].view->close();
+            if (views[output].pid > 0)
+            {
+                kill(views[output].pid, SIGINT);
+                views[output].pid = 0;
+            }
+
+            views[output].view = nullptr;
         }
 
         if (std::string(command).empty())
@@ -91,51 +101,81 @@ class wayfire_background_view : public wf::plugin_interface_t
             return;
         }
 
-        /* Insert exec between environment variables and command.
-         * This is needed for shells that fork on -c by default
-         * because we are matching the pid and fork increments
-         * the pid. We could just check for the pid and pid + 1
-         * but this wouldn't work for pid wrap around. For example,
-         * if /bin/sh is bash, this is not needed because bash -c
-         * execs the command and thus doesn't increment the pid.
-         * However if /bin/sh is dash, -c will fork by default and
-         * increment the pid unless exec is passed in the command.
-         */
-        std::stringstream stream(command);
-        std::string arg;
-        std::string cmd;
-        bool arg0_found = false;
-        while (std::getline(stream, arg, ' '))
-        {
-            if (!arg0_found && (arg.find('=') == std::string::npos))
-            {
-                arg0_found = true;
-                cmd += "exec ";
-            }
-
-            cmd += arg + " ";
-        }
-
-        cmd.pop_back();
-
-        procs[output].view = nullptr;
-        procs[output].pid  = wf::get_core().run(std::string(
-            cmd) + add_arg_if_not_empty(file));
+        views[output].view = nullptr;
+        views[output].pid  = wf::get_core().run(std::string(
+            command) + add_arg_if_not_empty(file));
     };
+
+    void set_view_for_output(wayfire_view view, wf::output_t *o)
+    {
+        /* Get rid of decorations */
+        view->set_decoration(nullptr);
+
+        /* Move to the respective output */
+        wf::get_core().move_view_to_output(view, o, false);
+
+        /* A client should be used that can be resized to any size.
+         * If we set it fullscreen, the screensaver would be inhibited
+         * so we send a resize request that is the size of the output
+         */
+        view->set_geometry(o->get_relative_geometry());
+
+        /* Set it as the background */
+        o->workspace->add_view(view, wf::LAYER_BACKGROUND);
+
+        /* Make it show on all workspaces */
+        view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
+
+        /* Remember to close it later */
+        views[o].view = view;
+    }
 
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
         {
             auto view = get_signaled_view(data);
-#if WF_HAS_XWAYLAND
+
+            if (!view)
+            {
+                return;
+            }
+
+            pid_t x_pid  = 0;
+            pid_t wl_pid = 0;
+            bool is_xwayland_surface = false;
             wlr_surface *wlr_surface = view->get_wlr_surface();
-            bool is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
+
+#if WF_HAS_XWAYLAND
+            is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
 #endif
-            /* Get pid for view */
-            pid_t view_pid;
-            wl_client_get_credentials(view->get_client(), &view_pid, 0, 0);
+
+            if (is_xwayland_surface)
+            {
+                /* Get pid for xwayland view */
+#if WF_HAS_XWAYLAND
+                x_pid = wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid;
+#endif
+            } else
+            {
+                /* Get pid for native view */
+                wl_client_get_credentials(view->get_client(), &wl_pid, 0, 0);
+            }
 
             for (auto& o : wf::get_core().output_layout->get_outputs())
             {
+                if (views[o].view)
+                {
+                    continue;
+                }
+
+                /* Try app-id match first */
+                if (std::string(app_id) == view->get_app_id())
+                {
+                    views[o].pid = is_xwayland_surface ?
+                        (x_pid ? x_pid : views[o].pid) : wl_pid;
+                    set_view_for_output(view, o);
+                    break;
+                }
+
                 /* This condition attempts to match the pid that we got from run()
                  * to the client pid. This will not work in all cases. Naturally,
                  * not every command will spawn a view. This wont work well for gtk
@@ -146,34 +186,12 @@ class wayfire_background_view : public wf::plugin_interface_t
                  * the app. This does work well with clients such as mpv, projectM
                  * and running xscreensavers directly.
                  */
-                if (procs[o].pid == view_pid
-#if WF_HAS_XWAYLAND
-                    || (is_xwayland_surface &&
-                        /* For this match to work, the client must set _NET_WM_PID */
-                        procs[o].pid ==
-                        wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid)
-#endif
-                )
+                if ((views[o].pid == wl_pid) ||
+                    /* For this match to work, the
+                     * client must set _NET_WM_PID */
+                    (is_xwayland_surface && (views[o].pid == x_pid)))
                 {
-                    view->set_decoration(nullptr);
-
-                    /* Move to the respective output */
-                    wf::get_core().move_view_to_output(view, o, false);
-
-                    /* A client should be used that can be resized to any size.
-                     * If we set it fullscreen, the screensaver would be inhibited
-                     * so we send a resize request that is the size of the output
-                     */
-                    view->set_geometry(o->get_relative_geometry());
-
-                    /* Set it as the background */
-                    o->workspace->add_view(view, wf::LAYER_BACKGROUND);
-
-                    /* Make it show on all workspaces */
-                    view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
-
-                    procs[o].view = view;
-
+                    set_view_for_output(view, o);
                     break;
                 }
             }
@@ -182,21 +200,24 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     std::string add_arg_if_not_empty(std::string in)
     {
-        if (!in.empty())
-        {
-            return " \"" + in + "\"";
-        } else
+        if (in.empty())
         {
             return in;
+        } else
+        {
+            return " \"" + in + "\"";
         }
     }
 
     void fini() override
     {
-        if (procs[output].view)
+        if (views[output].view)
         {
-            procs[output].view->close();
-            kill(procs[output].pid, SIGINT);
+            views[output].view->close();
+            if (views[output].pid > 0)
+            {
+                kill(views[output].pid, SIGINT);
+            }
         }
     }
 };

@@ -8,9 +8,13 @@
 		<default>mpv --loop=inf</default>
 	</option>
 	<option name="file" type="string">
-		<_short>File</_short>
+		<_short>File (optional)</_short>
 		<hint>file</hint>
 		<default></default>
+	</option>
+	<option name="app-id" type="string">
+		<_short>Application Identifier</_short>
+		<default>mpv</default>
 	</option>
 	</plugin>
 </wayfire>
