@@ -7,7 +7,24 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine:edge
     steps:
-    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev eudev-dev libxml2-dev libexecinfo-dev glibmm-dev
+    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev eudev-dev libxml2-dev libexecinfo-dev glibmm-dev libseat-dev
+    - name: Wayfire
+      uses: actions/checkout@v2
+      with:
+        repository: WayfireWM/wayfire
+        path: wayfire
+    - run: cd wayfire && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
+    - name: Wayfire Plugins Extra
+      uses: actions/checkout@v2
+      with:
+        path: wayfire-plugins-extra
+    - run: cd wayfire-plugins-extra && meson build && ninja -v -Cbuild
+  test_musl_gcc_xwayland:
+    name: "Test with with GCC/musl/libstdc++/BFD on Alpine Linux with Xwayland"
+    runs-on: ubuntu-latest
+    container: alpine:edge
+    steps:
+    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev eudev-dev libxml2-dev libexecinfo-dev glibmm-dev libseat-dev libxcb-dev xcb-util-wm-dev xwayland
     - name: Wayfire
       uses: actions/checkout@v2
       with:
