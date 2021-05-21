@@ -124,6 +124,9 @@ class wayfire_background_view : public wf::plugin_interface_t
         o->workspace->add_view(view, wf::LAYER_BACKGROUND);
 
         /* Make it show on all workspaces */
+        view->sticky = true;
+
+        /* Set role */
         view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
 
         /* Remember to close it later */
