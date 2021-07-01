@@ -80,11 +80,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
             overlays[x].resize(wsize.height);
         }
 
-        grab_interface->callbacks.pointer.motion = [=] (int x, int y)
-        {
-            pointer_moved();
-        };
-
         grab_interface->callbacks.pointer.button = [=] (uint32_t b, uint32_t s)
         {
             if ((b == button) && (s == WL_POINTER_BUTTON_STATE_RELEASED))
@@ -137,8 +132,10 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
     wf::button_callback draw_begin = [=] (wf::buttonbinding_t btn)
     {
+        output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
         grab_point = last_cursor = wf::get_core().get_cursor_position();
         button     = btn.get_button();
+        connect_ws_stream_post();
 
         grab();
 
@@ -149,6 +146,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     {
         auto& ol = get_current_overlay();
 
+        output->render->rem_effect(&frame_pre_paint);
         overlay_destroy(shape_overlay);
         ungrab();
 
@@ -169,38 +167,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
           default:
             break;
         }
-    }
-
-    void pointer_moved()
-    {
-        auto current_cursor = wf::get_core().get_cursor_position();
-        auto& ol = get_current_overlay();
-
-        switch (draw_method)
-        {
-          case ANNOTATE_METHOD_DRAW:
-            cairo_draw(ol, last_cursor, current_cursor);
-            break;
-
-          case ANNOTATE_METHOD_LINE:
-            cairo_draw_line(shape_overlay, current_cursor);
-            break;
-
-          case ANNOTATE_METHOD_RECTANGLE:
-            cairo_draw_rectangle(shape_overlay, current_cursor);
-            break;
-
-          case ANNOTATE_METHOD_CIRCLE:
-            cairo_draw_circle(shape_overlay, current_cursor);
-            break;
-
-          default:
-            return;
-        }
-
-        last_cursor = current_cursor;
-
-        connect_ws_stream_post();
     }
 
     void deactivate_check()
@@ -508,6 +474,36 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         last_bbox = bbox;
     }
+
+    wf::effect_hook_t frame_pre_paint = [=] ()
+    {
+        auto current_cursor = wf::get_core().get_cursor_position();
+        auto& ol = get_current_overlay();
+
+        switch (draw_method)
+        {
+          case ANNOTATE_METHOD_DRAW:
+            cairo_draw(ol, last_cursor, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_LINE:
+            cairo_draw_line(shape_overlay, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_RECTANGLE:
+            cairo_draw_rectangle(shape_overlay, current_cursor);
+            break;
+
+          case ANNOTATE_METHOD_CIRCLE:
+            cairo_draw_circle(shape_overlay, current_cursor);
+            break;
+
+          default:
+            return;
+        }
+
+        last_cursor = current_cursor;
+    };
 
     wf::signal_connection_t workspace_stream_post{[this] (wf::signal_data_t *data)
         {
