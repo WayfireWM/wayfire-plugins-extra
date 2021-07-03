@@ -276,6 +276,45 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
+    static void cairo_surface_upload_to_texture_with_damage(
+        cairo_surface_t *surface, wf::simple_texture_t& buffer, wlr_box damage_box)
+    {
+        buffer.width  = cairo_image_surface_get_width(surface);
+        buffer.height = cairo_image_surface_get_height(surface);
+
+        auto src = cairo_image_surface_get_data(surface);
+
+        OpenGL::render_begin();
+        if (buffer.tex == (GLuint) - 1)
+        {
+            GL_CALL(glGenTextures(1, &buffer.tex));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
+            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                GL_LINEAR));
+            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                GL_LINEAR));
+            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE));
+            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
+            GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                buffer.width, buffer.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, src));
+            OpenGL::render_end();
+            return;
+        }
+
+        GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
+        GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, buffer.width));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, damage_box.y));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, damage_box.x));
+
+        GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, damage_box.x, damage_box.y,
+            damage_box.width, damage_box.height, GL_RGBA, GL_UNSIGNED_BYTE, src));
+
+        GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, 0));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0));
+        OpenGL::render_end();
+    }
+
     void cairo_draw(anno_ws_overlay& ol, wf::pointf_t from, wf::pointf_t to)
     {
         auto og = output->get_layout_geometry();
@@ -298,10 +337,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_line_to(cr, to.x, to.y);
         cairo_stroke(cr);
 
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(ol.cairo_surface, *ol.texture);
-        OpenGL::render_end();
-
         wlr_box bbox;
         int padding = line_width + 1;
         bbox.x     = std::min(from.x, to.x) - padding;
@@ -309,6 +344,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
         output->render->damage(bbox);
+        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+            bbox);
     }
 
     bool should_damage_last()
@@ -342,10 +379,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_line_to(cr, to.x, to.y);
         cairo_stroke(cr);
 
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(ol.cairo_surface, *ol.texture);
-        OpenGL::render_end();
-
         wlr_box bbox;
         int padding = line_width + 1;
         bbox.x     = std::min(from.x, to.x) - padding;
@@ -353,10 +386,20 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
         output->render->damage(bbox);
+        wf::region_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
+            damage_region |= last_bbox;
         }
+
+        damage_region &= output->get_relative_geometry();
+        auto damage_extents = damage_region.get_extents();
+        wlr_box damage_box  =
+        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
+            damage_extents.y2 - damage_extents.y1};
+        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+            damage_box);
 
         last_bbox = bbox;
     }
@@ -402,10 +445,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_rectangle(cr, x, y, w, h);
         cairo_stroke(cr);
 
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(ol.cairo_surface, *ol.texture);
-        OpenGL::render_end();
-
         wlr_box bbox;
         int padding = line_width + 1;
         bbox.x     = x - padding;
@@ -413,10 +452,20 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.width = w + padding * 2;
         bbox.height = h + padding * 2;
         output->render->damage(bbox);
+        wf::region_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
+            damage_region |= last_bbox;
         }
+
+        damage_region &= output->get_relative_geometry();
+        auto damage_extents = damage_region.get_extents();
+        wlr_box damage_box  =
+        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
+            damage_extents.y2 - damage_extents.y1};
+        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+            damage_box);
 
         last_bbox = bbox;
     }
@@ -456,10 +505,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_arc(cr, from.x, from.y, radius, 0, 2 * M_PI);
         cairo_stroke(cr);
 
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(ol.cairo_surface, *ol.texture);
-        OpenGL::render_end();
-
         wlr_box bbox;
         int padding = line_width + 1;
         bbox.x     = (from.x - radius) - padding;
@@ -467,10 +512,20 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.width = (radius * 2) + padding * 2;
         bbox.height = (radius * 2) + padding * 2;
         output->render->damage(bbox);
+        wf::region_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
+            damage_region |= last_bbox;
         }
+
+        damage_region &= output->get_relative_geometry();
+        auto damage_extents = damage_region.get_extents();
+        wlr_box damage_box  =
+        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
+            damage_extents.y2 - damage_extents.y1};
+        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+            damage_box);
 
         last_bbox = bbox;
     }
