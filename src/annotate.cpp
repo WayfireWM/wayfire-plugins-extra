@@ -276,7 +276,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
-    static void cairo_surface_upload_to_texture_with_damage(
+    void cairo_surface_upload_to_texture_with_damage(
         cairo_surface_t *surface, wf::simple_texture_t& buffer, wlr_box damage_box)
     {
         buffer.width  = cairo_image_surface_get_width(surface);
@@ -301,13 +301,19 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
             return;
         }
 
+        auto og = output->get_relative_geometry();
         GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
         GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, buffer.width));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, damage_box.y));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, damage_box.x));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS,
+            wf::clamp(damage_box.y, 0, og.height - damage_box.height)));
+        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS,
+            wf::clamp(damage_box.x, 0, og.width - damage_box.width)));
 
-        GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0, damage_box.x, damage_box.y,
-            damage_box.width, damage_box.height, GL_RGBA, GL_UNSIGNED_BYTE, src));
+        GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0,
+            wf::clamp(damage_box.x, 0, og.width - damage_box.width),
+            wf::clamp(damage_box.y, 0, og.height - damage_box.height),
+            damage_box.width, damage_box.height,
+            GL_RGBA, GL_UNSIGNED_BYTE, src));
 
         GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
         GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, 0));
