@@ -1,3 +1,4 @@
 option('enable_nk', type: 'boolean', value: false, description: 'Enable network-keyboard demo')
 option('enable_dbus', type: 'boolean', value: 'false', description: 'Install dbus plugin')
 option('enable_windecor', type: 'boolean', value: 'false', description: 'Install windecor plugin')
+option('enable_wayfire_shadows', type: 'boolean', value: 'false', description: 'Install wayfire shadows plugin')
