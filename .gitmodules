@@ -4,3 +4,6 @@
 [submodule "subprojects/windecor"]
 	path = subprojects/windecor
 	url = https://gitlab.com/wayfireplugins/windecor
+[submodule "subprojects/wayfire-shadows"]
+	path = subprojects/wayfire-shadows
+	url = https://github.com/timgott/wayfire-shadows
