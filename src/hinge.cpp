@@ -10,7 +10,7 @@
 
 class wayfire_hinge : public wf::plugin_interface_t
 {
-    enum thread_message {
+    enum thread_message: char {
         ENABLE_INPUT,
         DISABLE_INPUT,
         THREAD_EXIT
@@ -82,7 +82,7 @@ class wayfire_hinge : public wf::plugin_interface_t
     }
 
     static void send_message(thread_message message, int pipe) {
-        write(pipe, (char*)&message, 1);
+        write(pipe, &message, 1);
     }
 
     static int on_pipe_update(int fd, uint32_t mask, void *data) {
