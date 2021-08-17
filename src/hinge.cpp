@@ -1,0 +1,96 @@
+#include <wayfire/plugin.hpp>
+#include <wayfire/signal-definitions.hpp>
+#include "wayfire/input-device.hpp"
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+
+class wayfire_hinge : public wf::plugin_interface_t
+{
+    wf::option_wrapper_t<std::string> file_name{"hinge/filename"};
+    wf::option_wrapper_t<int> poll_freq{"hinge/poll_freq"};
+    wf::option_wrapper_t<int> flip_degree{"hinge/flip_degree"};
+    
+    std::ifstream device_file;
+    std::vector<nonstd::observer_ptr<wf::input_device_t>> inputs;
+
+    bool input_enabled = true;
+
+    bool read_device() 
+    {   
+        char buf[1024];
+        device_file.seekg(0);
+        device_file.readsome(buf, 4);
+
+        if(device_file.fail()) {
+            perror("The following error occured while trying to read the hinge sensor data");
+            return false;
+        }
+        
+        int angle;
+        sscanf(buf, "%i", &angle);
+
+        if((angle < 0) | (angle > 360)) {
+            std::cout << "Read invalid data from hinge sensor: " << angle << std::endl;
+            enable_inputs(); // So we don't get stuck with disabled inputs
+            return true;
+        }
+
+        bool new_state = angle < flip_degree;
+        if(new_state != input_enabled) {
+            if(new_state) enable_inputs();
+            else disable_inputs();
+        }
+
+        return true;
+    }
+
+    void disable_inputs() {
+        input_enabled = false;
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            auto inp = inputs[i];
+            auto inp_type = inp->get_wlr_handle()->type;
+            if(
+            inp_type == wlr_input_device_type::WLR_INPUT_DEVICE_KEYBOARD || 
+            inp_type == wlr_input_device_type::WLR_INPUT_DEVICE_POINTER
+            ) {
+                inp->set_enabled(false);
+            }
+        }
+    }
+
+    void enable_inputs() {
+        input_enabled = true;
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            auto inp = inputs[i];
+            inp->set_enabled();
+        }
+    }
+
+    public:
+
+        void init() override
+        {
+            device_file.open(file_name, std::ifstream::in);
+
+            auto timer = new wf::wl_timer();
+            timer->set_timeout(poll_freq, [this] ()
+            {
+                return read_device();
+            });
+
+            wf::compositor_core_t* core = &wf::get_core();
+            inputs = core->get_input_devices();
+        }
+
+        void fini() override
+        { 
+            enable_inputs();
+            device_file.close();
+        }
+};
+
+DECLARE_WAYFIRE_PLUGIN(wayfire_hinge);
