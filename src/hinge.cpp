@@ -14,6 +14,7 @@ class wayfire_hinge : public wf::plugin_interface_t
     wf::option_wrapper_t<int> flip_degree{"hinge/flip_degree"};
     
     std::ifstream device_file;
+    wf::wl_timer* timer;
 
     bool input_enabled = true;
 
@@ -81,13 +82,11 @@ class wayfire_hinge : public wf::plugin_interface_t
         {
             device_file.open(file_name, std::ifstream::in);
 
-            auto timer = new wf::wl_timer();
+            timer = new wf::wl_timer();
             timer->set_timeout(poll_freq, [this] ()
             {
                 return read_device();
             });
-
-            
         }
 
         void fini() override
