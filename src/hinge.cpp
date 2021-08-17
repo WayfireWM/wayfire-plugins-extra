@@ -14,9 +14,13 @@ class wayfire_hinge : public wf::plugin_interface_t
     wf::option_wrapper_t<int> flip_degree{"hinge/flip_degree"};
     
     std::ifstream device_file;
-    std::vector<nonstd::observer_ptr<wf::input_device_t>> inputs;
 
     bool input_enabled = true;
+
+    std::vector<nonstd::observer_ptr<wf::input_device_t>> get_inputs() {
+        wf::compositor_core_t* core = &wf::get_core();
+        return core->get_input_devices();
+    }
 
     bool read_device() 
     {   
@@ -47,11 +51,13 @@ class wayfire_hinge : public wf::plugin_interface_t
         return true;
     }
 
+
+
     void disable_inputs() {
         input_enabled = false;
-        for (size_t i = 0; i < inputs.size(); i++)
+        for (size_t i = 0; i < get_inputs().size(); i++)
         {
-            auto inp = inputs[i];
+            auto inp = get_inputs()[i];
             auto inp_type = inp->get_wlr_handle()->type;
             if(
             inp_type == wlr_input_device_type::WLR_INPUT_DEVICE_KEYBOARD || 
@@ -64,9 +70,9 @@ class wayfire_hinge : public wf::plugin_interface_t
 
     void enable_inputs() {
         input_enabled = true;
-        for (size_t i = 0; i < inputs.size(); i++)
+        for (size_t i = 0; i < get_inputs().size(); i++)
         {
-            auto inp = inputs[i];
+            auto inp = get_inputs()[i];
             inp->set_enabled();
         }
     }
@@ -83,8 +89,7 @@ class wayfire_hinge : public wf::plugin_interface_t
                 return read_device();
             });
 
-            wf::compositor_core_t* core = &wf::get_core();
-            inputs = core->get_input_devices();
+            
         }
 
         void fini() override
