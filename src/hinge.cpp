@@ -1,6 +1,7 @@
-#include <wayfire/plugin.hpp>
-#include <wayfire/signal-definitions.hpp>
+#include "wayfire/plugin.hpp"
+#include "wayfire/signal-definitions.hpp"
 #include "wayfire/input-device.hpp"
+#include <wayfire/util/log.hpp>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -24,7 +25,7 @@ class wayfire_hinge : public wf::plugin_interface_t
         device_file.readsome(buf, 4);
 
         if(device_file.fail()) {
-            perror("The following error occured while trying to read the hinge sensor data");
+            LOGE("Failed reading from hinge sensor device: ", device_file.rdstate());
             return false;
         }
         
@@ -32,7 +33,7 @@ class wayfire_hinge : public wf::plugin_interface_t
         sscanf(buf, "%i", &angle);
 
         if((angle < 0) | (angle > 360)) {
-            std::cout << "Read invalid data from hinge sensor: " << angle << std::endl;
+            LOGE("Read invalid data from hinge sensor: ", angle);
             enable_inputs(); // So we don't get stuck with disabled inputs
             return true;
         }
