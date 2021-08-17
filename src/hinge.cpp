@@ -55,9 +55,8 @@ class wayfire_hinge : public wf::plugin_interface_t
 
     void disable_inputs() {
         input_enabled = false;
-        for (size_t i = 0; i < get_inputs().size(); i++)
+        for (auto inp: get_inputs())
         {
-            auto inp = get_inputs()[i];
             auto inp_type = inp->get_wlr_handle()->type;
             if(
             inp_type == wlr_input_device_type::WLR_INPUT_DEVICE_KEYBOARD || 
@@ -70,9 +69,8 @@ class wayfire_hinge : public wf::plugin_interface_t
 
     void enable_inputs() {
         input_enabled = true;
-        for (size_t i = 0; i < get_inputs().size(); i++)
+        for (auto inp: get_inputs())
         {
-            auto inp = get_inputs()[i];
             inp->set_enabled();
         }
     }
