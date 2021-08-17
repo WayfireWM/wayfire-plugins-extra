@@ -21,6 +21,9 @@ class wayfire_hinge : public wf::plugin_interface_t
     wf::option_wrapper_t<int> flip_degree{"hinge/flip_degree"};
     
     int pipefd[2];
+    std::thread thread;
+    wl_event_source* pipe_reader;
+    bool exiting = false;
 
     std::vector<nonstd::observer_ptr<wf::input_device_t>> get_inputs() {
         wf::compositor_core_t* core = &wf::get_core();
@@ -47,11 +50,11 @@ class wayfire_hinge : public wf::plugin_interface_t
         }
     }
 
-    static void setup_thread(std::string fn, int poll_freq, int flip_degree, int pipe) {
+    static void setup_thread(std::string fn, int poll_freq, int flip_degree, bool* exiting, int pipe) {
         std::ifstream device_file(fn, std::ifstream::in);
         bool input_enabled = true;
 
-        while(true) {
+        while(!*exiting) {
             char buf[4];
             device_file.seekg(0);
             device_file.readsome(buf, 4);
@@ -79,6 +82,8 @@ class wayfire_hinge : public wf::plugin_interface_t
             }
             usleep(poll_freq * 1000); // microseconds*1000=ms
         }
+        close(pipe);
+        device_file.close();
     }
 
     static void send_message(thread_message message, int pipe) {
@@ -111,14 +116,19 @@ class wayfire_hinge : public wf::plugin_interface_t
                LOGE("Failed to open pipe");
                return;
             }
-            wl_event_loop_add_fd(wl_display_get_event_loop(wf::get_core().display), pipefd[0], WL_EVENT_READABLE, on_pipe_update, this);
-            std::thread thread(setup_thread, file_name.value(), poll_freq.value(), flip_degree.value(), pipefd[1]);
-            thread.detach();
+            pipe_reader = wl_event_loop_add_fd(wl_display_get_event_loop(wf::get_core().display), pipefd[0], WL_EVENT_READABLE, on_pipe_update, this);
+            thread = std::thread(setup_thread, file_name.value(), poll_freq.value(), flip_degree.value(), &exiting, pipefd[1]);
         }
 
         void fini() override
         { 
             enable_inputs();
+            wl_event_source_remove(pipe_reader);
+
+            exiting = true;
+            thread.join();
+
+            close(pipefd[0]);
         }
 };
 
