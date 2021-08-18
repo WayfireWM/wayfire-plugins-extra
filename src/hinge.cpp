@@ -70,7 +70,6 @@ class wayfire_hinge : public wf::plugin_interface_t
                 LOGE("Failed reading from hinge sensor device: ",
                     device_file.rdstate());
                 send_message(thread_message::THREAD_EXIT, write_fd);
-                device_file.close();
                 break;
             }
 
@@ -79,7 +78,6 @@ class wayfire_hinge : public wf::plugin_interface_t
             {
                 LOGE("Read invalid data from hinge sensor: ", angle);
                 send_message(thread_message::THREAD_EXIT, write_fd);
-                device_file.close();
                 break;
             }
 
