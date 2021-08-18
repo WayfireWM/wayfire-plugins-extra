@@ -50,7 +50,7 @@ class wayfire_hinge : public wf::plugin_interface_t
         }
     }
 
-    static void setup_thread(std::string fn, int poll_freq, int flip_degree, bool* exiting, int pipe) {
+    static void setup_thread(std::string fn, int poll_freq, int flip_degree, bool* exiting, int write_fd) {
         std::ifstream device_file(fn, std::ifstream::in);
         bool input_enabled = true;
 
@@ -61,7 +61,7 @@ class wayfire_hinge : public wf::plugin_interface_t
 
             if(device_file.fail()) {
                 LOGE("Failed reading from hinge sensor device: ", device_file.rdstate());
-                send_message(thread_message::THREAD_EXIT, pipe);
+                send_message(thread_message::THREAD_EXIT, write_fd);
                 device_file.close();
                 break;
             }
@@ -69,25 +69,25 @@ class wayfire_hinge : public wf::plugin_interface_t
             int angle = std::stoi(buf);
             if(angle < 0 || angle > 360) {
                 LOGE("Read invalid data from hinge sensor: ", angle);
-                send_message(thread_message::THREAD_EXIT, pipe);
+                send_message(thread_message::THREAD_EXIT, write_fd);
                 device_file.close();
                 break;
             }
 
             bool new_state = angle < flip_degree;
             if(new_state != input_enabled) {
-                if(new_state) send_message(thread_message::ENABLE_INPUT, pipe);
-                else send_message(thread_message::DISABLE_INPUT, pipe);
+                if(new_state) send_message(thread_message::ENABLE_INPUT, write_fd);
+                else send_message(thread_message::DISABLE_INPUT, write_fd);
                 input_enabled = new_state;
             }
             usleep(poll_freq * 1000); // microseconds*1000=ms
         }
-        close(pipe);
+        close(write_fd);
         device_file.close();
     }
 
-    static void send_message(thread_message message, int pipe) {
-        write(pipe, &message, 1);
+    static void send_message(thread_message message, int write_fd) {
+        write(write_fd, &message, 1);
     }
 
     static int on_pipe_update(int fd, uint32_t mask, void *data) {
