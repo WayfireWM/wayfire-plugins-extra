@@ -1,25 +1,25 @@
 <?xml version="1.0"?>
 <wayfire>
-  <plugin name="hinge">
-    <_short>Hinge</_short>
-    <category>Utility</category>
-    <option name="filename" type="string">
-      <_short>File Name</_short>
-      <_long>The name of the sensor device.</_long>
-      <default>/sys/bus/iio/devices/iio:device1/in_angl0_raw</default>
-	  </option>
-    <option name="poll_freq" type="int">
+	<plugin name="hinge">
+		<_short>Hinge</_short>
+		<category>Utility</category>
+		<option name="filename" type="string">
+			<_short>File Name</_short>
+			<_long>The name of the sensor device.</_long>
+			<default>/sys/bus/iio/devices/iio:device1/in_angl0_raw</default>
+		</option>
+		<option name="poll_freq" type="int">
 			<_short>Poll Frequency</_short>
 			<_long>The delay between sensor readings in ms.</_long>
 			<default>200</default>
 			<min>1</min>
 		</option>
-    <option name="flip_degree" type="int">
-      <_short>Flip Degree</_short>
-      <_long>Inputs are disabled when the sensed degree is greater than the set Flip Degree.</_long>
-      <default>180</default>
-      <min>0</min>
-      <max>360</max>
-	  </option>
-  </plugin>
+		<option name="flip_degree" type="int">
+			<_short>Flip Degree</_short>
+			<_long>Inputs are disabled when the sensed degree is greater than the set Flip Degree.</_long>
+			<default>180</default>
+			<min>0</min>
+			<max>360</max>
+		</option>
+	</plugin>
 </wayfire>
