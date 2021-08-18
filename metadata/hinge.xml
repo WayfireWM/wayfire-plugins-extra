@@ -2,6 +2,7 @@
 <wayfire>
 	<plugin name="hinge">
 		<_short>Hinge</_short>
+		<_long>Given a filename, this plugin reads an int32 from it. This value should be in degrees, so from 0 to 360. Depending on the value, the keyboard and pointer inputs get disabled.</_long>
 		<category>Utility</category>
 		<option name="filename" type="string">
 			<_short>File Name</_short>
