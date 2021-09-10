@@ -109,7 +109,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         });
     }
 
-    void check_view()
+    void check_view(bool movement_threshold)
     {
         change_view_focus.disconnect();
 
@@ -141,7 +141,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
             focus_view = view;
         }
 
-        if (abs(coords - last_view_coords) < threshold)
+        if (movement_threshold && abs(coords - last_view_coords) < threshold)
         {
             return;
         }
@@ -163,7 +163,12 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
     {
         check_output();
-        check_view();
+        check_view(true);
+    };
+
+    wf::signal_callback_t output_stack_order_changed = [=] (wf::signal_data_t* /*data*/)
+    {
+        check_view(false);
     };
 
   public:
@@ -173,11 +178,13 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         grab_interface->capabilities = 0;
 
         wf::get_core().connect_signal("pointer_motion", &pointer_motion);
+        wf::get_core().connect_signal("output-stack-order-changed", &output_stack_order_changed);
     }
 
     void fini() override
     {
         wf::get_core().disconnect_signal("pointer_motion", &pointer_motion);
+        wf::get_core().disconnect_signal("output-stack-order-changed", &output_stack_order_changed);
         change_output_focus.disconnect();
         change_view_focus.disconnect();
     }
