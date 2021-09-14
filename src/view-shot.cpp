@@ -53,9 +53,7 @@ class wayfire_view_shot : public wf::plugin_interface_t
             return false;
         }
 
-        view->take_snapshot();
-
-        const wf::framebuffer_t& offscreen_buffer = view->get_snapshot();
+        const wf::framebuffer_t& offscreen_buffer = view->take_snapshot();
         auto width  = offscreen_buffer.viewport_width;
         auto height = offscreen_buffer.viewport_height;
 
