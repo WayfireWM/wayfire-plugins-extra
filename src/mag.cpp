@@ -173,9 +173,15 @@ class wayfire_magnifier : public wf::plugin_interface_t
     {
         wlr_dmabuf_attributes dmabuf_attribs;
 
+        if (!output->handle->front_buffer)
+        {
+            LOGE("Got empty buffer on ", output->handle->name);
+            return;
+        }
+
         /* This plugin only works if this function succeeds. It will not
          * work with the x11 backend but works with drm, for example. */
-        if (!wlr_output_export_dmabuf(output->handle, &dmabuf_attribs))
+        if (!wlr_buffer_get_dmabuf(output->handle->front_buffer, &dmabuf_attribs))
         {
             LOGE("Failed reading output contents");
             deactivate();
