@@ -491,7 +491,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return;
         }
 
-        wf::get_core().disconnect_signal("pointer_motion", &on_motion_event);
+        wf::get_core().disconnect_signal(&on_motion_event);
         motion_connected = false;
     }
 
@@ -531,7 +531,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         }
     };
 
-    wf::signal_callback_t on_motion_event = [=] (wf::signal_data_t *data)
+    wf::signal_connection_t on_motion_event = [=] (wf::signal_data_t *data)
     {
         auto ev = static_cast<
             wf::input_event_signal<wlr_event_pointer_motion>*>(data);

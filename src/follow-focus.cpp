@@ -160,7 +160,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         });
     }
 
-    wf::signal_callback_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    wf::signal_connection_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
     {
         check_output();
         check_view();
@@ -177,7 +177,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
 
     void fini() override
     {
-        wf::get_core().disconnect_signal("pointer_motion", &pointer_motion);
         change_output_focus.disconnect();
         change_view_focus.disconnect();
     }
