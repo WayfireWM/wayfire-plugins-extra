@@ -48,7 +48,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         return false;
     }
 
-    wf::signal_callback_t on_input_devices_changed = [=] (void*)
+    wf::signal_connection_t on_input_devices_changed = [=] (void*)
     {
         if (!is_autorotate_enabled())
         {
@@ -162,7 +162,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         output->add_activator(rotate_up_opt, &on_rotate_up);
         output->add_activator(rotate_down_opt, &on_rotate_down);
 
-        on_input_devices_changed(nullptr);
+        on_input_devices_changed.emit(nullptr);
         wf::get_core().connect_signal("input-device-added",
             &on_input_devices_changed);
 
@@ -253,9 +253,6 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
         output->rem_binding(&on_rotate_right);
         output->rem_binding(&on_rotate_up);
         output->rem_binding(&on_rotate_down);
-
-        wf::get_core().disconnect_signal("input-device-added",
-            &on_input_devices_changed);
 
         /* If loop is NULL, autorotate was disabled for the current output */
         if (loop)
