@@ -5,6 +5,7 @@ install_data('bench.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadata
 install_data('crosshair.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('follow-focus.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('force-fullscreen.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
+install_data('hide-cursor.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('join-views.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('keycolor.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('mag.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))

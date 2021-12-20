@@ -30,6 +30,10 @@ glib_main_loop = shared_module('glib-main-loop', 'glib-main-loop.cpp',
     dependencies: [wayfire, giomm],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+hide_cursor = shared_module('hide-cursor', 'hide-cursor.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 joinviews = shared_module('join-views', 'join-views.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
