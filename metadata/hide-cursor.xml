@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="hide-cursor">
+		<_short>Hide Cursor</_short>
+		<_long>A plugin that allows to toggle hide mouse cursor.</_long>
+		<category>Utility</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle</_short>
+			<_long>Toggles hide mouse cursor.</_long>
+			<default>&lt;super&gt; &lt;ctrl&gt; KEY_H</default>
+		</option>
+		<option name="hide_delay" type="int">
+			<_short>Delay (in ms) before cursor will be hidden</_short>
+			<_long>The delay in ms before the plugin will hide the cursor. The cursor is shown again when cursor motion happens.</_long>
+			<default>2000</default>
+			<min>250</min>
+		</option>
+	</plugin>
+</wayfire>
