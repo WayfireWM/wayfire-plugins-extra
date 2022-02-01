@@ -77,5 +77,11 @@
 			<_long>Display option names on screen for convenience.</_long>
 			<default>false</default>
 		</option>
+		<option name="background_radius" type="double">
+			<_short>Background Corner Radius</_short>
+			<_long>Radius for the corners of the background.</_long>
+			<default>30</default>
+			<min>0</min>
+		</option>
 	</plugin>
 </wayfire>
