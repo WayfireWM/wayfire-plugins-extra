@@ -10,6 +10,12 @@
 			<default>500</default>
 			<min>1</min>
 		</option>
+		<option name="margin" type="int">
+			<_short>Margin</_short>
+			<_long>Distance from edge of screen to indicator.</_long>
+			<default>0</default>
+			<min>0</min>
+		</option>
 		<option name="position" type="string">
 			<_short>Position</_short>
 			<_long>Position of rendering.</_long>

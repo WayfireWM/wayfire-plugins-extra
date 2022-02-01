@@ -67,6 +67,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
     wf::option_wrapper_t<std::string> font{"workspace-names/font"};
     wf::option_wrapper_t<std::string> position{"workspace-names/position"};
     wf::option_wrapper_t<int> display_duration{"workspace-names/display_duration"};
+    wf::option_wrapper_t<int> margin{"workspace-names/margin"};
     wf::option_wrapper_t<wf::color_t> text_color{"workspace-names/text_color"};
     wf::option_wrapper_t<wf::color_t> background_color{
         "workspace-names/background_color"};
@@ -258,19 +259,19 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
 
         if ((std::string)position == "top_left")
         {
-            wsn.rect.x = workarea.x;
-            wsn.rect.y = workarea.y;
+            wsn.rect.x = workarea.x + margin;
+            wsn.rect.y = workarea.y + margin;
         } else if ((std::string)position == "top_center")
         {
             wsn.rect.x = workarea.x + (workarea.width / 2 - wsn.rect.width / 2);
-            wsn.rect.y = workarea.y;
+            wsn.rect.y = workarea.y + margin;
         } else if ((std::string)position == "top_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width);
-            wsn.rect.y = workarea.y;
+            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
+            wsn.rect.y = workarea.y + margin;
         } else if ((std::string)position == "center_left")
         {
-            wsn.rect.x = workarea.x;
+            wsn.rect.x = workarea.x + margin;
             wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
         } else if ((std::string)position == "center")
         {
@@ -278,20 +279,20 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
         } else if ((std::string)position == "center_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width);
+            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
             wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
         } else if ((std::string)position == "bottom_left")
         {
-            wsn.rect.x = workarea.x;
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height);
+            wsn.rect.x = workarea.x + margin;
+            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
         } else if ((std::string)position == "bottom_center")
         {
             wsn.rect.x = workarea.x + (workarea.width / 2 - wsn.rect.width / 2);
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height);
+            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
         } else if ((std::string)position == "bottom_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width);
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height);
+            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
+            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
         } else
         {
             wsn.rect.x = workarea.x;
