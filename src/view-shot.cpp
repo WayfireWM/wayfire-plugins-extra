@@ -29,11 +29,19 @@
 #include <wayfire/opengl.hpp>
 #include <wayfire/img.hpp>
 
+std::string replaceAll(std::string s, const std::string& from, const std::string& to) 
+{
+    for (auto pos = s.find(from); pos != std::string::npos; pos = s.find(from))
+        s.replace(pos, from.length(), to);
+    return s;
+}
+
 class wayfire_view_shot : public wf::plugin_interface_t
 {
     const std::string transformer_name = "view_shot";
     wf::option_wrapper_t<wf::activatorbinding_t> capture_binding{"view-shot/capture"};
     wf::option_wrapper_t<std::string> file_name{"view-shot/filename"};
+    wf::option_wrapper_t<std::string> command{"view-shot/command"};
 
   public:
     void init() override
@@ -73,6 +81,9 @@ class wayfire_view_shot : public wf::plugin_interface_t
 
         image_io::write_to_file(file_name, pixels, width, height, "png");
         free(pixels);
+
+        wf::get_core().run(replaceAll(command.value(), "%f", file_name.value()));
+
         return true;
     };
 
