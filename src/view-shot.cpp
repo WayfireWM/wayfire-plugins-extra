@@ -31,8 +31,14 @@
 
 std::string replaceAll(std::string s, const std::string& from, const std::string& to) 
 {
-    for (auto pos = s.find(from); pos != std::string::npos; pos = s.find(from))
-        s.replace(pos, from.length(), to);
+    for (int i = 0; i < s.size();)
+    {
+        auto pos = s.find(from, i);
+        if (pos == std::string::npos)
+            return s;
+        s.replace(pos, from.size(), to);
+        i = pos + to.size();
+    }
     return s;
 }
 
