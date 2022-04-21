@@ -29,9 +29,11 @@
 #include <wayfire/opengl.hpp>
 #include <wayfire/img.hpp>
 
-std::string replaceAll(std::string s, const std::string& from, const std::string& to) 
+#include <ctime>
+
+static std::string replaceAll(std::string s, const std::string& from, const std::string& to) 
 {
-    for (int i = 0; i < s.size();)
+    for (unsigned i = 0; i < s.size();)
     {
         auto pos = s.find(from, i);
         if (pos == std::string::npos)
@@ -46,7 +48,7 @@ class wayfire_view_shot : public wf::plugin_interface_t
 {
     const std::string transformer_name = "view_shot";
     wf::option_wrapper_t<wf::activatorbinding_t> capture_binding{"view-shot/capture"};
-    wf::option_wrapper_t<std::string> file_name{"view-shot/filename"};
+    wf::option_wrapper_t<std::string> file_format{"view-shot/filename"};
     wf::option_wrapper_t<std::string> command{"view-shot/command"};
 
   public:
@@ -85,10 +87,15 @@ class wayfire_view_shot : public wf::plugin_interface_t
             pixels));
         OpenGL::render_end();
 
+        char _file_name[255];
+        auto time = std::time(nullptr);
+        std::strftime(_file_name, sizeof(_file_name), file_format.value().c_str(), std::localtime(&time));
+        std::string file_name = _file_name;
+
         image_io::write_to_file(file_name, pixels, width, height, "png");
         free(pixels);
 
-        wf::get_core().run(replaceAll(command.value(), "%f", file_name.value()));
+        wf::get_core().run(replaceAll(command.value(), "%f", file_name));
 
         return true;
     };
