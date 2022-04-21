@@ -46,7 +46,7 @@ extern "C"
 }
 
 #include <wayfire/util/log.hpp>
-
+#include <wayfire/nonstd/wlroots-full.hpp>
 
 class mag_view_t : public wf::color_rect_view_t
 {
@@ -109,6 +109,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
     nonstd::observer_ptr<mag_view_t> mag_view;
     bool active, hook_set;
     int width, height;
+    wlr_buffer *source_back_buffer = NULL;
 
     wf::activator_callback toggle_cb = [=] (auto)
     {
@@ -173,7 +174,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
     {
         wlr_dmabuf_attributes dmabuf_attribs;
 
-        if (!output->handle->front_buffer)
+        if (!source_back_buffer)
         {
             LOGE("Got empty buffer on ", output->handle->name);
             return;
@@ -181,7 +182,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
 
         /* This plugin only works if this function succeeds. It will not
          * work with the x11 backend but works with drm, for example. */
-        if (!wlr_buffer_get_dmabuf(output->handle->front_buffer, &dmabuf_attribs))
+        if (!wlr_buffer_get_dmabuf(source_back_buffer, &dmabuf_attribs))
         {
             LOGE("Failed reading output contents");
             deactivate();
