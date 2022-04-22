@@ -243,6 +243,7 @@ class wayfire_magnifier : public wf::plugin_interface_t
         GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y2, zoom_box.x2, zoom_box.y1,
             0, 0, width, height,
             GL_COLOR_BUFFER_BIT, GL_LINEAR));
+        OpenGL::render_end();
 
         mag_view->damage();
     };
