@@ -68,7 +68,8 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
     wf::option_wrapper_t<std::string> position{"workspace-names/position"};
     wf::option_wrapper_t<int> display_duration{"workspace-names/display_duration"};
     wf::option_wrapper_t<int> margin{"workspace-names/margin"};
-    wf::option_wrapper_t<double> background_radius{"workspace-names/background_radius"};
+    wf::option_wrapper_t<double> background_radius{
+        "workspace-names/background_radius"};
     wf::option_wrapper_t<wf::color_t> text_color{"workspace-names/text_color"};
     wf::option_wrapper_t<wf::color_t> background_color{
         "workspace-names/background_color"};
