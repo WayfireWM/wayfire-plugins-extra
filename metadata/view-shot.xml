@@ -11,11 +11,11 @@
 	<option name="filename" type="string">
 		<_short>File Name</_short>
 		<default>/tmp/snapshot.png</default>
-    </option>
-    <option name="command" type="string">
-        <_short>Run Command</_short>
-        <_long>Runs the command after the capturing. %f is replaced with the file name.</_long>
-        <default>notify-send "The view under cursor was captured to %f"</default>
-    </option>
+	</option>
+	<option name="command" type="string">
+		<_short>Run Command</_short>
+		<_long>Runs the command after the capturing. %f is replaced with the file name.</_long>
+		<default>notify-send "The view under cursor was captured to %f"</default>
+	</option>
 	</plugin>
 </wayfire>
