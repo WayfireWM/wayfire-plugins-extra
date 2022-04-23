@@ -31,16 +31,21 @@
 
 #include <ctime>
 
-static std::string replaceAll(std::string s, const std::string& from, const std::string& to) 
+static std::string replaceAll(std::string s, const std::string& from,
+    const std::string& to)
 {
     for (unsigned i = 0; i < s.size();)
     {
         auto pos = s.find(from, i);
         if (pos == std::string::npos)
+        {
             return s;
+        }
+
         s.replace(pos, from.size(), to);
         i = pos + to.size();
     }
+
     return s;
 }
 
@@ -89,7 +94,8 @@ class wayfire_view_shot : public wf::plugin_interface_t
 
         char _file_name[255];
         auto time = std::time(nullptr);
-        std::strftime(_file_name, sizeof(_file_name), file_format.value().c_str(), std::localtime(&time));
+        std::strftime(_file_name, sizeof(_file_name),
+            file_format.value().c_str(), std::localtime(&time));
         std::string file_name = _file_name;
 
         image_io::write_to_file(file_name, pixels, width, height, "png");
