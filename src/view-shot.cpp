@@ -53,7 +53,7 @@ class wayfire_view_shot : public wf::plugin_interface_t
 {
     const std::string transformer_name = "view_shot";
     wf::option_wrapper_t<wf::activatorbinding_t> capture_binding{"view-shot/capture"};
-    wf::option_wrapper_t<std::string> file_format{"view-shot/filename"};
+    wf::option_wrapper_t<std::string> file_name{"view-shot/filename"};
     wf::option_wrapper_t<std::string> command{"view-shot/command"};
 
   public:
@@ -95,13 +95,13 @@ class wayfire_view_shot : public wf::plugin_interface_t
         char _file_name[255];
         auto time = std::time(nullptr);
         std::strftime(_file_name, sizeof(_file_name),
-            file_format.value().c_str(), std::localtime(&time));
-        std::string file_name = _file_name;
+            file_name.value().c_str(), std::localtime(&time));
+        std::string formatted_file_name = _file_name;
 
-        image_io::write_to_file(file_name, pixels, width, height, "png");
+        image_io::write_to_file(formatted_file_name, pixels, width, height, "png");
         free(pixels);
 
-        wf::get_core().run(replaceAll(command.value(), "%f", file_name));
+        wf::get_core().run(replaceAll(command, "%f", formatted_file_name));
 
         return true;
     };
