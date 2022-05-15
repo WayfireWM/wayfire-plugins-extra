@@ -10,7 +10,13 @@
 	</option>
 	<option name="filename" type="string">
 		<_short>File Name</_short>
-		<default>/tmp/snapshot.png</default>
+		<_long>C date format specifiers are repleaced by the time/date/etc. For example, %Y is replaced by the current year.</_long>
+		<default>/tmp/snapshot-%F-%T.png</default>
+	</option>
+	<option name="command" type="string">
+		<_short>Run Command</_short>
+		<_long>Runs the command after the capturing. %f is replaced with the file name.</_long>
+		<default>notify-send "The view under cursor was captured to %f"</default>
 	</option>
 	</plugin>
 </wayfire>
