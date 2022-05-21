@@ -46,7 +46,6 @@ extern "C"
 struct parent_view
 {
     nonstd::observer_ptr<wf::view_interface_t> view;
-    pid_t pid;
 };
 
 static std::map<wf::output_t*, struct parent_view> views;
@@ -54,14 +53,17 @@ static std::map<wf::output_t*, struct parent_view> views;
 class wayfire_background_view : public wf::plugin_interface_t
 {
     const std::string transformer_name = "background-view";
+
     /* The command option should be set to a client like mpv, projectM or
      * a single xscreensaver.
      */
     wf::option_wrapper_t<std::string> command{"background-view/command"};
+
     /* The file option is for convenience when using wcm. If file is set,
      * it will be appended to the command, wrapped in double quotes.
      */
     wf::option_wrapper_t<std::string> file{"background-view/file"};
+
     /* The app-id option is used to identify the application. If app-id
      * is not set or does not match the launched app-id, the plugin will
      * not be able to set the client surface as the background.
@@ -78,6 +80,7 @@ class wayfire_background_view : public wf::plugin_interface_t
         file.set_callback(option_changed);
 
         output->connect_signal("view-mapped", &view_mapped);
+        output->connect_signal("view-detached", &view_detached);
 
         option_changed();
     }
@@ -87,13 +90,6 @@ class wayfire_background_view : public wf::plugin_interface_t
         if (views[output].view)
         {
             views[output].view->close();
-            if (views[output].pid > 0)
-            {
-                kill(views[output].pid, SIGINT);
-                views[output].pid = 0;
-            }
-
-            views[output].view = nullptr;
         }
 
         if (std::string(command).empty())
@@ -102,7 +98,8 @@ class wayfire_background_view : public wf::plugin_interface_t
         }
 
         views[output].view = nullptr;
-        views[output].pid  = wf::get_core().run(std::string(
+
+        wf::get_core().run(std::string(
             command) + add_arg_if_not_empty(file));
     };
 
@@ -133,6 +130,22 @@ class wayfire_background_view : public wf::plugin_interface_t
         views[o].view = view;
     }
 
+    wf::signal_connection_t view_detached{[this] (wf::signal_data_t *data)
+        {
+            auto view = get_signaled_view(data);
+
+            if (!view)
+            {
+                return;
+            }
+
+            if (view == views[output].view)
+            {
+                views[output].view = nullptr;
+            }
+        }
+    };
+
     wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
         {
             auto view = get_signaled_view(data);
@@ -142,27 +155,6 @@ class wayfire_background_view : public wf::plugin_interface_t
                 return;
             }
 
-            pid_t x_pid  = 0;
-            pid_t wl_pid = 0;
-            bool is_xwayland_surface = false;
-            wlr_surface *wlr_surface = view->get_wlr_surface();
-
-#if WF_HAS_XWAYLAND
-            is_xwayland_surface = wlr_surface_is_xwayland_surface(wlr_surface);
-#endif
-
-            if (is_xwayland_surface)
-            {
-                /* Get pid for xwayland view */
-#if WF_HAS_XWAYLAND
-                x_pid = wlr_xwayland_surface_from_wlr_surface(wlr_surface)->pid;
-#endif
-            } else
-            {
-                /* Get pid for native view */
-                wl_client_get_credentials(view->get_client(), &wl_pid, 0, 0);
-            }
-
             for (auto& o : wf::get_core().output_layout->get_outputs())
             {
                 if (views[o].view)
@@ -170,29 +162,8 @@ class wayfire_background_view : public wf::plugin_interface_t
                     continue;
                 }
 
-                /* Try app-id match first */
+                /* Try to match application identifier */
                 if (std::string(app_id) == view->get_app_id())
-                {
-                    views[o].pid = is_xwayland_surface ?
-                        (x_pid ? x_pid : views[o].pid) : wl_pid;
-                    set_view_for_output(view, o);
-                    break;
-                }
-
-                /* This condition attempts to match the pid that we got from run()
-                 * to the client pid. This will not work in all cases. Naturally,
-                 * not every command will spawn a view. This wont work well for gtk
-                 * apps because it has a system where the client will defer to an
-                 * existing instance with the same app-id and have that instance
-                 * spawn a new view but have the same pid, meaning when we compare
-                 * the pids, they wont match unless we happen to be the first to run
-                 * the app. This does work well with clients such as mpv, projectM
-                 * and running xscreensavers directly.
-                 */
-                if ((views[o].pid == wl_pid) ||
-                    /* For this match to work, the
-                     * client must set _NET_WM_PID */
-                    (is_xwayland_surface && (views[o].pid == x_pid)))
                 {
                     set_view_for_output(view, o);
                     break;
@@ -217,10 +188,6 @@ class wayfire_background_view : public wf::plugin_interface_t
         if (views[output].view)
         {
             views[output].view->close();
-            if (views[output].pid > 0)
-            {
-                kill(views[output].pid, SIGINT);
-            }
         }
     }
 };
