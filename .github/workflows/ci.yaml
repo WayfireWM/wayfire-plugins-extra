@@ -13,7 +13,7 @@ jobs:
       with:
         repository: WayfireWM/wayfire
         path: wayfire
-    - run: cd wayfire && git checkout 0.7.x && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
+    - run: cd wayfire && git pull --all && git checkout 0.7.x && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
     - name: Wayfire Plugins Extra
       uses: actions/checkout@v2
       with:
@@ -37,7 +37,7 @@ jobs:
       with:
         repository: WayfireWM/wayfire
         path: wayfire
-    - run: cd wayfire git checkout 0.7.x && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
+    - run: cd wayfire && git pull --all && git checkout 0.7.x && git submodule sync --recursive && git submodule update --init --force --recursive && meson build --prefix=/usr && ninja -v -Cbuild && ninja -v -Cbuild install && cd ..
     - name: Wayfire Plugins Extra
       uses: actions/checkout@v2
       with:
