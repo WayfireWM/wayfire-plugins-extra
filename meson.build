@@ -14,7 +14,7 @@ project(
 )
 
 wayfire = dependency('wayfire')
-giomm = dependency('giomm-2.4')
+giomm = dependency('giomm-2.4', required: false)
 wlroots = dependency('wlroots')
 wfconfig = dependency('wf-config')
 cairo = dependency('cairo')
