@@ -2,9 +2,11 @@ annotate = shared_module('annotate', 'annotate.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+if giomm.found()
 autorotate = shared_module('autorotate-iio', 'autorotate-iio.cpp',
     dependencies: [wayfire, giomm],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+endif
 
 background_view = shared_module('background-view', 'background-view.cpp',
     dependencies: [wayfire],
@@ -26,9 +28,11 @@ force_fullscreen = shared_module('force-fullscreen', 'force-fullscreen.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+if giomm.found()
 glib_main_loop = shared_module('glib-main-loop', 'glib-main-loop.cpp',
     dependencies: [wayfire, giomm],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+endif
 
 hide_cursor = shared_module('hide-cursor', 'hide-cursor.cpp',
     dependencies: [wayfire],
