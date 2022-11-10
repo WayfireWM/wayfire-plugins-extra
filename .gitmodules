@@ -7,3 +7,6 @@
 [submodule "subprojects/wayfire-shadows"]
 	path = subprojects/wayfire-shadows
 	url = https://github.com/timgott/wayfire-shadows
+[submodule "subprojects/hjson-config-backend"]
+	path = subprojects/hjson-config-backend
+	url = https://gitlab.com/wayfireplugins/wf-config-hjson.git

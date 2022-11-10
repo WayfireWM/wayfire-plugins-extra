@@ -28,6 +28,10 @@ if get_option('enable_wayfire_shadows') == true
     wayfire_shadows = subproject('wayfire-shadows')
 endif
 
+if get_option('enable_hjson_config_backend') == true
+    hjson_config_backend = subproject('hjson-config-backend')
+endif
+
 add_project_arguments(['-DWLR_USE_UNSTABLE'], language: ['cpp', 'c'])
 add_project_arguments(['-DWAYFIRE_PLUGIN'], language: ['cpp', 'c'])
 add_project_link_arguments(['-rdynamic'], language:'cpp')
