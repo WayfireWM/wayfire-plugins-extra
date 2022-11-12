@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,7 +39,7 @@ class wayfire_showrepaint : public wf::plugin_interface_t
     wf::option_wrapper_t<wf::activatorbinding_t> toggle_binding{"showrepaint/toggle"};
     wf::option_wrapper_t<bool> reduce_flicker{"showrepaint/reduce_flicker"};
     bool active, egl_swap_buffers_with_damage;
-    wf::framebuffer_base_t last_buffer;
+    wf::framebuffer_t last_buffer;
 
   public:
     void init() override
@@ -105,10 +105,10 @@ class wayfire_showrepaint : public wf::plugin_interface_t
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
-        wf::framebuffer_t target_fb = output->render->get_target_framebuffer();
-        wf::region_t swap_damage    = output->render->get_swap_damage();
+        auto target_fb = output->render->get_target_framebuffer();
+        wf::region_t swap_damage = output->render->get_swap_damage();
         wf::region_t scheduled_damage = output->render->get_scheduled_damage();
-        auto fbg = target_fb.geometry;
+        wlr_box fbg = {0, 0, target_fb.viewport_width, target_fb.viewport_height};
         wf::region_t output_region{fbg};
         wf::region_t inverted_damage;
         wf::region_t damage;

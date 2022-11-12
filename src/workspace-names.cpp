@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,13 @@
  */
 
 #include <map>
+#include "wayfire/geometry.hpp"
+#include "wayfire/opengl.hpp"
+#include "wayfire/region.hpp"
+#include "wayfire/scene-operations.hpp"
+#include "wayfire/signal-provider.hpp"
+#include "wayfire/scene.hpp"
+#include "wayfire/scene-render.hpp"
 #include <wayfire/util.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
@@ -47,9 +54,8 @@
 
 #define WIDGET_PADDING 20
 
-class workspace_name
+struct workspace_name
 {
-  public:
     wf::geometry_t rect;
     std::string name;
     std::unique_ptr<wf::simple_texture_t> texture;
@@ -58,12 +64,144 @@ class workspace_name
     cairo_text_extents_t text_extents;
 };
 
-class wayfire_workspace_names_screen : public wf::plugin_interface_t
+namespace wf
+{
+namespace scene
+{
+namespace workspace_names
+{
+class simple_node_render_instance_t : public render_instance_t
+{
+    wf::signal::connection_t<node_damage_signal> on_node_damaged =
+        [=] (node_damage_signal *ev)
+    {
+        push_to_parent(ev->region);
+    };
+
+    node_t *self;
+    damage_callback push_to_parent;
+    std::shared_ptr<workspace_name> workspace;
+    int *x, *y, *w, *h;
+    double *alpha_fade;
+
+  public:
+    simple_node_render_instance_t(node_t *self, damage_callback push_dmg,
+        int *x, int *y, int *w, int *h, double *alpha_fade,
+        std::shared_ptr<workspace_name> workspace)
+    {
+        this->x    = x;
+        this->y    = y;
+        this->w    = w;
+        this->h    = h;
+        this->self = self;
+        this->workspace  = workspace;
+        this->alpha_fade = alpha_fade;
+        this->push_to_parent = push_dmg;
+        self->connect(&on_node_damaged);
+    }
+
+    void schedule_instructions(
+        std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage)
+    {
+        // We want to render ourselves only, the node does not have children
+        instructions.push_back(render_instruction_t{
+                        .instance = this,
+                        .target   = target,
+                        .damage   = damage & self->get_bounding_box(),
+                    });
+    }
+
+    void render(const wf::render_target_t& target,
+        const wf::region_t& region)
+    {
+        OpenGL::render_begin(target);
+        for (auto& box : region)
+        {
+            target.logic_scissor(wlr_box_from_pixman_box(box));
+            OpenGL::render_texture(wf::texture_t{workspace->texture->tex},
+                target, workspace->rect, glm::vec4(1, 1, 1, *alpha_fade),
+                OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+        }
+
+        OpenGL::render_end();
+    }
+};
+
+
+class simple_node_t : public node_t
+{
+    int x, y, w, h;
+    double alpha_fade;
+
+  public:
+    std::shared_ptr<workspace_name> workspace;
+    simple_node_t(int x, int y, int w, int h) : node_t(false)
+    {
+        this->x = x;
+        this->y = y;
+        this->w = w;
+        this->h = h;
+        this->alpha_fade = 0.0;
+        workspace = std::make_shared<workspace_name>();
+    }
+
+    void gen_render_instances(std::vector<render_instance_uptr>& instances,
+        damage_callback push_damage, wf::output_t *shown_on) override
+    {
+        // push_damage accepts damage in the parent's coordinate system
+        // If the node is a transformer, it may transform the damage. However,
+        // this simple nodes does not need any transformations, so the push_damage
+        // callback is just passed along.
+        instances.push_back(std::make_unique<simple_node_render_instance_t>(
+            this, push_damage, &x, &y, &w, &h, &alpha_fade, workspace));
+    }
+
+    void do_push_damage(wf::region_t updated_region)
+    {
+        node_damage_signal ev;
+        ev.region = updated_region;
+        this->emit(&ev);
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        // Specify whatever geometry your node has
+        return {x, y, w, h};
+    }
+
+    void set_position(int x, int y)
+    {
+        this->x = x;
+        this->y = y;
+    }
+
+    void set_size(int w, int h)
+    {
+        this->w = w;
+        this->h = h;
+    }
+
+    void set_alpha(double alpha)
+    {
+        this->alpha_fade = alpha;
+    }
+};
+
+std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int y,
+    int w, int h)
+{
+    auto subnode = std::make_shared<simple_node_t>(x, y, w, h);
+    wf::scene::add_front(output->node_for_layer(wf::scene::layer::TOP), subnode);
+    return subnode;
+}
+
+class wayfire_workspace_names_output : public wf::plugin_interface_t
 {
     wf::wl_timer timer;
     bool hook_set  = false;
     bool timed_out = false;
-    std::vector<std::vector<workspace_name>> workspaces;
+    std::vector<std::vector<std::shared_ptr<simple_node_t>>> workspaces;
     wf::option_wrapper_t<std::string> font{"workspace-names/font"};
     wf::option_wrapper_t<std::string> position{"workspace-names/position"};
     wf::option_wrapper_t<int> display_duration{"workspace-names/display_duration"};
@@ -90,6 +228,17 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         for (int x = 0; x < wsize.width; x++)
         {
             workspaces[x].resize(wsize.height);
+        }
+
+        auto og = output->get_relative_geometry();
+        for (int x = 0; x < wsize.width; x++)
+        {
+            for (int y = 0; y < wsize.height; y++)
+            {
+                workspaces[x][y] = add_simple_node(output, x * og.width,
+                    y * og.height, og.width,
+                    og.height);
+            }
         }
 
         output->connect_signal("workarea-changed", &workarea_changed);
@@ -142,12 +291,12 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
     {
         auto section = wf::get_core().config.get_section(grab_interface->name);
         auto wsize   = output->workspace->get_workspace_grid_size();
-        workspace_name& wsn = workspaces[x][y];
-        int ws_num = x + y * wsize.width + 1;
+        auto wsn     = workspaces[x][y]->workspace;
+        int ws_num   = x + y * wsize.width + 1;
 
         if (show_option_names)
         {
-            wsn.name = output->to_string() + "_workspace_" +
+            wsn->name = output->to_string() + "_workspace_" +
                 std::to_string(ws_num);
         } else
         {
@@ -160,7 +309,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
                 {
                     if (ws == ws_num)
                     {
-                        wsn.name     = option->get_value_str();
+                        wsn->name    = option->get_value_str();
                         option_found = true;
                         break;
                     }
@@ -169,7 +318,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
 
             if (!option_found)
             {
-                wsn.name = "Workspace " + std::to_string(ws_num);
+                wsn->name = "Workspace " + std::to_string(ws_num);
             }
         }
     }
@@ -182,12 +331,12 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             for (int y = 0; y < wsize.height; y++)
             {
                 update_name(x, y);
-                update_texture(workspaces[x][y]);
+                update_texture(workspaces[x][y]->workspace);
             }
         }
     }
 
-    void update_texture(workspace_name& wsn)
+    void update_texture(std::shared_ptr<workspace_name> wsn)
     {
         update_texture_position(wsn);
         render_workspace_name(wsn);
@@ -200,52 +349,52 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                update_texture(workspaces[x][y]);
+                update_texture(workspaces[x][y]->workspace);
             }
         }
 
         output->render->damage_whole();
     }
 
-    void cairo_recreate(workspace_name& wsn)
+    void cairo_recreate(std::shared_ptr<workspace_name> wsn)
     {
         auto og = output->get_relative_geometry();
         auto font_size = og.height * 0.05;
-        cairo_t *cr    = wsn.cr;
-        cairo_surface_t *cairo_surface = wsn.cairo_surface;
+        cairo_t *cr    = wsn->cr;
+        cairo_surface_t *cairo_surface = wsn->cairo_surface;
 
         if (!cr)
         {
             /* Setup dummy context to get initial font size */
             cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
             cr = cairo_create(cairo_surface);
-            wsn.texture = std::make_unique<wf::simple_texture_t>();
+            wsn->texture = std::make_unique<wf::simple_texture_t>();
         }
 
         cairo_select_font_face(cr, std::string(
             font).c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(cr, font_size);
 
-        const char *name = wsn.name.c_str();
-        cairo_text_extents(cr, name, &wsn.text_extents);
+        const char *name = wsn->name.c_str();
+        cairo_text_extents(cr, name, &wsn->text_extents);
 
-        wsn.rect.width  = wsn.text_extents.width + WIDGET_PADDING * 2;
-        wsn.rect.height = wsn.text_extents.height + WIDGET_PADDING * 2;
+        wsn->rect.width  = wsn->text_extents.width + WIDGET_PADDING * 2;
+        wsn->rect.height = wsn->text_extents.height + WIDGET_PADDING * 2;
 
         /* Recreate surface based on font size */
         cairo_destroy(cr);
         cairo_surface_destroy(cairo_surface);
 
         cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
-            wsn.rect.width, wsn.rect.height);
+            wsn->rect.width, wsn->rect.height);
         cr = cairo_create(cairo_surface);
 
         cairo_select_font_face(cr, std::string(
             font).c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
         cairo_set_font_size(cr, font_size);
 
-        wsn.cr = cr;
-        wsn.cairo_surface = cairo_surface;
+        wsn->cr = cr;
+        wsn->cairo_surface = cairo_surface;
     }
 
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
@@ -253,7 +402,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         update_textures();
     };
 
-    void update_texture_position(workspace_name& wsn)
+    void update_texture_position(std::shared_ptr<workspace_name> wsn)
     {
         auto workarea = output->workspace->get_workarea();
 
@@ -261,44 +410,44 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
 
         if ((std::string)position == "top_left")
         {
-            wsn.rect.x = workarea.x + margin;
-            wsn.rect.y = workarea.y + margin;
+            wsn->rect.x = workarea.x + margin;
+            wsn->rect.y = workarea.y + margin;
         } else if ((std::string)position == "top_center")
         {
-            wsn.rect.x = workarea.x + (workarea.width / 2 - wsn.rect.width / 2);
-            wsn.rect.y = workarea.y + margin;
+            wsn->rect.x = workarea.x + (workarea.width / 2 - wsn->rect.width / 2);
+            wsn->rect.y = workarea.y + margin;
         } else if ((std::string)position == "top_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
-            wsn.rect.y = workarea.y + margin;
+            wsn->rect.x = workarea.x + (workarea.width - wsn->rect.width) - margin;
+            wsn->rect.y = workarea.y + margin;
         } else if ((std::string)position == "center_left")
         {
-            wsn.rect.x = workarea.x + margin;
-            wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
+            wsn->rect.x = workarea.x + margin;
+            wsn->rect.y = workarea.y + (workarea.height / 2 - wsn->rect.height / 2);
         } else if ((std::string)position == "center")
         {
-            wsn.rect.x = workarea.x + (workarea.width / 2 - wsn.rect.width / 2);
-            wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
+            wsn->rect.x = workarea.x + (workarea.width / 2 - wsn->rect.width / 2);
+            wsn->rect.y = workarea.y + (workarea.height / 2 - wsn->rect.height / 2);
         } else if ((std::string)position == "center_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
-            wsn.rect.y = workarea.y + (workarea.height / 2 - wsn.rect.height / 2);
+            wsn->rect.x = workarea.x + (workarea.width - wsn->rect.width) - margin;
+            wsn->rect.y = workarea.y + (workarea.height / 2 - wsn->rect.height / 2);
         } else if ((std::string)position == "bottom_left")
         {
-            wsn.rect.x = workarea.x + margin;
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
+            wsn->rect.x = workarea.x + margin;
+            wsn->rect.y = workarea.y + (workarea.height - wsn->rect.height) - margin;
         } else if ((std::string)position == "bottom_center")
         {
-            wsn.rect.x = workarea.x + (workarea.width / 2 - wsn.rect.width / 2);
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
+            wsn->rect.x = workarea.x + (workarea.width / 2 - wsn->rect.width / 2);
+            wsn->rect.y = workarea.y + (workarea.height - wsn->rect.height) - margin;
         } else if ((std::string)position == "bottom_right")
         {
-            wsn.rect.x = workarea.x + (workarea.width - wsn.rect.width) - margin;
-            wsn.rect.y = workarea.y + (workarea.height - wsn.rect.height) - margin;
+            wsn->rect.x = workarea.x + (workarea.width - wsn->rect.width) - margin;
+            wsn->rect.y = workarea.y + (workarea.height - wsn->rect.height) - margin;
         } else
         {
-            wsn.rect.x = workarea.x;
-            wsn.rect.y = workarea.y;
+            wsn->rect.x = workarea.x;
+            wsn->rect.y = workarea.y;
         }
     }
 
@@ -315,19 +464,19 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         cairo_paint(cr);
     }
 
-    void render_workspace_name(workspace_name& wsn)
+    void render_workspace_name(std::shared_ptr<workspace_name> wsn)
     {
-        double xc = wsn.rect.width / 2;
-        double yc = wsn.rect.height / 2;
+        double xc = wsn->rect.width / 2;
+        double yc = wsn->rect.height / 2;
         int x2, y2;
-        const char *name = wsn.name.c_str();
+        const char *name = wsn->name.c_str();
         double radius = background_radius;
-        cairo_t *cr   = wsn.cr;
+        cairo_t *cr   = wsn->cr;
 
         cairo_clear(cr);
 
-        x2 = wsn.rect.width;
-        y2 = wsn.rect.height;
+        x2 = wsn->rect.width;
+        y2 = wsn->rect.height;
 
         cairo_set_source_rgba(cr,
             wf::color_t(background_color).r,
@@ -350,15 +499,15 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             wf::color_t(text_color).g,
             wf::color_t(text_color).b,
             wf::color_t(text_color).a);
-        cairo_text_extents(cr, name, &wsn.text_extents);
+        cairo_text_extents(cr, name, &wsn->text_extents);
         cairo_move_to(cr,
-            xc - (wsn.text_extents.width / 2 + wsn.text_extents.x_bearing),
-            yc - (wsn.text_extents.height / 2 + wsn.text_extents.y_bearing));
+            xc - (wsn->text_extents.width / 2 + wsn->text_extents.x_bearing),
+            yc - (wsn->text_extents.height / 2 + wsn->text_extents.y_bearing));
         cairo_show_text(cr, name);
         cairo_stroke(cr);
 
         OpenGL::render_begin();
-        cairo_surface_upload_to_texture(wsn.cairo_surface, *wsn.texture);
+        cairo_surface_upload_to_texture(wsn->cairo_surface, *wsn->texture);
         OpenGL::render_end();
     }
 
@@ -372,6 +521,24 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
 
     wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
         {
+            auto wsize = output->workspace->get_workspace_grid_size();
+            wf::workspace_changed_signal *signal =
+                static_cast<wf::workspace_changed_signal*>(data);
+            auto og  = output->get_relative_geometry();
+            auto nvp = signal->new_viewport;
+
+            for (int x = 0; x < wsize.width; x++)
+            {
+                for (int y = 0; y < wsize.height; y++)
+                {
+                    workspaces[x][y]->set_position((x - nvp.x) * og.width,
+                        (y - nvp.y) * og.height);
+                    workspaces[x][y]->set_size(og.width, og.height);
+                }
+            }
+
+            output->render->damage_whole();
+
             activate();
 
             if (!alpha_fade.running())
@@ -403,31 +570,6 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         return false; // disconnect
     };
 
-    wf::signal_connection_t workspace_stream_post{[this] (wf::signal_data_t *data)
-        {
-            const auto& workspace = static_cast<wf::stream_signal_t*>(data);
-            auto& wsn   = workspaces[workspace->ws.x][workspace->ws.y];
-            auto damage = output->render->get_scheduled_damage() &
-                output->render->get_ws_box(workspace->ws);
-            auto og   = workspace->fb.geometry;
-            auto rect = wsn.rect;
-
-            rect.x += og.x;
-            rect.y += og.y;
-
-            OpenGL::render_begin(workspace->fb);
-            for (auto& box : damage)
-            {
-                workspace->fb.logic_scissor(wlr_box_from_pixman_box(box));
-                OpenGL::render_texture(wf::texture_t{wsn.texture->tex},
-                    workspace->fb, rect, glm::vec4(1, 1, 1, alpha_fade),
-                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-            }
-
-            OpenGL::render_end();
-        }
-    };
-
     wf::effect_hook_t post_hook = [=] ()
     {
         if (!alpha_fade.running())
@@ -441,6 +583,16 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             {
                 timer.set_timeout((int)display_duration, timeout);
             }
+        } else
+        {
+            auto wsize = output->workspace->get_workspace_grid_size();
+            for (int x = 0; x < wsize.width; x++)
+            {
+                for (int y = 0; y < wsize.height; y++)
+                {
+                    workspaces[x][y]->set_alpha(alpha_fade);
+                }
+            }
         }
     };
 
@@ -451,8 +603,6 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
             return;
         }
 
-        output->render->connect_signal("workspace-stream-post",
-            &workspace_stream_post);
         output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
         output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
         output->render->damage_whole();
@@ -468,7 +618,6 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
 
         output->render->rem_effect(&post_hook);
         output->render->rem_effect(&pre_hook);
-        workspace_stream_post.disconnect();
         hook_set = false;
     }
 
@@ -480,11 +629,13 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                auto& wsn = workspaces[x][y];
-                cairo_surface_destroy(wsn.cairo_surface);
-                cairo_destroy(wsn.cr);
-                wsn.texture->release();
-                wsn.texture.reset();
+                auto& wsn = workspaces[x][y]->workspace;
+                cairo_surface_destroy(wsn->cairo_surface);
+                cairo_destroy(wsn->cr);
+                wsn->texture->release();
+                wsn->texture.reset();
+                wf::scene::remove_child(workspaces[x][y]);
+                workspaces[x][y].reset();
             }
         }
 
@@ -492,4 +643,7 @@ class wayfire_workspace_names_screen : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_workspace_names_screen);
+DECLARE_WAYFIRE_PLUGIN(wayfire_workspace_names_output);
+}
+}
+}
