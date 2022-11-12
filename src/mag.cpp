@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -69,7 +69,7 @@ class mag_view_t : public wf::color_rect_view_t
         return false;
     }
 
-    void simple_render(const wf::framebuffer_t& fb, int x, int y,
+    void simple_render(const wf::render_target_t& fb, int x, int y,
         const wf::region_t& damage) override
     {
         OpenGL::render_begin(fb);
@@ -236,7 +236,6 @@ class wayfire_magnifier : public wf::plugin_interface_t
 
         OpenGL::render_begin();
         mag_view->mag_tex.allocate(width, height);
-        mag_view->mag_tex.geometry = og;
         mag_view->mag_tex.bind();
         GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER,
             output->render->get_target_framebuffer().fb));

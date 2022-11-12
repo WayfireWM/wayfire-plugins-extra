@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,7 +52,7 @@ class winzoom_t : public wf::view_2D
     {}
 
     void render_with_damage(wf::texture_t src_tex, wlr_box src_box,
-        const wf::region_t& damage, const wf::framebuffer_t& target_fb) override
+        const wf::region_t& damage, const wf::render_target_t& target_fb) override
     {
         GL_CALL(glBindTexture(GL_TEXTURE_2D, src_tex.tex_id));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,

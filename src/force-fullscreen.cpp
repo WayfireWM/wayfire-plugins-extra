@@ -2,7 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2020 Ilia Bozhinov
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -83,7 +83,7 @@ class fullscreen_subsurface : public wf::surface_interface_t,
         return {1, 1};
     }
 
-    void simple_render(const wf::framebuffer_t& fb, int x, int y,
+    void simple_render(const wf::render_target_t& fb, int x, int y,
         const wf::region_t& damage) override
     {
         /* fully transparent */ }
@@ -191,7 +191,7 @@ class fullscreen_transformer : public wf::view_2D
     }
 
     void render_box(wf::texture_t src_tex, wlr_box src_box,
-        wlr_box scissor_box, const wf::framebuffer_t& target_fb) override
+        wlr_box scissor_box, const wf::render_target_t& target_fb) override
     {
         auto output = view->get_output();
 
