@@ -65,7 +65,8 @@ class mag_view_t : public wf::color_rect_view_t
             output->workspace->add_view(self(), wf::LAYER_TOP);
             idle_set_geometry.run_once([=] ()
             {
-                set_geometry({100, 100, (int)(default_height * aspect),
+                wf::color_rect_view_t::set_geometry({100, 100,
+                    (int)(default_height * aspect),
                     default_height});
             });
         }
@@ -75,6 +76,7 @@ class mag_view_t : public wf::color_rect_view_t
     {
         this->edges   = edges;
         view_geometry = get_wm_geometry();
+        wf::color_rect_view_t::set_resizing(resizing, edges);
     }
 
     void resize(int w, int h) override
