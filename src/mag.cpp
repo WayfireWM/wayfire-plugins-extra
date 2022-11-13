@@ -43,7 +43,7 @@ class mag_view_t : public wf::color_rect_view_t
     wf::option_wrapper_t<int> default_height{"mag/default_height"};
     wf::wl_idle_call idle_set_geometry;
     wf::geometry_t view_geometry;
-    uint32_t edges;
+    uint32_t edges = 0;
     double aspect;
 
   public:
@@ -81,14 +81,16 @@ class mag_view_t : public wf::color_rect_view_t
 
     void resize(int w, int h) override
     {
+        auto vg = get_wm_geometry();
+        int x   = vg.x;
+        int y   = vg.y;
+
+        wf::color_rect_view_t::resize(w, h);
+
         if (!this->edges)
         {
             return;
         }
-
-        auto vg = get_wm_geometry();
-        int x   = vg.x;
-        int y   = vg.y;
 
         if (this->edges & WLR_EDGE_TOP)
         {
@@ -102,7 +104,6 @@ class mag_view_t : public wf::color_rect_view_t
 
         view_geometry = vg;
         wf::color_rect_view_t::move(x, y);
-        wf::color_rect_view_t::resize(w, h);
     }
 
     bool accepts_input(int32_t sx, int32_t sy) override
