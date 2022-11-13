@@ -41,6 +41,8 @@
 class mag_view_t : public wf::color_rect_view_t
 {
     wf::option_wrapper_t<int> default_height{"mag/default_height"};
+    wf::wl_idle_call idle_set_geometry;
+    double aspect;
 
   public:
     wf::framebuffer_t mag_tex;
@@ -48,12 +50,23 @@ class mag_view_t : public wf::color_rect_view_t
     mag_view_t(wf::output_t *output, float aspect) :
         wf::color_rect_view_t()
     {
-        set_output(output);
+        this->role   = wf::VIEW_ROLE_TOPLEVEL;
+        this->aspect = aspect;
+    }
 
-        set_geometry({100, 100, (int)(default_height * aspect), default_height});
+    void set_output(wf::output_t *output) override
+    {
+        wf::color_rect_view_t::set_output(output);
 
-        this->role = wf::VIEW_ROLE_TOPLEVEL;
-        output->workspace->add_view(self(), wf::LAYER_TOP);
+        if (output)
+        {
+            output->workspace->add_view(self(), wf::LAYER_TOP);
+            idle_set_geometry.run_once([=] ()
+            {
+                set_geometry({100, 100, (int)(default_height * aspect),
+                    default_height});
+            });
+        }
     }
 
     bool accepts_input(int32_t sx, int32_t sy) override
@@ -74,8 +87,8 @@ class mag_view_t : public wf::color_rect_view_t
     {
         OpenGL::render_begin(fb);
         auto vg = get_wm_geometry();
-        gl_geometry src_geometry = {(float)vg.x, (float)vg.y,
-            (float)vg.x + vg.width, (float)vg.y + vg.height};
+        gl_geometry src_geometry = {(float)x, (float)y,
+            (float)x + vg.width, (float)y + vg.height};
         for (const auto& box : damage)
         {
             fb.logic_scissor(wlr_box_from_pixman_box(box));
