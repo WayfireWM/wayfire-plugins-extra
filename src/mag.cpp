@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,10 @@
 class mag_view_t : public wf::color_rect_view_t
 {
     wf::option_wrapper_t<int> default_height{"mag/default_height"};
+    wf::wl_idle_call idle_set_geometry;
+    wf::geometry_t view_geometry;
+    uint32_t edges = 0;
+    double aspect;
 
   public:
     wf::framebuffer_t mag_tex;
@@ -48,12 +52,58 @@ class mag_view_t : public wf::color_rect_view_t
     mag_view_t(wf::output_t *output, float aspect) :
         wf::color_rect_view_t()
     {
-        set_output(output);
+        this->role   = wf::VIEW_ROLE_TOPLEVEL;
+        this->aspect = aspect;
+    }
 
-        set_geometry({100, 100, (int)(default_height * aspect), default_height});
+    void set_output(wf::output_t *output) override
+    {
+        wf::color_rect_view_t::set_output(output);
 
-        this->role = wf::VIEW_ROLE_TOPLEVEL;
-        output->workspace->add_view(self(), wf::LAYER_TOP);
+        if (output)
+        {
+            output->workspace->add_view(self(), wf::LAYER_TOP);
+            idle_set_geometry.run_once([=] ()
+            {
+                wf::color_rect_view_t::set_geometry({100, 100,
+                    (int)(default_height * aspect),
+                    default_height});
+            });
+        }
+    }
+
+    void set_resizing(bool resizing, uint32_t edges) override
+    {
+        this->edges   = edges;
+        view_geometry = get_wm_geometry();
+        wf::color_rect_view_t::set_resizing(resizing, edges);
+    }
+
+    void resize(int w, int h) override
+    {
+        auto vg = get_wm_geometry();
+        int x   = vg.x;
+        int y   = vg.y;
+
+        wf::color_rect_view_t::resize(w, h);
+
+        if (!this->edges)
+        {
+            return;
+        }
+
+        if (this->edges & WLR_EDGE_TOP)
+        {
+            y += view_geometry.height - vg.height;
+        }
+
+        if (this->edges & WLR_EDGE_LEFT)
+        {
+            x += view_geometry.width - vg.width;
+        }
+
+        view_geometry = vg;
+        wf::color_rect_view_t::move(x, y);
     }
 
     bool accepts_input(int32_t sx, int32_t sy) override
@@ -69,13 +119,13 @@ class mag_view_t : public wf::color_rect_view_t
         return false;
     }
 
-    void simple_render(const wf::framebuffer_t& fb, int x, int y,
+    void simple_render(const wf::render_target_t& fb, int x, int y,
         const wf::region_t& damage) override
     {
         OpenGL::render_begin(fb);
         auto vg = get_wm_geometry();
-        gl_geometry src_geometry = {(float)vg.x, (float)vg.y,
-            (float)vg.x + vg.width, (float)vg.y + vg.height};
+        gl_geometry src_geometry = {(float)x, (float)y,
+            (float)x + vg.width, (float)y + vg.height};
         for (const auto& box : damage)
         {
             fb.logic_scissor(wlr_box_from_pixman_box(box));
@@ -236,7 +286,6 @@ class wayfire_magnifier : public wf::plugin_interface_t
 
         OpenGL::render_begin();
         mag_view->mag_tex.allocate(width, height);
-        mag_view->mag_tex.geometry = og;
         mag_view->mag_tex.bind();
         GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER,
             output->render->get_target_framebuffer().fb));

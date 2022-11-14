@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -126,7 +126,7 @@ class wf_keycolor : public wf::view_transformer_t
     }
 
     void render_with_damage(wf::texture_t src_tex, wlr_box src_box,
-        const wf::region_t& damage, const wf::framebuffer_t& target_fb) override
+        const wf::region_t& damage, const wf::render_target_t& target_fb) override
     {
         wlr_box fb_geom =
             target_fb.framebuffer_box_from_geometry_box(target_fb.geometry);

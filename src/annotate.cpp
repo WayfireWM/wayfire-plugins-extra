@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,15 +24,21 @@
 
 #include <map>
 #include <math.h>
-#include <wayfire/util.hpp>
-#include <wayfire/plugin.hpp>
-#include <wayfire/output.hpp>
-#include <wayfire/output-layout.hpp>
-#include <wayfire/render-manager.hpp>
-#include <wayfire/workspace-stream.hpp>
-#include <wayfire/workspace-manager.hpp>
-#include <wayfire/signal-definitions.hpp>
-#include <wayfire/plugins/common/cairo-util.hpp>
+#include <memory>
+#include "wayfire/geometry.hpp"
+#include "wayfire/opengl.hpp"
+#include "wayfire/region.hpp"
+#include "wayfire/scene-operations.hpp"
+#include "wayfire/signal-provider.hpp"
+#include "wayfire/scene.hpp"
+#include "wayfire/scene-render.hpp"
+#include "wayfire/plugin.hpp"
+#include "wayfire/output.hpp"
+#include "wayfire/output-layout.hpp"
+#include "wayfire/render-manager.hpp"
+#include "wayfire/workspace-manager.hpp"
+#include "wayfire/signal-definitions.hpp"
+#include "wayfire/plugins/common/cairo-util.hpp"
 
 enum annotate_draw_method
 {
@@ -42,23 +48,158 @@ enum annotate_draw_method
     ANNOTATE_METHOD_CIRCLE,
 };
 
-class anno_ws_overlay
+struct anno_ws_overlay
 {
-  public:
     cairo_t *cr = nullptr;
     cairo_surface_t *cairo_surface;
     std::unique_ptr<wf::simple_texture_t> texture;
 };
+
+namespace wf
+{
+namespace scene
+{
+namespace annotate
+{
+class simple_node_render_instance_t : public render_instance_t
+{
+    wf::signal::connection_t<node_damage_signal> on_node_damaged =
+        [=] (node_damage_signal *ev)
+    {
+        push_to_parent(ev->region);
+    };
+
+    node_t *self;
+    damage_callback push_to_parent;
+    std::shared_ptr<anno_ws_overlay> overlay, shape_overlay;
+    int *x, *y, *w, *h;
+
+  public:
+    simple_node_render_instance_t(node_t *self, damage_callback push_dmg,
+        int *x, int *y, int *w, int *h, std::shared_ptr<anno_ws_overlay> overlay,
+        std::shared_ptr<anno_ws_overlay> shape_overlay)
+    {
+        this->x    = x;
+        this->y    = y;
+        this->w    = w;
+        this->h    = h;
+        this->self = self;
+        this->overlay = overlay;
+        this->shape_overlay  = shape_overlay;
+        this->push_to_parent = push_dmg;
+        self->connect(&on_node_damaged);
+    }
+
+    void schedule_instructions(
+        std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage)
+    {
+        // We want to render ourselves only, the node does not have children
+        instructions.push_back(render_instruction_t{
+                        .instance = this,
+                        .target   = target,
+                        .damage   = damage & self->get_bounding_box(),
+                    });
+    }
+
+    void render(const wf::render_target_t& target,
+        const wf::region_t& region)
+    {
+        auto ol    = this->overlay;
+        wlr_box og = {*x, *y, *w, *h};
+        OpenGL::render_begin(target);
+        for (auto& box : region)
+        {
+            target.logic_scissor(wlr_box_from_pixman_box(box));
+            if (ol->cr)
+            {
+                OpenGL::render_texture(wf::texture_t{ol->texture->tex},
+                    target, og, glm::vec4(1.0),
+                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+            }
+
+            if (shape_overlay->cr)
+            {
+                OpenGL::render_texture(wf::texture_t{shape_overlay->texture->tex},
+                    target, og, glm::vec4(1.0),
+                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+            }
+        }
+
+        OpenGL::render_end();
+    }
+};
+
+
+class simple_node_t : public node_t
+{
+    int x, y, w, h;
+
+  public:
+    std::shared_ptr<anno_ws_overlay> overlay, shape_overlay;
+    simple_node_t(int x, int y, int w, int h) : node_t(false)
+    {
+        this->x = x;
+        this->y = y;
+        this->w = w;
+        this->h = h;
+        overlay = std::make_shared<anno_ws_overlay>();
+        shape_overlay = std::make_shared<anno_ws_overlay>();
+    }
+
+    void gen_render_instances(std::vector<render_instance_uptr>& instances,
+        damage_callback push_damage, wf::output_t *shown_on) override
+    {
+        // push_damage accepts damage in the parent's coordinate system
+        // If the node is a transformer, it may transform the damage. However,
+        // this simple nodes does not need any transformations, so the push_damage
+        // callback is just passed along.
+        instances.push_back(std::make_unique<simple_node_render_instance_t>(
+            this, push_damage, &x, &y, &w, &h, overlay, shape_overlay));
+    }
+
+    void do_push_damage(wf::region_t updated_region)
+    {
+        node_damage_signal ev;
+        ev.region = updated_region;
+        this->emit(&ev);
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        // Specify whatever geometry your node has
+        return {x, y, w, h};
+    }
+
+    void set_position(int x, int y)
+    {
+        this->x = x;
+        this->y = y;
+    }
+
+    void set_size(int w, int h)
+    {
+        this->w = w;
+        this->h = h;
+    }
+};
+
+std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int y,
+    int w, int h)
+{
+    auto subnode = std::make_shared<simple_node_t>(x, y, w, h);
+    wf::scene::add_front(output->node_for_layer(wf::scene::layer::TOP), subnode);
+    return subnode;
+}
 
 class wayfire_annotate_screen : public wf::plugin_interface_t
 {
     uint32_t button;
     wlr_box last_bbox;
     bool hook_set = false;
-    anno_ws_overlay shape_overlay;
     annotate_draw_method draw_method;
     wf::pointf_t grab_point, last_cursor;
-    std::vector<std::vector<anno_ws_overlay>> overlays;
+    std::vector<std::vector<std::shared_ptr<simple_node_t>>> overlays;
     wf::option_wrapper_t<std::string> method{"annotate/method"};
     wf::option_wrapper_t<double> line_width{"annotate/line_width"};
     wf::option_wrapper_t<bool> shapes_from_center{"annotate/from_center"};
@@ -78,6 +219,16 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         for (int x = 0; x < wsize.width; x++)
         {
             overlays[x].resize(wsize.height);
+        }
+
+        auto og = output->get_relative_geometry();
+        for (int x = 0; x < wsize.width; x++)
+        {
+            for (int y = 0; y < wsize.height; y++)
+            {
+                overlays[x][y] = add_simple_node(output, x * og.width, y * og.height,
+                    og.width, og.height);
+            }
         }
 
         grab_interface->callbacks.pointer.button = [=] (uint32_t b, uint32_t s)
@@ -117,15 +268,43 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
     };
 
-    anno_ws_overlay& get_current_overlay()
+    std::shared_ptr<simple_node_t> get_node_overlay()
+    {
+        auto ws = output->workspace->get_current_workspace();
+        return overlays[ws.x][ws.y];
+    }
+
+    std::shared_ptr<anno_ws_overlay> get_current_overlay()
     {
         auto ws = output->workspace->get_current_workspace();
 
-        return overlays[ws.x][ws.y];
+        return overlays[ws.x][ws.y]->overlay;
+    }
+
+    std::shared_ptr<anno_ws_overlay> get_shape_overlay()
+    {
+        auto ws = output->workspace->get_current_workspace();
+
+        return overlays[ws.x][ws.y]->shape_overlay;
     }
 
     wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
         {
+            auto wsize = output->workspace->get_workspace_grid_size();
+            wf::workspace_changed_signal *signal =
+                static_cast<wf::workspace_changed_signal*>(data);
+            auto og  = output->get_relative_geometry();
+            auto nvp = signal->new_viewport;
+
+            for (int x = 0; x < wsize.width; x++)
+            {
+                for (int y = 0; y < wsize.height; y++)
+                {
+                    overlays[x][y]->set_position((x - nvp.x) * og.width,
+                        (y - nvp.y) * og.height);
+                }
+            }
+
             output->render->damage_whole();
         }
     };
@@ -133,9 +312,9 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     wf::button_callback draw_begin = [=] (wf::buttonbinding_t btn)
     {
         output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
+        output->render->damage_whole();
         grab_point = last_cursor = wf::get_core().get_cursor_position();
         button     = btn.get_button();
-        connect_ws_stream_post();
 
         grab();
 
@@ -144,7 +323,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
     void draw_end()
     {
-        auto& ol = get_current_overlay();
+        auto ol = get_current_overlay();
+        auto shape_overlay = get_shape_overlay();
 
         output->render->rem_effect(&frame_pre_paint);
         overlay_destroy(shape_overlay);
@@ -169,60 +349,34 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         }
     }
 
-    void deactivate_check()
+    void overlay_clear(std::shared_ptr<anno_ws_overlay> ol)
     {
-        bool all_workspaces_clear = true;
-        auto wsize = output->workspace->get_workspace_grid_size();
-
-        for (int x = 0; x < wsize.width; x++)
-        {
-            for (int y = 0; y < wsize.height; y++)
-            {
-                auto& ol = overlays[x][y];
-                if (ol.cr)
-                {
-                    all_workspaces_clear = false;
-                    x = wsize.width;
-                    break;
-                }
-            }
-        }
-
-        if (all_workspaces_clear)
-        {
-            disconnect_ws_stream_post();
-        }
-    }
-
-    void overlay_clear(anno_ws_overlay& ol)
-    {
-        if (!ol.cr)
+        if (!ol->cr)
         {
             return;
         }
 
-        cairo_clear(ol.cr);
+        cairo_clear(ol->cr);
     }
 
-    void overlay_destroy(anno_ws_overlay& ol)
+    void overlay_destroy(std::shared_ptr<anno_ws_overlay> ol)
     {
-        if (!ol.cr)
+        if (!ol->cr)
         {
             return;
         }
 
-        ol.texture.reset();
-        cairo_surface_destroy(ol.cairo_surface);
-        cairo_destroy(ol.cr);
-        ol.cr = nullptr;
+        ol->texture.reset();
+        cairo_surface_destroy(ol->cairo_surface);
+        cairo_destroy(ol->cr);
+        ol->cr = nullptr;
     }
 
     void clear()
     {
-        auto& ol = get_current_overlay();
+        auto ol = get_current_overlay();
 
         overlay_destroy(ol);
-        deactivate_check();
 
         output->render->damage_whole();
     }
@@ -253,20 +407,21 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         return true;
     };
 
-    void cairo_init(anno_ws_overlay& ol)
+    void cairo_init(std::shared_ptr<anno_ws_overlay> ol)
     {
         auto og = output->get_relative_geometry();
 
-        if (ol.cr)
+        if (ol->cr)
         {
             return;
         }
 
-        ol.cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, og.width,
+        ol->cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, og.width,
             og.height);
-        ol.cr = cairo_create(ol.cairo_surface);
+        get_node_overlay()->set_size(og.width, og.height);
+        ol->cr = cairo_create(ol->cairo_surface);
 
-        ol.texture = std::make_unique<wf::simple_texture_t>();
+        ol->texture = std::make_unique<wf::simple_texture_t>();
     }
 
     void cairo_clear(cairo_t *cr)
@@ -321,7 +476,8 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         OpenGL::render_end();
     }
 
-    void cairo_draw(anno_ws_overlay& ol, wf::pointf_t from, wf::pointf_t to)
+    void cairo_draw(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t from,
+        wf::pointf_t to)
     {
         auto og = output->get_layout_geometry();
 
@@ -331,7 +487,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         to.y   -= og.y;
 
         cairo_init(ol);
-        cairo_t *cr = ol.cr;
+        cairo_t *cr = ol->cr;
 
         cairo_set_line_width(cr, line_width);
         cairo_set_source_rgba(cr,
@@ -349,19 +505,21 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         bbox.y     = std::min(from.y, to.y) - padding;
         bbox.width = abs(from.x - to.x) + padding * 2;
         bbox.height = abs(from.y - to.y) + padding * 2;
-        output->render->damage(bbox);
-        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+        get_node_overlay()->do_push_damage(wf::region_t(bbox));
+        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             bbox);
     }
 
     bool should_damage_last()
     {
-        return shape_overlay.texture && shape_overlay.texture->tex != (uint32_t)-1;
+        auto shape_overlay = get_shape_overlay();
+        return shape_overlay->texture && shape_overlay->texture->tex != (uint32_t)-1;
     }
 
-    void cairo_draw_line(anno_ws_overlay& ol, wf::pointf_t to)
+    void cairo_draw_line(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
-        auto og   = output->get_layout_geometry();
+        auto og = output->get_layout_geometry();
+        auto shape_overlay = get_shape_overlay();
         auto from = grab_point;
 
         from.x -= og.x;
@@ -373,7 +531,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         overlay_clear(shape_overlay);
 
         cairo_init(ol);
-        cairo_t *cr = ol.cr;
+        cairo_t *cr = ol->cr;
 
         cairo_set_line_width(cr, line_width);
         cairo_set_source_rgba(cr,
@@ -404,15 +562,18 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         wlr_box damage_box  =
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
             damage_extents.y2 - damage_extents.y1};
-        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
+        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::region_t(bbox));
         last_bbox = bbox;
     }
 
-    void cairo_draw_rectangle(anno_ws_overlay& ol, wf::pointf_t to)
+    void cairo_draw_rectangle(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
         auto og = output->get_layout_geometry();
+        auto shape_overlay = get_shape_overlay();
         auto from = grab_point;
         double x, y, w, h;
 
@@ -425,7 +586,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         overlay_clear(shape_overlay);
 
         cairo_init(ol);
-        cairo_t *cr = ol.cr;
+        cairo_t *cr = ol->cr;
 
         w = fabs(from.x - to.x);
         h = fabs(from.y - to.y);
@@ -470,15 +631,18 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         wlr_box damage_box  =
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
             damage_extents.y2 - damage_extents.y1};
-        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
+        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::region_t(bbox));
         last_bbox = bbox;
     }
 
-    void cairo_draw_circle(anno_ws_overlay& ol, wf::pointf_t to)
+    void cairo_draw_circle(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
-        auto og   = output->get_layout_geometry();
+        auto og = output->get_layout_geometry();
+        auto shape_overlay = get_shape_overlay();
         auto from = grab_point;
 
         from.x -= og.x;
@@ -490,7 +654,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         overlay_clear(shape_overlay);
 
         cairo_init(ol);
-        cairo_t *cr = ol.cr;
+        cairo_t *cr = ol->cr;
 
         auto radius =
             glm::distance(glm::vec2(from.x, from.y), glm::vec2(to.x, to.y));
@@ -530,16 +694,19 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         wlr_box damage_box  =
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
             damage_extents.y2 - damage_extents.y1};
-        cairo_surface_upload_to_texture_with_damage(ol.cairo_surface, *ol.texture,
+        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
+        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::region_t(bbox));
         last_bbox = bbox;
     }
 
     wf::effect_hook_t frame_pre_paint = [=] ()
     {
         auto current_cursor = wf::get_core().get_cursor_position();
-        auto& ol = get_current_overlay();
+        auto shape_overlay  = get_shape_overlay();
+        auto ol = get_current_overlay();
 
         switch (draw_method)
         {
@@ -566,37 +733,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         last_cursor = current_cursor;
     };
 
-    wf::signal_connection_t workspace_stream_post{[this] (wf::signal_data_t *data)
-        {
-            const auto& workspace = static_cast<wf::stream_signal_t*>(data);
-            auto& ol    = overlays[workspace->ws.x][workspace->ws.y];
-            auto og     = workspace->fb.geometry;
-            auto damage = output->render->get_scheduled_damage() &
-                output->render->get_ws_box(workspace->ws);
-
-            OpenGL::render_begin(workspace->fb);
-            for (auto& box : damage)
-            {
-                workspace->fb.logic_scissor(wlr_box_from_pixman_box(box));
-                if (ol.cr)
-                {
-                    OpenGL::render_texture(wf::texture_t{ol.texture->tex},
-                        workspace->fb, og, glm::vec4(1.0),
-                        OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-                }
-
-                if (shape_overlay.cr)
-                {
-                    OpenGL::render_texture(wf::texture_t{shape_overlay.texture->tex},
-                        workspace->fb, og, glm::vec4(1.0),
-                        OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-                }
-            }
-
-            OpenGL::render_end();
-        }
-    };
-
     void grab()
     {
         if (!output->activate_plugin(grab_interface))
@@ -613,33 +749,9 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         output->deactivate_plugin(grab_interface);
     }
 
-    void connect_ws_stream_post()
-    {
-        if (hook_set)
-        {
-            return;
-        }
-
-        output->render->connect_signal("workspace-stream-post",
-            &workspace_stream_post);
-        hook_set = true;
-    }
-
-    void disconnect_ws_stream_post()
-    {
-        if (!hook_set)
-        {
-            return;
-        }
-
-        workspace_stream_post.disconnect();
-        hook_set = false;
-    }
-
     void fini() override
     {
         ungrab();
-        disconnect_ws_stream_post();
         output->rem_binding(&draw_begin);
         output->rem_binding(&clear_workspace);
         auto wsize = output->workspace->get_workspace_grid_size();
@@ -647,8 +759,14 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                auto& ol = overlays[x][y];
+                auto& ol = overlays[x][y]->overlay;
                 overlay_destroy(ol);
+                ol.reset();
+                auto& shape_overlay = overlays[x][y]->shape_overlay;
+                overlay_destroy(shape_overlay);
+                shape_overlay.reset();
+                wf::scene::remove_child(overlays[x][y]);
+                overlays[x][y].reset();
             }
         }
 
@@ -657,3 +775,6 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_annotate_screen);
+}
+}
+}

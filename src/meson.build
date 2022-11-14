@@ -70,7 +70,7 @@ workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
-workspace_names = shared_module('hinge', 'hinge.cpp',
+hinge = shared_module('hinge', 'hinge.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 

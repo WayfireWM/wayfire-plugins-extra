@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2022 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -258,8 +258,8 @@ class wayfire_water_screen : public wf::plugin_interface_t
         return false; // disconnect
     };
 
-    wf::post_hook_t render = [=] (const wf::framebuffer_base_t& source,
-                                  const wf::framebuffer_base_t& destination)
+    wf::post_hook_t render = [=] (const wf::framebuffer_t& source,
+                                  const wf::framebuffer_t& destination)
     {
         auto transform = output->render->get_target_framebuffer().transform;
         auto cursor_position = output->get_cursor_position();
@@ -318,14 +318,12 @@ class wayfire_water_screen : public wf::plugin_interface_t
         if (buffer[0].allocate(fbg.width, fbg.height))
         {
             buffer[0].bind();
-            buffer[0].geometry = fbg;
             OpenGL::clear({0, 0, 0, 1});
         }
 
         if (buffer[1].allocate(fbg.width, fbg.height))
         {
             buffer[1].bind();
-            buffer[1].geometry = fbg;
             OpenGL::clear({0, 0, 0, 1});
         }
 
