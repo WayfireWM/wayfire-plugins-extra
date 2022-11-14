@@ -511,10 +511,23 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
         OpenGL::render_end();
     }
 
+    void set_alpha()
+    {
+        auto wsize = output->workspace->get_workspace_grid_size();
+        for (int x = 0; x < wsize.width; x++)
+        {
+            for (int y = 0; y < wsize.height; y++)
+            {
+                workspaces[x][y]->set_alpha(alpha_fade);
+            }
+        }
+    }
+
     wf::effect_hook_t pre_hook = [=] ()
     {
         if (alpha_fade.running())
         {
+            set_alpha();
             output->render->damage_whole();
         }
     };
@@ -522,10 +535,8 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
     wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
         {
             auto wsize = output->workspace->get_workspace_grid_size();
-            wf::workspace_changed_signal *signal =
-                static_cast<wf::workspace_changed_signal*>(data);
-            auto og  = output->get_relative_geometry();
-            auto nvp = signal->new_viewport;
+            auto nvp   = output->workspace->get_current_workspace();
+            auto og    = output->get_relative_geometry();
 
             for (int x = 0; x < wsize.width; x++)
             {
@@ -585,14 +596,7 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
             }
         } else
         {
-            auto wsize = output->workspace->get_workspace_grid_size();
-            for (int x = 0; x < wsize.width; x++)
-            {
-                for (int y = 0; y < wsize.height; y++)
-                {
-                    workspaces[x][y]->set_alpha(alpha_fade);
-                }
-            }
+            set_alpha();
         }
     };
 
