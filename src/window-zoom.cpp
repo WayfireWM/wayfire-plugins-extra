@@ -195,7 +195,7 @@ class wayfire_winzoom : public wf::plugin_interface_t
         return update_winzoom(view, wf::point_t{0, -1});
     };
 
-    wf::axis_callback axis_cb = [=] (wlr_event_pointer_axis *ev)
+    wf::axis_callback axis_cb = [=] (wlr_pointer_axis_event *ev)
     {
         auto view = wf::get_core().get_cursor_focus_view();
         if (ev->orientation == WLR_AXIS_ORIENTATION_VERTICAL)
