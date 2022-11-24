@@ -30,6 +30,7 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/output-layout.hpp>
+#include <wayfire/plugins/common/input-grab.hpp>
 
 #include <wayfire/config.h>
 #if WF_HAS_XWAYLAND
@@ -50,7 +51,8 @@ struct parent_view
 
 static std::map<wf::output_t*, struct parent_view> views;
 
-class wayfire_background_view : public wf::plugin_interface_t
+class wayfire_background_view : public wf::plugin_interface_t,
+    public wf::pointer_interaction_t
 {
     const std::string transformer_name = "background-view";
 
@@ -70,11 +72,15 @@ class wayfire_background_view : public wf::plugin_interface_t
      */
     wf::option_wrapper_t<std::string> app_id{"background-view/app-id"};
 
+    /* To grab input on the background layer */
+    std::unique_ptr<wf::input_grab_t> grab;
+
   public:
     void init() override
     {
-        grab_interface->name = transformer_name;
-        grab_interface->capabilities = 0;
+        grab = std::make_unique<wf::input_grab_t>(
+            "background-view", output, nullptr, this, nullptr);
+        grab->grab_input(wf::scene::layer::BACKGROUND);
 
         command.set_callback(option_changed);
         file.set_callback(option_changed);
@@ -83,6 +89,11 @@ class wayfire_background_view : public wf::plugin_interface_t
         output->connect_signal("view-detached", &view_detached);
 
         option_changed();
+    }
+
+    void handle_pointer_enter(wf::pointf_t position) override
+    {
+        wf::get_core().set_cursor("default");
     }
 
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
@@ -185,6 +196,7 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     void fini() override
     {
+        grab->ungrab_input();
         if (views[output].view)
         {
             views[output].view->close();
