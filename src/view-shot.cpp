@@ -98,7 +98,8 @@ class wayfire_view_shot : public wf::plugin_interface_t
             file_name.value().c_str(), std::localtime(&time));
         std::string formatted_file_name = _file_name;
 
-        image_io::write_to_file(formatted_file_name, pixels, width, height, "png", true);
+        image_io::write_to_file(formatted_file_name, pixels, width, height, "png",
+            true);
         free(pixels);
 
         wf::get_core().run(replaceAll(command, "%f", formatted_file_name));
