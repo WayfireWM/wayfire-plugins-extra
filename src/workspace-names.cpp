@@ -81,19 +81,16 @@ class simple_node_render_instance_t : public render_instance_t
     node_t *self;
     damage_callback push_to_parent;
     std::shared_ptr<workspace_name> workspace;
-    int *x, *y, *w, *h;
+    wf::point_t *offset;
     double *alpha_fade;
 
   public:
     simple_node_render_instance_t(node_t *self, damage_callback push_dmg,
-        int *x, int *y, int *w, int *h, double *alpha_fade,
+        wf::point_t *offset, double *alpha_fade,
         std::shared_ptr<workspace_name> workspace)
     {
-        this->x    = x;
-        this->y    = y;
-        this->w    = w;
-        this->h    = h;
-        this->self = self;
+        this->offset = offset;
+        this->self   = self;
         this->workspace  = workspace;
         this->alpha_fade = alpha_fade;
         this->push_to_parent = push_dmg;
@@ -115,12 +112,15 @@ class simple_node_render_instance_t : public render_instance_t
     void render(const wf::render_target_t& target,
         const wf::region_t& region)
     {
+        wf::geometry_t g{workspace->rect.x + offset->x,
+            workspace->rect.y + offset->y,
+            workspace->rect.width, workspace->rect.height};
         OpenGL::render_begin(target);
         for (auto& box : region)
         {
             target.logic_scissor(wlr_box_from_pixman_box(box));
             OpenGL::render_texture(wf::texture_t{workspace->texture->tex},
-                target, workspace->rect, glm::vec4(1, 1, 1, *alpha_fade),
+                target, g, glm::vec4(1, 1, 1, *alpha_fade),
                 OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
         }
 
@@ -131,17 +131,14 @@ class simple_node_render_instance_t : public render_instance_t
 
 class simple_node_t : public node_t
 {
-    int x, y, w, h;
+    wf::point_t offset;
     double alpha_fade;
 
   public:
     std::shared_ptr<workspace_name> workspace;
-    simple_node_t(int x, int y, int w, int h) : node_t(false)
+    simple_node_t(wf::point_t offset) : node_t(false)
     {
-        this->x = x;
-        this->y = y;
-        this->w = w;
-        this->h = h;
+        this->offset     = offset;
         this->alpha_fade = 0.0;
         workspace = std::make_shared<workspace_name>();
     }
@@ -154,7 +151,7 @@ class simple_node_t : public node_t
         // this simple nodes does not need any transformations, so the push_damage
         // callback is just passed along.
         instances.push_back(std::make_unique<simple_node_render_instance_t>(
-            this, push_damage, &x, &y, &w, &h, &alpha_fade, workspace));
+            this, push_damage, &offset, &alpha_fade, workspace));
     }
 
     void do_push_damage(wf::region_t updated_region)
@@ -167,19 +164,14 @@ class simple_node_t : public node_t
     wf::geometry_t get_bounding_box() override
     {
         // Specify whatever geometry your node has
-        return {x, y, w, h};
+        return {workspace->rect.x + offset.x, workspace->rect.y + offset.y,
+            workspace->rect.width, workspace->rect.height};
     }
 
-    void set_position(int x, int y)
+    void set_offset(int x, int y)
     {
-        this->x = x;
-        this->y = y;
-    }
-
-    void set_size(int w, int h)
-    {
-        this->w = w;
-        this->h = h;
+        this->offset.x = x;
+        this->offset.y = y;
     }
 
     void set_alpha(double alpha)
@@ -188,10 +180,10 @@ class simple_node_t : public node_t
     }
 };
 
-std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int y,
-    int w, int h)
+std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
+    wf::point_t offset)
 {
-    auto subnode = std::make_shared<simple_node_t>(x, y, w, h);
+    auto subnode = std::make_shared<simple_node_t>(offset);
     wf::scene::add_front(output->node_for_layer(wf::scene::layer::TOP), subnode);
     return subnode;
 }
@@ -235,9 +227,8 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                workspaces[x][y] = add_simple_node(output, x * og.width,
-                    y * og.height, og.width,
-                    og.height);
+                workspaces[x][y] = add_simple_node(output, {x *og.width,
+                    y * og.height});
             }
         }
 
@@ -275,7 +266,6 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
         if (show_option_names)
         {
             timer.disconnect();
-            viewport_changed.disconnect();
             output->render->rem_effect(&post_hook);
         } else
         {
@@ -511,10 +501,23 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
         OpenGL::render_end();
     }
 
+    void set_alpha()
+    {
+        auto wsize = output->workspace->get_workspace_grid_size();
+        for (int x = 0; x < wsize.width; x++)
+        {
+            for (int y = 0; y < wsize.height; y++)
+            {
+                workspaces[x][y]->set_alpha(alpha_fade);
+            }
+        }
+    }
+
     wf::effect_hook_t pre_hook = [=] ()
     {
         if (alpha_fade.running())
         {
+            set_alpha();
             output->render->damage_whole();
         }
     };
@@ -522,24 +525,26 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
     wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
         {
             auto wsize = output->workspace->get_workspace_grid_size();
-            wf::workspace_changed_signal *signal =
-                static_cast<wf::workspace_changed_signal*>(data);
-            auto og  = output->get_relative_geometry();
-            auto nvp = signal->new_viewport;
+            auto nvp   = output->workspace->get_current_workspace();
+            auto og    = output->get_relative_geometry();
 
             for (int x = 0; x < wsize.width; x++)
             {
                 for (int y = 0; y < wsize.height; y++)
                 {
-                    workspaces[x][y]->set_position((x - nvp.x) * og.width,
+                    workspaces[x][y]->set_offset((x - nvp.x) * og.width,
                         (y - nvp.y) * og.height);
-                    workspaces[x][y]->set_size(og.width, og.height);
                 }
             }
 
             output->render->damage_whole();
 
             activate();
+
+            if (show_option_names)
+            {
+                return;
+            }
 
             if (!alpha_fade.running())
             {
@@ -585,14 +590,7 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
             }
         } else
         {
-            auto wsize = output->workspace->get_workspace_grid_size();
-            for (int x = 0; x < wsize.width; x++)
-            {
-                for (int y = 0; y < wsize.height; y++)
-                {
-                    workspaces[x][y]->set_alpha(alpha_fade);
-                }
-            }
+            set_alpha();
         }
     };
 
