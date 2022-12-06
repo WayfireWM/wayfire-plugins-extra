@@ -173,6 +173,7 @@ class wayfire_follow_focus : public wf::plugin_interface_t
         grab_interface->capabilities = 0;
 
         wf::get_core().connect_signal("pointer_motion", &pointer_motion);
+        wf::get_core().connect_signal("pointer_motion_absolute", &pointer_motion);
     }
 
     void fini() override
