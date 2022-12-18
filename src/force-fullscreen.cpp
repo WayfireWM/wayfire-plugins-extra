@@ -31,167 +31,58 @@
 #include <wayfire/compositor-view.hpp>
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/signal-definitions.hpp>
+#include <wayfire/scene-operations.hpp>
+#include <wayfire/render-manager.hpp>
 
-
-class fullscreen_subsurface : public wf::surface_interface_t,
-    public wf::compositor_surface_t
+namespace wf
 {
-  public:
-    bool _mapped = true;
-
-    fullscreen_subsurface(wayfire_view view) :
-        wf::surface_interface_t(), wf::compositor_surface_t()
+namespace scene
+{
+namespace force_fullscreen
+{
+class simple_node_render_instance_t : public render_instance_t
+{
+    wf::signal::connection_t<node_damage_signal> on_node_damaged =
+        [=] (node_damage_signal *ev)
     {
-        view->connect_signal("subsurface-removed", &on_subsurface_removed);
-    }
-
-    ~fullscreen_subsurface()
-    {}
-
-    wf::signal_connection_t on_subsurface_removed = [&] (auto data)
-    {
-        auto ev = static_cast<wf::subsurface_removed_signal*>(data);
-        if ((ev->subsurface.get() == this) && _mapped)
-        {
-            _mapped = false;
-            wf::emit_map_state_change(this);
-        }
+        push_to_parent(ev->region);
     };
 
-    void on_pointer_enter(int x, int y) override
-    {
-        wf::get_core().set_cursor("default");
-    }
-
-    bool accepts_input(int32_t sx, int32_t sy) override
-    {
-        return wlr_box{0, 0, 1, 1} & wf::point_t{sx, sy};
-    }
-
-    bool is_mapped() const override
-    {
-        return _mapped;
-    }
-
-    wf::point_t get_offset() override
-    {
-        return {-1, 0};
-    }
-
-    wf::dimensions_t get_size() const override
-    {
-        return {1, 1};
-    }
-
-    void simple_render(const wf::render_target_t& fb, int x, int y,
-        const wf::region_t& damage) override
-    {
-        /* fully transparent */ }
-};
-
-class fullscreen_transformer : public wf::view_2D
-{
-  public:
+    node_t *self;
     wayfire_view view;
-    wlr_box transformed_view_box;
+    damage_callback push_to_parent;
+    int *x, *y, *w, *h;
     wf::option_wrapper_t<bool> transparent_behind_views{
         "force-fullscreen/transparent_behind_views"};
 
-    fullscreen_transformer(wayfire_view view) : wf::view_2D(view)
+  public:
+    simple_node_render_instance_t(node_t *self, damage_callback push_damage,
+        wayfire_view view, int *x, int *y, int *w, int *h)
     {
+        this->x    = x;
+        this->y    = y;
+        this->w    = w;
+        this->h    = h;
+        this->self = self;
         this->view = view;
+        this->push_to_parent = push_damage;
+        self->connect(&on_node_damaged);
     }
 
-    ~fullscreen_transformer()
-    {}
-
-    wf::point_t get_workspace(wlr_box og)
+    void schedule_instructions(
+        std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage)
     {
-        wf::point_t ws;
-        auto vg = view->get_wm_geometry();
-        auto tg = transformed_view_box;
-        wf::pointf_t center{vg.x + tg.width / 2.0, vg.y + tg.height / 2.0};
-
-        ws.x = std::floor(center.x / og.width);
-        ws.y = std::floor(center.y / og.height);
-
-        return ws;
+        // We want to render ourselves only, the node does not have children
+        instructions.push_back(render_instruction_t{
+                        .instance = this,
+                        .target   = target,
+                        .damage   = damage & self->get_bounding_box(),
+                    });
     }
 
-    /* TODO: transform_point */
-    wf::geometry_t get_bounding_box(
-        wf::geometry_t geometry, wf::geometry_t box) override
-    {
-        auto output = view->get_output();
-        auto bbox   = wf::view_2D::get_bounding_box(geometry, box);
-
-        if (!output)
-        {
-            return bbox;
-        }
-
-        wf::geometry_t wm = view->get_wm_geometry();
-        wf::point_t subsurface = {wm.x - 1, wm.y};
-        auto og = output->get_relative_geometry();
-        auto ws = get_workspace(og);
-        if (box & subsurface)
-        {
-            og.x += ws.x * og.width;
-            og.y += ws.y * og.height;
-
-            return og;
-        } else
-        {
-            bbox.x += ws.x * og.width;
-            bbox.y += ws.y * og.height;
-
-            return bbox;
-        }
-    }
-
-    wlr_box get_relative_transformed_view(wlr_box& og)
-    {
-        auto ws   = get_workspace(og);
-        auto bbox = transformed_view_box;
-        bbox.x += ws.x * og.width;
-        bbox.y += ws.y * og.height;
-        og.x   += ws.x * og.width;
-        og.y   += ws.y * og.height;
-
-        return bbox;
-    }
-
-    wf::pointf_t untransform_point(
-        wf::geometry_t geometry, wf::pointf_t point) override
-    {
-        auto output = view->get_output();
-        auto default_point = wf::view_2D::untransform_point(geometry, point);
-
-        if (!output)
-        {
-            return default_point;
-        }
-
-        auto og   = output->get_relative_geometry();
-        auto bbox = get_relative_transformed_view(og);
-
-        if (!(bbox & point))
-        {
-            auto region = ((wf::region_t{og} ^ wf::region_t{bbox}) &
-                wf::region_t{{(int)point.x, (int)point.y, 1, 1}});
-            if (!region.empty())
-            {
-                auto wm = view->get_wm_geometry();
-
-                return wf::pointf_t{wm.x - 1.0, wm.y * 1.0};
-            }
-        }
-
-        return default_point;
-    }
-
-    void render_box(wf::texture_t src_tex, wlr_box src_box,
-        wlr_box scissor_box, const wf::render_target_t& target_fb) override
+    void render(const wf::render_target_t& target,
+        const wf::region_t& region)
     {
         auto output = view->get_output();
 
@@ -200,24 +91,60 @@ class fullscreen_transformer : public wf::view_2D
             return;
         }
 
-        auto og = output->get_relative_geometry();
-        wf::region_t scissor_region{scissor_box};
-
+        wf::region_t scissor_region{region};
         if (transparent_behind_views)
         {
-            auto bbox = get_relative_transformed_view(og);
+            auto bbox = this->view->get_bounding_box();
+            bbox.x     += 1;
+            bbox.y     += 1;
+            bbox.width -= 2;
+            bbox.height    -= 2;
             scissor_region ^= wf::region_t{bbox};
         }
 
-        for (auto& b : scissor_region)
+        OpenGL::render_begin(target);
+        for (auto& box : scissor_region)
         {
-            OpenGL::render_begin(target_fb);
-            target_fb.logic_scissor(wlr_box_from_pixman_box(b));
+            target.logic_scissor(wlr_box_from_pixman_box(box));
             OpenGL::clear({0, 0, 0, 1});
-            OpenGL::render_end();
         }
 
-        wf::view_2D::render_box(src_tex, src_box, scissor_box, target_fb);
+        OpenGL::render_end();
+    }
+};
+
+class black_border_node_t : public node_t
+{
+    wayfire_view view;
+
+  public:
+    int x, y, w, h;
+
+    black_border_node_t(wayfire_view view, int x, int y, int w,
+        int h) : node_t(false)
+    {
+        this->x    = x;
+        this->y    = y;
+        this->w    = w;
+        this->h    = h;
+        this->view = view;
+    }
+
+    void gen_render_instances(std::vector<render_instance_uptr>& instances,
+        damage_callback push_damage, wf::output_t *shown_on) override
+    {
+        // push_damage accepts damage in the parent's coordinate system
+        // If the node is a transformer, it may transform the damage. However,
+        // this simple nodes does not need any transformations, so the push_damage
+        // callback is just passed along.
+        instances.push_back(std::make_unique<simple_node_render_instance_t>(
+            this, push_damage, view, &x, &y, &w, &h));
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        // Specify whatever geometry your node has
+        return {x, y, w, h};
     }
 };
 
@@ -226,8 +153,10 @@ class fullscreen_background
   public:
     wf::geometry_t saved_geometry;
     wf::geometry_t undecorated_geometry;
-    fullscreen_transformer *transformer;
-    fullscreen_subsurface *black_border = nullptr;
+    std::shared_ptr<wf::scene::view_2d_transformer_t> transformer;
+    std::shared_ptr<black_border_node_t> black_border_node;
+    bool black_border = false;
+    wlr_box transformed_view_box;
 
     fullscreen_background(wayfire_view view)
     {}
@@ -248,8 +177,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     std::map<wayfire_view, std::unique_ptr<fullscreen_background>> backgrounds;
     wf::option_wrapper_t<bool> preserve_aspect{"force-fullscreen/preserve_aspect"};
     wf::option_wrapper_t<bool> constrain_pointer{"force-fullscreen/constrain_pointer"};
-    wf::option_wrapper_t<double> scale_x_factor{"force-fullscreen/x_skew"};
-    wf::option_wrapper_t<double> scale_y_factor{"force-fullscreen/y_skew"};
     wf::option_wrapper_t<std::string> constraint_area{
         "force-fullscreen/constraint_area"};
     wf::option_wrapper_t<bool> transparent_behind_views{
@@ -269,11 +196,37 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         wayfire_force_fullscreen_instances[output] = this;
         constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
-        scale_x_factor.set_callback(skew_changed);
-        scale_y_factor.set_callback(skew_changed);
+        output->connect_signal("workspace-changed", &viewport_changed);
     }
 
-    void ensure_subsurface(wayfire_view view)
+    wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
+        {
+            wf::workspace_changed_signal *signal =
+                static_cast<wf::workspace_changed_signal*>(data);
+            auto og  = output->get_relative_geometry();
+            auto nvp = signal->new_viewport;
+
+            for (auto& b : backgrounds)
+            {
+                int w   = (og.width - b.second->transformed_view_box.width) / 2.0f;
+                auto ws = output->workspace->get_view_main_workspace(b.first);
+                auto offset = ws - nvp;
+                int x = offset.x * og.width;
+                int y = offset.y * og.height;
+                b.second->transformed_view_box.x = x + w;
+                b.second->black_border_node->x   = x;
+                b.second->black_border_node->y   = y;
+                b.second->black_border_node->w   = og.width;
+                b.second->black_border_node->h   = og.height;
+                b.second->transformed_view_box.y = b.second->black_border_node->y =
+                    y;
+            }
+
+            output->render->damage_whole();
+        }
+    };
+
+    void ensure_subsurface(wayfire_view view, wlr_box transformed_view_box)
     {
         auto pair = backgrounds.find(view);
 
@@ -286,11 +239,18 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (!background->black_border)
         {
-            std::unique_ptr<fullscreen_subsurface> subsurface =
-                std::make_unique<fullscreen_subsurface>(view);
-            nonstd::observer_ptr<fullscreen_subsurface> ptr{subsurface};
-            view->add_subsurface(std::move(subsurface), true);
-            background->black_border = ptr.get();
+            auto output = view->get_output();
+            if (!output)
+            {
+                return;
+            }
+
+            auto og = output->get_relative_geometry();
+            background->black_border_node = std::make_shared<black_border_node_t>(
+                view, 0, 0, og.width, og.height);
+            wf::scene::add_back(view->get_root_node(),
+                background->black_border_node);
+            background->black_border = true;
         }
     }
 
@@ -307,8 +267,8 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
         if (background->black_border)
         {
-            view->remove_subsurface(background->black_border);
-            background->black_border = nullptr;
+            wf::scene::remove_child(background->black_border_node);
+            background->black_border = false;
         }
     }
 
@@ -327,18 +287,15 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             scale_x = scale_y = std::min(scale_x, scale_y);
         }
 
-        scale_x += (scale_x_factor * 0.01);
-        scale_y += (scale_y_factor * 0.01);
-
         wlr_box box;
-        box.width  = std::floor((vg.width - 2) * scale_x);
-        box.height = std::floor((vg.height - 2) * scale_y);
+        box.width  = std::floor(vg.width * scale_x);
+        box.height = std::floor(vg.height * scale_y);
         box.x = std::ceil((og.width - box.width) / 2.0);
         box.y = std::ceil((og.height - box.height) / 2.0);
 
         if (preserve_aspect)
         {
-            ensure_subsurface(view);
+            ensure_subsurface(view, box);
             scale_x += 1.0 / vg.width;
             translation_x -= 1.0;
         } else
@@ -346,7 +303,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             destroy_subsurface(view);
         }
 
-        backgrounds[view]->transformer->transformed_view_box = box;
+        backgrounds[view]->transformed_view_box = box;
         backgrounds[view]->transformer->scale_x = scale_x;
         backgrounds[view]->transformer->scale_y = scale_y;
         backgrounds[view]->transformer->translation_x = translation_x;
@@ -422,9 +379,11 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     {
         view->move(0, 0);
         backgrounds[view] = std::make_unique<fullscreen_background>(view);
-        backgrounds[view]->transformer = new fullscreen_transformer(view);
-        view->add_transformer(std::unique_ptr<fullscreen_transformer>(backgrounds[
-            view]->transformer), background_name);
+        backgrounds[view]->transformer =
+            std::make_shared<wf::scene::view_2d_transformer_t>(view);
+        view->get_transformed_node()->add_transformer(backgrounds[view]->transformer,
+            wf::TRANSFORMER_2D,
+            background_name);
         output->connect_signal("output-configuration-changed",
             &output_config_changed);
         wf::get_core().connect_signal("view-pre-moved-to-output",
@@ -459,14 +418,14 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             view_focused.disconnect();
         }
 
-        auto og = output->get_relative_geometry();
-        auto ws = background->second->transformer->get_workspace(og);
         view->move(
-            background->second->saved_geometry.x + ws.x * og.width,
-            background->second->saved_geometry.y + ws.y * og.height);
-        if (view->get_transformer(background_name))
+            background->second->saved_geometry.x,
+            background->second->saved_geometry.y);
+
+        if (view->get_transformed_node()->get_transformer(background_name))
         {
-            view->pop_transformer(background_name);
+            view->get_transformed_node()->rem_transformer(
+                background->second->transformer);
         }
 
         destroy_subsurface(view);
@@ -521,16 +480,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         update_backgrounds();
     };
 
-    wf::config::option_base_t::updated_callback_t skew_changed =
-        [=] ()
-    {
-        for (auto& b : backgrounds)
-        {
-            auto v = b.first;
-            setup_transform(v);
-        }
-    };
-
     wf::signal_connection_t on_motion_event = [=] (wf::signal_data_t *data)
     {
         auto ev = static_cast<
@@ -558,7 +507,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             auto view = output->get_active_view();
             wlr_box box;
 
-            box    = b.second->transformer->transformed_view_box;
+            box    = b.second->transformed_view_box;
             box.x += og.x;
             box.y += og.y;
 
@@ -693,3 +642,6 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_force_fullscreen);
+}
+}
+}
