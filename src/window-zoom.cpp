@@ -31,37 +31,148 @@
 #include "wayfire/workspace-manager.hpp"
 
 
-class winzoom_t : public wf::view_2D
+namespace wf
 {
-    wf::option_wrapper_t<bool> nearest_filtering{"winzoom/nearest_filtering"};
-    wayfire_view view;
+namespace scene
+{
+namespace winzoom
+{
+static wf::pointf_t get_center(wf::geometry_t view)
+{
+    return {
+        view.x + view.width / 2.0,
+        view.y + view.height / 2.0,
+    };
+}
 
-    wf::config::option_base_t::updated_callback_t filtering_changed = [=] ()
+class simple_node_render_instance_t : public transformer_render_instance_t<node_t>
+{
+    wf::signal::connection_t<node_damage_signal> on_node_damaged =
+        [=] (node_damage_signal *ev)
     {
-        view->damage();
+        push_damage(ev->region);
     };
 
+    node_t *self;
+    wayfire_view view;
+    float *scale_x, *scale_y;
+    wlr_box *transformed_view_geometry;
+    damage_callback push_damage;
+    wf::option_wrapper_t<bool> nearest_filtering{"winzoom/nearest_filtering"};
+
   public:
-    winzoom_t(wayfire_view view) : wf::view_2D(view)
+    simple_node_render_instance_t(node_t *self, damage_callback push_damage,
+        wayfire_view view, float *scale_x, float *scale_y,
+        wlr_box *transformed_view_geometry) :
+        transformer_render_instance_t<node_t>(self, push_damage,
+            view->get_output())
     {
-        nearest_filtering.set_callback(filtering_changed);
-        this->view = view;
+        this->self    = self;
+        this->view    = view;
+        this->scale_x = scale_x;
+        this->scale_y = scale_y;
+        this->transformed_view_geometry = transformed_view_geometry;
+        this->push_damage = push_damage;
+        self->connect(&on_node_damaged);
+
+        wf::config::option_base_t::updated_callback_t option_changed = [=] ()
+        {
+            this->view->damage();
+        };
+
+        nearest_filtering.set_callback(option_changed);
     }
 
-    ~winzoom_t()
-    {}
-
-    void render_with_damage(wf::texture_t src_tex, wlr_box src_box,
-        const wf::region_t& damage, const wf::render_target_t& target_fb) override
+    void schedule_instructions(
+        std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage)
     {
+        // We want to render ourselves only, the node does not have children
+        instructions.push_back(render_instruction_t{
+                        .instance = this,
+                        .target   = target,
+                        .damage   = damage & self->get_bounding_box(),
+                    });
+    }
+
+    void transform_damage_region(wf::region_t& damage) override
+    {
+        damage |= view->get_transformed_node()->get_children_bounding_box();
+    }
+
+    wlr_box get_scaled_geometry()
+    {
+        auto vg = view->get_wm_geometry();
+        auto midpoint = get_center(vg);
+        auto result   = wf::pointf_t{float(vg.x), float(vg.y)} - midpoint;
+        result.x *= *scale_x;
+        result.y *= *scale_y;
+        result   += midpoint;
+        transformed_view_geometry->x     = result.x;
+        transformed_view_geometry->y     = result.y;
+        transformed_view_geometry->width = vg.width * *scale_x;
+        transformed_view_geometry->height = vg.height * *scale_y;
+        return *transformed_view_geometry;
+    }
+
+    void render(const wf::render_target_t& target,
+        const wf::region_t& region)
+    {
+        auto src_tex = transformer_render_instance_t<node_t>::get_texture(1.0);
+
+        OpenGL::render_begin(target);
         GL_CALL(glBindTexture(GL_TEXTURE_2D, src_tex.tex_id));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
             nearest_filtering ? GL_NEAREST : GL_LINEAR));
         GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
             nearest_filtering ? GL_NEAREST : GL_LINEAR));
-        wf::view_transformer_t::render_with_damage(src_tex, src_box, damage,
-            target_fb);
+        auto scaled_geometry = get_scaled_geometry();
+        for (const auto& box : region)
+        {
+            target.logic_scissor(wlr_box_from_pixman_box(box));
+            OpenGL::render_texture(src_tex, target, scaled_geometry, glm::vec4(1.0));
+        }
+
+        OpenGL::render_end();
     }
+};
+
+class winzoom_t : public view_2d_transformer_t
+{
+    wayfire_view view;
+    wlr_box transformed_view_geometry;
+
+  public:
+    winzoom_t(wayfire_view view) : view_2d_transformer_t(view)
+    {
+        this->view = view;
+        this->transformed_view_geometry = view->get_wm_geometry();
+    }
+
+    wf::pointf_t to_local(const wf::pointf_t& point) override
+    {
+        auto midpoint = get_center(transformed_view_geometry);
+        auto result   = point - midpoint;
+        result.x /= scale_x;
+        result.y /= scale_y;
+        result   += midpoint;
+        return result;
+    }
+
+    void gen_render_instances(std::vector<render_instance_uptr>& instances,
+        damage_callback push_damage, wf::output_t *shown_on) override
+    {
+        // push_damage accepts damage in the parent's coordinate system
+        // If the node is a transformer, it may transform the damage. However,
+        // this simple nodes does not need any transformations, so the push_damage
+        // callback is just passed along.
+        instances.push_back(std::make_unique<simple_node_render_instance_t>(
+            this, push_damage, view, &scale_x, &scale_y,
+            &transformed_view_geometry));
+    }
+
+    ~winzoom_t()
+    {}
 };
 
 class wayfire_winzoom : public wf::plugin_interface_t
@@ -77,6 +188,7 @@ class wayfire_winzoom : public wf::plugin_interface_t
     wf::option_wrapper_t<bool> preserve_aspect{"winzoom/preserve_aspect"};
     wf::option_wrapper_t<wf::keybinding_t> modifier{"winzoom/modifier"};
     wf::option_wrapper_t<double> zoom_step{"winzoom/zoom_step"};
+    std::map<wayfire_view, std::shared_ptr<winzoom_t>> transformers;
 
   public:
     void init() override
@@ -120,13 +232,16 @@ class wayfire_winzoom : public wf::plugin_interface_t
             return false;
         }
 
-        if (!view->get_transformer("winzoom"))
+        if (!view->get_transformed_node()->get_transformer("winzoom"))
         {
-            view->add_transformer(std::make_unique<winzoom_t>(view), "winzoom");
+            transformers[view] = std::make_shared<winzoom_t>(view);
+            view->get_transformed_node()->add_transformer(transformers[view],
+                wf::TRANSFORMER_2D, "winzoom");
         }
 
         transformer =
-            dynamic_cast<winzoom_t*>(view->get_transformer("winzoom").get());
+            dynamic_cast<winzoom_t*>(view->get_transformed_node()->get_transformer(
+                "winzoom").get());
 
         zoom.x = transformer->scale_x;
         zoom.y = transformer->scale_y;
@@ -152,7 +267,7 @@ class wayfire_winzoom : public wf::plugin_interface_t
 
         if ((zoom.x == 1.0) && (zoom.y == 1.0))
         {
-            view->pop_transformer("winzoom");
+            view->get_transformed_node()->rem_transformer(transformers[view]);
             return true;
         }
 
@@ -209,12 +324,9 @@ class wayfire_winzoom : public wf::plugin_interface_t
 
     void fini() override
     {
-        for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
+        for (auto& t : transformers)
         {
-            if (view->get_transformer("winzoom"))
-            {
-                view->pop_transformer("winzoom");
-            }
+            t.first->get_transformed_node()->rem_transformer(t.second);
         }
 
         output->rem_binding(&axis_cb);
@@ -226,3 +338,6 @@ class wayfire_winzoom : public wf::plugin_interface_t
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_winzoom);
+}
+}
+}

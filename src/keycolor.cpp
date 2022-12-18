@@ -78,42 +78,44 @@ void main()
 static const std::string program_name = "keycolor_shader_program";
 static int program_ref_count;
 
+namespace wf
+{
+namespace scene
+{
+namespace keycolor
+{
 class keycolor_custom_data_t : public wf::custom_data_t
 {
   public:
     OpenGL::program_t program;
 };
 
-class wf_keycolor : public wf::view_transformer_t
+class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<node_t>
 {
-    nonstd::observer_ptr<wf::view_interface_t> view;
+    wf::signal::connection_t<node_damage_signal> on_node_damaged =
+        [=] (node_damage_signal *ev)
+    {
+        push_to_parent(ev->region);
+    };
+
+    node_t *self;
+    wayfire_view view;
+    damage_callback push_to_parent;
     wf::config::option_base_t::updated_callback_t option_changed;
     wf::option_wrapper_t<wf::color_t> color{"keycolor/color"};
     wf::option_wrapper_t<double> opacity{"keycolor/opacity"};
     wf::option_wrapper_t<double> threshold{"keycolor/threshold"};
 
-    uint32_t get_z_order() override
-    {
-        return wf::TRANSFORMER_HIGHLEVEL;
-    }
-
-    wf::pointf_t transform_point(
-        wf::geometry_t view, wf::pointf_t point) override
-    {
-        return point;
-    }
-
-    wf::pointf_t untransform_point(
-        wf::geometry_t view, wf::pointf_t point) override
-    {
-        return point;
-    }
-
   public:
-
-    wf_keycolor(wayfire_view view) : wf::view_transformer_t()
+    simple_node_render_instance_t(node_t *self, damage_callback push_damage,
+        wayfire_view view) : wf::scene::transformer_render_instance_t<node_t>(self,
+            push_damage,
+            view->get_output())
     {
+        this->self = self;
         this->view = view;
+        this->push_to_parent = push_damage;
+        self->connect(&on_node_damaged);
 
         option_changed = [=] ()
         {
@@ -125,12 +127,25 @@ class wf_keycolor : public wf::view_transformer_t
         threshold.set_callback(option_changed);
     }
 
-    void render_with_damage(wf::texture_t src_tex, wlr_box src_box,
-        const wf::region_t& damage, const wf::render_target_t& target_fb) override
+    void schedule_instructions(
+        std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage)
+    {
+        // We want to render ourselves only, the node does not have children
+        instructions.push_back(render_instruction_t{
+                        .instance = this,
+                        .target   = target,
+                        .damage   = damage & self->get_bounding_box(),
+                    });
+    }
+
+    void render(const wf::render_target_t& target,
+        const wf::region_t& region)
     {
         wlr_box fb_geom =
-            target_fb.framebuffer_box_from_geometry_box(target_fb.geometry);
-        auto view_box = target_fb.framebuffer_box_from_geometry_box(src_box);
+            target.framebuffer_box_from_geometry_box(target.geometry);
+        auto view_box = target.framebuffer_box_from_geometry_box(
+            this->view->get_wm_geometry());
         view_box.x -= fb_geom.x;
         view_box.y -= fb_geom.y;
 
@@ -153,7 +168,7 @@ class wf_keycolor : public wf::view_transformer_t
             0.0f, 1.0f
         };
 
-        OpenGL::render_begin(target_fb);
+        OpenGL::render_begin(target);
 
         /* Upload data to shader */
         glm::vec4 color_data{
@@ -161,25 +176,27 @@ class wf_keycolor : public wf::view_transformer_t
             ((wf::color_t)color).g,
             ((wf::color_t)color).b,
             (double)opacity};
+        auto src_tex = wf::scene::transformer_render_instance_t<node_t>::get_texture(
+            1.0);
         data->program.use(src_tex.type);
         data->program.uniform4f("color", color_data);
         data->program.uniform1f("threshold", threshold);
         data->program.attrib_pointer("position", 2, 0, vertexData);
         data->program.attrib_pointer("texcoord", 2, 0, texCoords);
-        data->program.uniformMatrix4f("mvp", target_fb.transform);
+        data->program.uniformMatrix4f("mvp", target.transform);
         GL_CALL(glActiveTexture(GL_TEXTURE0));
         data->program.set_active_texture(src_tex);
 
-        /* Render it to target_fb */
-        target_fb.bind();
+        /* Render it to target */
+        target.bind();
         GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
 
         GL_CALL(glEnable(GL_BLEND));
         GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
 
-        for (const auto& box : damage)
+        for (const auto& box : region)
         {
-            target_fb.logic_scissor(wlr_box_from_pixman_box(box));
+            target.logic_scissor(wlr_box_from_pixman_box(box));
             GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
         }
 
@@ -192,6 +209,29 @@ class wf_keycolor : public wf::view_transformer_t
         data->program.deactivate();
         OpenGL::render_end();
     }
+};
+
+class wf_keycolor : public wf::scene::view_2d_transformer_t
+{
+    wayfire_view view;
+
+  public:
+
+    wf_keycolor(wayfire_view view) : wf::scene::view_2d_transformer_t(view)
+    {
+        this->view = view;
+    }
+
+    void gen_render_instances(std::vector<render_instance_uptr>& instances,
+        damage_callback push_damage, wf::output_t *shown_on) override
+    {
+        // push_damage accepts damage in the parent's coordinate system
+        // If the node is a transformer, it may transform the damage. However,
+        // this simple nodes does not need any transformations, so the push_damage
+        // callback is just passed along.
+        instances.push_back(std::make_unique<simple_node_render_instance_t>(
+            this, push_damage, view));
+    }
 
     virtual ~wf_keycolor()
     {}
@@ -199,24 +239,27 @@ class wf_keycolor : public wf::view_transformer_t
 
 class wayfire_keycolor : public wf::plugin_interface_t
 {
+    wf::wl_idle_call idle_attach;
     const std::string transformer_name = "keycolor";
+    std::map<wayfire_view, std::shared_ptr<wf_keycolor>> transformers;
 
     void add_transformer(wayfire_view view)
     {
-        if (view->get_transformer(transformer_name))
+        if (view->get_transformed_node()->get_transformer(transformer_name))
         {
             return;
         }
 
-        view->add_transformer(std::make_unique<wf_keycolor>(view),
-            transformer_name);
+        transformers[view] = std::make_shared<wf_keycolor>(view);
+        view->get_transformed_node()->add_transformer(transformers[view],
+            wf::TRANSFORMER_2D, transformer_name);
     }
 
     void pop_transformer(wayfire_view view)
     {
-        if (view->get_transformer(transformer_name))
+        if (view->get_transformed_node()->get_transformer(transformer_name))
         {
-            view->pop_transformer(transformer_name);
+            view->get_transformed_node()->rem_transformer(transformers[view]);
         }
     }
 
@@ -264,16 +307,23 @@ class wayfire_keycolor : public wf::plugin_interface_t
     wf::signal_connection_t view_attached{[this] (wf::signal_data_t *data)
         {
             auto view = get_signaled_view(data);
+            if (!view)
+            {
+                return;
+            }
 
             if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
             {
                 return;
             }
 
-            if (!view->get_transformer(transformer_name))
+            idle_attach.run_once([=] ()
             {
-                add_transformer(view);
-            }
+                if (!view->get_transformed_node()->get_transformer(transformer_name))
+                {
+                    add_transformer(view);
+                }
+            });
         }
     };
 
@@ -300,3 +350,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_keycolor);
+}
+}
+}
