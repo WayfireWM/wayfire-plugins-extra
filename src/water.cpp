@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,8 @@
 #include <wayfire/opengl.hpp>
 #include <wayfire/util/duration.hpp>
 #include <wayfire/render-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
+#include <wayfire/plugins/common/input-grab.hpp>
 
 static const char *vertex_shader =
     R"(
@@ -182,7 +184,7 @@ void main()
 }
 )";
 
-class wayfire_water_screen : public wf::plugin_interface_t
+class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf::pointer_interaction_t
 {
     wf::option_wrapper_t<wf::buttonbinding_t> button{"water/activate"};
     wf::animation::simple_animation_t animation =
@@ -194,13 +196,15 @@ class wayfire_water_screen : public wf::plugin_interface_t
     bool hook_set    = false;
     wf::wl_timer timer;
     int points_loc;
+    std::unique_ptr<wf::input_grab_t> input_grab;
+    wf::plugin_activation_data_t grab_interface{
+        .name = "water",
+        .capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR,
+    };
 
   public:
     void init() override
     {
-        grab_interface->name = "water";
-        grab_interface->capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR;
-
         OpenGL::render_begin();
         program[0].set_simple(
             OpenGL::compile_program(vertex_shader, fragment_shader_a));
@@ -212,26 +216,30 @@ class wayfire_water_screen : public wf::plugin_interface_t
             program[0].get_program_id(wf::TEXTURE_TYPE_RGBA), "points"));
         OpenGL::render_end();
 
+        input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
+            nullptr);
+
         output->add_button(button, &activate_binding);
 
-        grab_interface->callbacks.pointer.button = [=] (uint32_t b, uint32_t s)
-        {
-            if (s == WL_POINTER_BUTTON_STATE_RELEASED)
-            {
-                output->deactivate_plugin(grab_interface);
-                timer.set_timeout(5000, timeout);
-                grab_interface->ungrab();
-                button_down = false;
-            }
-        };
         animation.set(0, 0);
+    }
+
+    void handle_pointer_button(const wlr_pointer_button_event& event) override
+    {
+        if (event.state == WLR_BUTTON_RELEASED)
+        {
+            output->deactivate_plugin(&grab_interface);
+            timer.set_timeout(5000, timeout);
+            input_grab->ungrab_input();
+            button_down = false;
+        }
     }
 
     wf::button_callback activate_binding = [=] (auto)
     {
-        if (!output->is_plugin_active(grab_interface->name))
+        if (!output->is_plugin_active(grab_interface.name))
         {
-            if (!output->activate_plugin(grab_interface))
+            if (!output->activate_plugin(&grab_interface))
             {
                 return false;
             }
@@ -245,11 +253,11 @@ class wayfire_water_screen : public wf::plugin_interface_t
 
         last_cursor = output->get_cursor_position();
         animation.animate(animation, 1);
-        grab_interface->grab();
+        input_grab->grab_input(wf::scene::layer::OVERLAY, true);
         timer.disconnect();
         button_down = true;
 
-        return true;
+        return false;
     };
 
     wf::wl_timer::callback_t timeout = [=] ()
@@ -400,9 +408,9 @@ class wayfire_water_screen : public wf::plugin_interface_t
 
     void fini() override
     {
-        output->deactivate_plugin(grab_interface);
+        output->deactivate_plugin(&grab_interface);
         output->rem_binding(&activate_binding);
-        grab_interface->ungrab();
+        input_grab->ungrab_input();
         timer.disconnect();
         if (hook_set)
         {
@@ -419,4 +427,4 @@ class wayfire_water_screen : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_water_screen);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_water_screen>);

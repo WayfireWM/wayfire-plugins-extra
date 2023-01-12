@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@
 #include <wayfire/output.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/render-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
 #include <wayfire/util/log.hpp>
 
@@ -34,7 +35,7 @@ extern "C"
 #include <EGL/egl.h>
 }
 
-class wayfire_showrepaint : public wf::plugin_interface_t
+class wayfire_showrepaint : public wf::per_output_plugin_instance_t
 {
     wf::option_wrapper_t<wf::activatorbinding_t> toggle_binding{"showrepaint/toggle"};
     wf::option_wrapper_t<bool> reduce_flicker{"showrepaint/reduce_flicker"};
@@ -226,4 +227,4 @@ class wayfire_showrepaint : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_showrepaint);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_showrepaint>);

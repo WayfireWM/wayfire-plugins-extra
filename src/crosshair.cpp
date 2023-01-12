@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,9 @@
 #include <wayfire/opengl.hpp>
 #include <wayfire/util/duration.hpp>
 #include <wayfire/render-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
-class wayfire_crosshair : public wf::plugin_interface_t
+class wayfire_crosshair : public wf::per_output_plugin_instance_t
 {
     wf::option_wrapper_t<int> line_width{"crosshair/line_width"};
     wf::option_wrapper_t<wf::color_t> line_color{"crosshair/line_color"};
@@ -39,9 +40,6 @@ class wayfire_crosshair : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = "crosshair";
-        grab_interface->capabilities = 0;
-
         output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_OVERLAY);
         output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
     }
@@ -107,4 +105,4 @@ class wayfire_crosshair : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_crosshair);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_crosshair>);

@@ -2,7 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2020 Ilia Bozhinov
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/scene-operations.hpp>
 #include <wayfire/render-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
 namespace wf
 {
@@ -170,7 +171,7 @@ class wayfire_force_fullscreen;
 std::map<wf::output_t*,
     wayfire_force_fullscreen*> wayfire_force_fullscreen_instances;
 
-class wayfire_force_fullscreen : public wf::plugin_interface_t
+class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
 {
     std::string background_name;
     bool motion_connected = false;
@@ -183,13 +184,15 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
         "force-fullscreen/transparent_behind_views"};
     wf::option_wrapper_t<wf::keybinding_t> key_toggle_fullscreen{
         "force-fullscreen/key_toggle_fullscreen"};
+    wf::plugin_activation_data_t grab_interface{
+        .name = "force-fullscreen",
+        .capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR,
+    };
 
   public:
     void init() override
     {
-        this->grab_interface->name = "force-fullscreen";
-        this->grab_interface->capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR;
-        background_name = this->grab_interface->name;
+        background_name = this->grab_interface.name;
 
         output->add_key(key_toggle_fullscreen, &on_toggle_fullscreen);
         transparent_behind_views.set_callback(option_changed);
@@ -323,7 +326,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
 
     bool toggle_fullscreen(wayfire_view view)
     {
-        if (!output->can_activate_plugin(grab_interface))
+        if (!output->can_activate_plugin(&grab_interface))
         {
             return false;
         }
@@ -490,7 +493,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
             return;
         }
 
-        if (!output->can_activate_plugin(grab_interface))
+        if (!output->can_activate_plugin(&grab_interface))
         {
             return;
         }
@@ -641,7 +644,7 @@ class wayfire_force_fullscreen : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_force_fullscreen);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_force_fullscreen>);
 }
 }
 }

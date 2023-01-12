@@ -1,4 +1,3 @@
-#include <wayfire/singleton-plugin.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/core.hpp>
 #include <glibmm/main.h>
@@ -16,12 +15,12 @@ static gboolean on_wayland_fd_event(gint fd, GIOCondition condition,
 
 namespace wf
 {
-class glib_main_loop_t
+class glib_main_loop_t : public wf::plugin_interface_t
 {
     Glib::RefPtr<Glib::MainLoop> g_loop;
 
   public:
-    glib_main_loop_t()
+    void init()
     {
         // IMPORTANT!
         // Ensure that the .so file for this plugin is never closed, by opening it
@@ -126,4 +125,4 @@ static gboolean on_wayland_fd_event(gint, GIOCondition condition,
     return true;
 }
 
-DECLARE_WAYFIRE_PLUGIN((wf::singleton_plugin_t<wf::glib_main_loop_t, true>));
+DECLARE_WAYFIRE_PLUGIN(wf::glib_main_loop_t);
