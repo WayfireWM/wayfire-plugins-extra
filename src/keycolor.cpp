@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 #include <wayfire/output.hpp>
 #include <wayfire/view-transform.hpp>
 #include <wayfire/workspace-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
 
 
@@ -237,7 +238,7 @@ class wf_keycolor : public wf::scene::view_2d_transformer_t
     {}
 };
 
-class wayfire_keycolor : public wf::plugin_interface_t
+class wayfire_keycolor : public wf::per_output_plugin_instance_t
 {
     wf::wl_idle_call idle_attach;
     const std::string transformer_name = "keycolor";
@@ -274,9 +275,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = transformer_name;
-        grab_interface->capabilities = 0;
-
         if (!wf::get_core().get_data<keycolor_custom_data_t>(program_name))
         {
             std::unique_ptr<keycolor_custom_data_t> data =
@@ -349,7 +347,7 @@ class wayfire_keycolor : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_keycolor);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_keycolor>);
 }
 }
 }

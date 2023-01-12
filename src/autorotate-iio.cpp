@@ -5,6 +5,7 @@
 #include <wayfire/output-layout.hpp>
 #include <wayfire/core.hpp>
 #include <wayfire/util/log.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
 #include <giomm/dbusconnection.h>
 #include <giomm/dbuswatchname.h>
@@ -23,7 +24,7 @@ extern "C"
 }
 
 using namespace Gio;
-class WayfireAutorotateIIO : public wf::plugin_interface_t
+class WayfireAutorotateIIO : public wf::per_output_plugin_instance_t
 {
     /* Tries to detect whether autorotate is enabled for the current output.
      * Currently it is enabled only for integrated panels */
@@ -74,6 +75,10 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     rotate_right_opt{"autorotate-iio/rotate_right"};
     wf::option_wrapper_t<bool>
     config_rotation_locked{"autorotate-iio/lock_rotation"};
+    wf::plugin_activation_data_t grab_interface{
+        .name = "autorotate-iio",
+        .capabilities = 0,
+    };
 
     guint watch_id;
     wf::activator_callback on_rotate_left = [=] (auto)
@@ -101,7 +106,7 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
 
     bool on_rotate_binding(int32_t target_rotation)
     {
-        if (!output->can_activate_plugin(grab_interface))
+        if (!output->can_activate_plugin(&grab_interface))
         {
             return false;
         }
@@ -265,4 +270,4 @@ class WayfireAutorotateIIO : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(WayfireAutorotateIIO);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<WayfireAutorotateIIO>);

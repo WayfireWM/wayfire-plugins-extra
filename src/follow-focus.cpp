@@ -27,6 +27,7 @@
 #include <wayfire/output.hpp>
 #include <wayfire/output-layout.hpp>
 #include <wayfire/workspace-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
 
@@ -36,7 +37,7 @@ namespace follow_focus
 /* Since plugin instances are per-output, we need to make this global */
 static wf::output_t *focus_output;
 
-class wayfire_follow_focus : public wf::plugin_interface_t
+class wayfire_follow_focus : public wf::per_output_plugin_instance_t
 {
   private:
     wayfire_view focus_view = nullptr;
@@ -169,9 +170,6 @@ class wayfire_follow_focus : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = "follow-focus";
-        grab_interface->capabilities = 0;
-
         wf::get_core().connect_signal("pointer_motion", &pointer_motion);
         wf::get_core().connect_signal("pointer_motion_absolute", &pointer_motion);
     }
@@ -183,5 +181,5 @@ class wayfire_follow_focus : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_follow_focus);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_follow_focus>);
 }

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,9 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/render-manager.hpp>
-#include "wayfire/view-transform.hpp"
-#include "wayfire/workspace-manager.hpp"
+#include <wayfire/view-transform.hpp>
+#include <wayfire/workspace-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
 
 namespace wf
@@ -175,7 +176,7 @@ class winzoom_t : public view_2d_transformer_t
     {}
 };
 
-class wayfire_winzoom : public wf::plugin_interface_t
+class wayfire_winzoom : public wf::per_output_plugin_instance_t
 {
     wf::option_wrapper_t<wf::activatorbinding_t> inc_x_binding{
         "winzoom/inc_x_binding"};
@@ -189,13 +190,14 @@ class wayfire_winzoom : public wf::plugin_interface_t
     wf::option_wrapper_t<wf::keybinding_t> modifier{"winzoom/modifier"};
     wf::option_wrapper_t<double> zoom_step{"winzoom/zoom_step"};
     std::map<wayfire_view, std::shared_ptr<winzoom_t>> transformers;
+    wf::plugin_activation_data_t grab_interface{
+        .name = "window-zoom",
+        .capabilities = 0,
+    };
 
   public:
     void init() override
     {
-        grab_interface->name = "winzoom";
-        grab_interface->capabilities = 0;
-
         output->add_axis(modifier, &axis_cb);
         output->add_activator(inc_x_binding, &on_inc_x);
         output->add_activator(dec_x_binding, &on_dec_x);
@@ -213,12 +215,12 @@ class wayfire_winzoom : public wf::plugin_interface_t
             return false;
         }
 
-        if (!output->activate_plugin(grab_interface))
+        if (!output->activate_plugin(&grab_interface))
         {
             return false;
         }
 
-        output->deactivate_plugin(grab_interface);
+        output->deactivate_plugin(&grab_interface);
 
         auto layer = output->workspace->get_view_layer(view);
 
@@ -337,7 +339,7 @@ class wayfire_winzoom : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_winzoom);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_winzoom>);
 }
 }
 }
