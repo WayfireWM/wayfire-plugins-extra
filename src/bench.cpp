@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/render-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
 
@@ -38,7 +39,7 @@ extern "C"
 
 #define WIDGET_PADDING 10
 
-class wayfire_bench_screen : public wf::plugin_interface_t
+class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 {
     cairo_t *cr = nullptr;
     double text_y;
@@ -60,9 +61,6 @@ class wayfire_bench_screen : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = "bench";
-        grab_interface->capabilities = 0;
-
         output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
         output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
         output->render->set_redraw_always();
@@ -308,4 +306,4 @@ class wayfire_bench_screen : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_bench_screen);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_bench_screen>);

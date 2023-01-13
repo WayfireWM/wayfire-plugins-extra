@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,13 +34,13 @@
  */
 
 #include <map>
-#include "wayfire/geometry.hpp"
-#include "wayfire/opengl.hpp"
-#include "wayfire/region.hpp"
-#include "wayfire/scene-operations.hpp"
-#include "wayfire/signal-provider.hpp"
-#include "wayfire/scene.hpp"
-#include "wayfire/scene-render.hpp"
+#include <wayfire/geometry.hpp>
+#include <wayfire/opengl.hpp>
+#include <wayfire/region.hpp>
+#include <wayfire/scene-operations.hpp>
+#include <wayfire/signal-provider.hpp>
+#include <wayfire/scene.hpp>
+#include <wayfire/scene-render.hpp>
 #include <wayfire/util.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
@@ -49,6 +49,7 @@
 #include <wayfire/render-manager.hpp>
 #include <wayfire/workspace-stream.hpp>
 #include <wayfire/workspace-manager.hpp>
+#include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
 
@@ -188,7 +189,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
     return subnode;
 }
 
-class wayfire_workspace_names_output : public wf::plugin_interface_t
+class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 {
     wf::wl_timer timer;
     bool hook_set  = false;
@@ -209,9 +210,6 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = "workspace-names";
-        grab_interface->capabilities = 0;
-
         alpha_fade.set(0, 0);
         timed_out = false;
 
@@ -279,7 +277,7 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
 
     void update_name(int x, int y)
     {
-        auto section = wf::get_core().config.get_section(grab_interface->name);
+        auto section = wf::get_core().config.get_section("workspace-names");
         auto wsize   = output->workspace->get_workspace_grid_size();
         auto wsn     = workspaces[x][y]->workspace;
         int ws_num   = x + y * wsize.width + 1;
@@ -641,7 +639,7 @@ class wayfire_workspace_names_output : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_workspace_names_output);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_workspace_names_output>);
 }
 }
 }

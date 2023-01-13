@@ -1,5 +1,6 @@
 #include <wayfire/signal-definitions.hpp>
-#include <wayfire/singleton-plugin.hpp>
+#include <wayfire/per-output-plugin.hpp>
+#include <wayfire/plugins/common/shared-core-data.hpp>
 
 class JoinViewsSingleton
 {
@@ -46,14 +47,15 @@ class JoinViewsSingleton
     }
 };
 
-class JoinViews : public wf::singleton_plugin_t<JoinViewsSingleton>
+class JoinViews : public wf::per_output_plugin_instance_t
 {
+    wf::shared_data::ref_ptr_t<JoinViewsSingleton> global_idle;
+
   public:
     virtual void init() override
     {
-        singleton_plugin_t::init();
-        get_instance().handle_new_output(output);
+        global_idle->handle_new_output(output);
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(JoinViews);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<JoinViews>);

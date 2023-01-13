@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2020 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/workspace-manager.hpp>
 #include <wayfire/output-layout.hpp>
+#include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/input-grab.hpp>
 
 #include <wayfire/config.h>
@@ -51,7 +52,7 @@ struct parent_view
 
 static std::map<wf::output_t*, struct parent_view> views;
 
-class wayfire_background_view : public wf::plugin_interface_t,
+class wayfire_background_view : public wf::per_output_plugin_instance_t,
     public wf::pointer_interaction_t
 {
     const std::string transformer_name = "background-view";
@@ -204,4 +205,4 @@ class wayfire_background_view : public wf::plugin_interface_t,
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_background_view);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_background_view>);

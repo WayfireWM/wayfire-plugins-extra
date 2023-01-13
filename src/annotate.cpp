@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,10 @@
 #include "wayfire/output-layout.hpp"
 #include "wayfire/render-manager.hpp"
 #include "wayfire/workspace-manager.hpp"
+#include "wayfire/per-output-plugin.hpp"
 #include "wayfire/signal-definitions.hpp"
 #include "wayfire/plugins/common/cairo-util.hpp"
+#include "wayfire/plugins/common/input-grab.hpp"
 
 enum annotate_draw_method
 {
@@ -192,7 +194,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int 
     return subnode;
 }
 
-class wayfire_annotate_screen : public wf::plugin_interface_t
+class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public wf::pointer_interaction_t
 {
     uint32_t button;
     wlr_box last_bbox;
@@ -207,13 +209,15 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     wf::option_wrapper_t<wf::buttonbinding_t> draw_binding{"annotate/draw"};
     wf::option_wrapper_t<wf::activatorbinding_t> clear_binding{
         "annotate/clear_workspace"};
+    std::unique_ptr<wf::input_grab_t> input_grab;
+    wf::plugin_activation_data_t grab_interface{
+        .name = "annotate",
+        .capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR,
+    };
 
   public:
     void init() override
     {
-        grab_interface->name = "annotate";
-        grab_interface->capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR;
-
         auto wsize = output->workspace->get_workspace_grid_size();
         overlays.resize(wsize.width);
         for (int x = 0; x < wsize.width; x++)
@@ -231,21 +235,23 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
             }
         }
 
-        grab_interface->callbacks.pointer.button = [=] (uint32_t b, uint32_t s)
-        {
-            if ((b == button) && (s == WL_POINTER_BUTTON_STATE_RELEASED))
-            {
-                draw_end();
-            }
-        };
-
         output->connect_signal("output-configuration-changed",
             &output_config_changed);
         output->connect_signal("workspace-changed", &viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
         output->add_activator(clear_binding, &clear_workspace);
+        input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
+            nullptr);
         method_changed();
+    }
+
+    void handle_pointer_button(const wlr_pointer_button_event& event) override
+    {
+        if ((event.button == button) && (event.state == WLR_BUTTON_RELEASED))
+        {
+            draw_end();
+        }
     }
 
     wf::config::option_base_t::updated_callback_t method_changed = [=] ()
@@ -318,7 +324,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
         grab();
 
-        return true;
+        return false;
     };
 
     void draw_end()
@@ -735,18 +741,18 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
 
     void grab()
     {
-        if (!output->activate_plugin(grab_interface))
+        if (!output->activate_plugin(&grab_interface))
         {
             return;
         }
 
-        grab_interface->grab();
+        input_grab->grab_input(wf::scene::layer::OVERLAY, true);
     }
 
     void ungrab()
     {
-        grab_interface->ungrab();
-        output->deactivate_plugin(grab_interface);
+        input_grab->ungrab_input();
+        output->deactivate_plugin(&grab_interface);
     }
 
     void fini() override
@@ -774,7 +780,7 @@ class wayfire_annotate_screen : public wf::plugin_interface_t
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_annotate_screen);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_annotate_screen>);
 }
 }
 }

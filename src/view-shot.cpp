@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Moreau
+ * Copyright (c) 2023 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 #include <wayfire/output.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/img.hpp>
+#include <wayfire/per-output-plugin.hpp>
 
 #include <ctime>
 
@@ -49,7 +50,7 @@ static std::string replaceAll(std::string s, const std::string& from,
     return s;
 }
 
-class wayfire_view_shot : public wf::plugin_interface_t
+class wayfire_view_shot : public wf::per_output_plugin_instance_t
 {
     const std::string transformer_name = "view_shot";
     wf::option_wrapper_t<wf::activatorbinding_t> capture_binding{"view-shot/capture"};
@@ -59,9 +60,6 @@ class wayfire_view_shot : public wf::plugin_interface_t
   public:
     void init() override
     {
-        grab_interface->name = transformer_name;
-        grab_interface->capabilities = 0;
-
         output->add_activator(capture_binding, &on_capture);
     }
 
@@ -111,4 +109,4 @@ class wayfire_view_shot : public wf::plugin_interface_t
     {}
 };
 
-DECLARE_WAYFIRE_PLUGIN(wayfire_view_shot);
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_view_shot>);
