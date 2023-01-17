@@ -1,5 +1,6 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/core.hpp>
+#include <wayfire/signal-definitions.hpp>
 #include <glibmm/main.h>
 #include <giomm/init.h>
 #include <glibmm/init.h>
@@ -46,8 +47,8 @@ class glib_main_loop_t : public wf::plugin_interface_t
         Gio::init();
 
         g_loop = Glib::MainLoop::create();
-        wf::get_core().connect_signal("startup-finished", &glib_loop_run);
-        wf::get_core().connect_signal("shutdown", &glib_loop_quit);
+        wf::get_core().connect(&glib_loop_run);
+        wf::get_core().connect(&glib_loop_quit);
     }
 
     void handle_wayland_fd_in(GIOCondition flag)
@@ -64,7 +65,7 @@ class glib_main_loop_t : public wf::plugin_interface_t
         wl_display_flush_clients(wf::get_core().display);
     }
 
-    wf::signal_connection_t glib_loop_run = [=] (auto)
+    wf::signal::connection_t<wf::core_startup_finished_signal> glib_loop_run = [=] (auto)
     {
         auto fd = wl_event_loop_get_fd(wf::get_core().ev_loop);
         g_unix_fd_add(fd, G_IO_IN, on_wayland_fd_event, this);
@@ -74,7 +75,7 @@ class glib_main_loop_t : public wf::plugin_interface_t
         g_loop->run();
     };
 
-    wf::signal_connection_t glib_loop_quit = [=] (auto)
+    wf::signal::connection_t<wf::core_shutdown_signal> glib_loop_quit = [=] (auto)
     {
         auto display = wf::get_core().display;
         wl_display_destroy_clients(display);

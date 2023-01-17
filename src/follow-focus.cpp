@@ -161,7 +161,16 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
         });
     }
 
-    wf::signal_connection_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> pointer_motion =
+        [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
+    {
+        check_output();
+        check_view();
+    };
+
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_absolute_event>>
+    pointer_motion_absolute =
+        [=] (wf::input_event_signal<wlr_pointer_motion_absolute_event> *ev)
     {
         check_output();
         check_view();
@@ -170,8 +179,8 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
-        wf::get_core().connect_signal("pointer_motion", &pointer_motion);
-        wf::get_core().connect_signal("pointer_motion_absolute", &pointer_motion);
+        wf::get_core().connect(&pointer_motion);
+        wf::get_core().connect(&pointer_motion_absolute);
     }
 
     void fini() override

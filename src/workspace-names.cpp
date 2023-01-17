@@ -230,8 +230,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             }
         }
 
-        output->connect_signal("workarea-changed", &workarea_changed);
-        output->connect_signal("workspace-changed", &viewport_changed);
+        output->connect(&workarea_changed);
+        output->connect(&viewport_changed);
         font.set_callback(option_changed);
         position.set_callback(option_changed);
         background_color.set_callback(option_changed);
@@ -246,10 +246,10 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             update_names();
         }
 
-        wf::get_core().connect_signal("reload-config", &reload_config);
+        wf::get_core().connect(&reload_config);
     }
 
-    wf::signal_connection_t reload_config{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::reload_config_signal> reload_config{[this] (wf::reload_config_signal *ev)
         {
             update_names();
         }
@@ -267,7 +267,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             output->render->rem_effect(&post_hook);
         } else
         {
-            output->connect_signal("workspace-changed", &viewport_changed);
+            output->connect(&viewport_changed);
             output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
         }
 
@@ -439,7 +439,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         }
     }
 
-    wf::signal_connection_t workarea_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::workarea_changed_signal> workarea_changed{[this] (wf::workarea_changed_signal
+                                                                                   *ev)
         {
             update_textures();
         }
@@ -520,7 +521,9 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::workspace_changed_signal> viewport_changed{[this] (wf::
+                                                                                    workspace_changed_signal*
+                                                                                    ev)
         {
             auto wsize = output->workspace->get_workspace_grid_size();
             auto nvp   = output->workspace->get_current_workspace();

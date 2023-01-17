@@ -5,9 +5,10 @@
 class JoinViewsSingleton
 {
   public:
-    wf::signal_connection_t on_geometry_changed{[=] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_geometry_changed_signal> on_geometry_changed{[=
+        ] (wf::view_geometry_changed_signal *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
             if (!view->is_mapped())
             {
                 return;
@@ -26,18 +27,18 @@ class JoinViewsSingleton
         }
     };
 
-    wf::signal_connection_t on_view_map{[=] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_mapped_signal> on_view_map{[=] (wf::view_mapped_signal *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
             /* Make sure only a single connection is made */
-            view->disconnect_signal(&on_geometry_changed);
-            view->connect_signal("geometry-changed", &on_geometry_changed);
+            on_geometry_changed.disconnect();
+            view->connect(&on_geometry_changed);
         }
     };
 
     void handle_new_output(wf::output_t *output)
     {
-        output->connect_signal("view-mapped", &on_view_map);
+        output->connect(&on_view_map);
     }
 
     JoinViewsSingleton()

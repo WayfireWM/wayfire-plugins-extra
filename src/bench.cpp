@@ -65,7 +65,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
         output->render->set_redraw_always();
 
-        output->connect_signal("workarea-changed", &workarea_changed);
+        output->connect(&workarea_changed);
         position.set_callback(position_changed);
         update_texture_position();
     }
@@ -174,7 +174,8 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         output->render->damage_whole();
     }
 
-    wf::signal_connection_t workarea_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::workarea_changed_signal> workarea_changed{[this] (wf::workarea_changed_signal
+                                                                                   *ev)
         {
             update_texture_position();
         }

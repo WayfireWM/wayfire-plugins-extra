@@ -235,9 +235,8 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
             }
         }
 
-        output->connect_signal("output-configuration-changed",
-            &output_config_changed);
-        output->connect_signal("workspace-changed", &viewport_changed);
+        output->connect(&output_config_changed);
+        output->connect(&viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
         output->add_activator(clear_binding, &clear_workspace);
@@ -294,13 +293,13 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         return overlays[ws.x][ws.y]->shape_overlay;
     }
 
-    wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::workspace_changed_signal> viewport_changed{[this] (wf::
+                                                                                    workspace_changed_signal*
+                                                                                    ev)
         {
             auto wsize = output->workspace->get_workspace_grid_size();
-            wf::workspace_changed_signal *signal =
-                static_cast<wf::workspace_changed_signal*>(data);
-            auto og  = output->get_relative_geometry();
-            auto nvp = signal->new_viewport;
+            auto og    = output->get_relative_geometry();
+            auto nvp   = ev->new_viewport;
 
             for (int x = 0; x < wsize.width; x++)
             {
@@ -387,17 +386,16 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         output->render->damage_whole();
     }
 
-    wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::output_configuration_changed_signal> output_config_changed{[this] (wf::
+                                                                                                    output_configuration_changed_signal
+                                                                                                    *ev)
         {
-            wf::output_configuration_changed_signal *signal =
-                static_cast<wf::output_configuration_changed_signal*>(data);
-
-            if (!signal->changed_fields)
+            if (!ev->changed_fields)
             {
                 return;
             }
 
-            if (signal->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
+            if (ev->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
             {
                 return;
             }
