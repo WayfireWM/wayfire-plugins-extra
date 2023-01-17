@@ -199,15 +199,15 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         wayfire_force_fullscreen_instances[output] = this;
         constrain_pointer.set_callback(constrain_pointer_option_changed);
         preserve_aspect.set_callback(option_changed);
-        output->connect_signal("workspace-changed", &viewport_changed);
+        output->connect(&viewport_changed);
     }
 
-    wf::signal_connection_t viewport_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::workspace_changed_signal> viewport_changed{[this] (wf::
+                                                                                    workspace_changed_signal*
+                                                                                    ev)
         {
-            wf::workspace_changed_signal *signal =
-                static_cast<wf::workspace_changed_signal*>(data);
             auto og  = output->get_relative_geometry();
-            auto nvp = signal->new_viewport;
+            auto nvp = ev->new_viewport;
 
             for (auto& b : backgrounds)
             {
@@ -387,14 +387,12 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         view->get_transformed_node()->add_transformer(backgrounds[view]->transformer,
             wf::TRANSFORMER_2D,
             background_name);
-        output->connect_signal("output-configuration-changed",
-            &output_config_changed);
-        wf::get_core().connect_signal("view-pre-moved-to-output",
-            &view_output_changed);
-        output->connect_signal("view-fullscreen-request", &view_fullscreened);
-        view->connect_signal("geometry-changed", &view_geometry_changed);
-        output->connect_signal("view-unmapped", &view_unmapped);
-        output->connect_signal("view-focused", &view_focused);
+        output->connect(&output_config_changed);
+        wf::get_core().connect(&view_output_changed);
+        output->connect(&view_fullscreened);
+        view->connect(&view_geometry_changed);
+        output->connect(&view_unmapped);
+        output->connect(&view_focused);
         if (constrain_pointer)
         {
             connect_motion_signal();
@@ -442,7 +440,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
             return;
         }
 
-        wf::get_core().connect_signal("pointer_motion", &on_motion_event);
+        wf::get_core().connect(&on_motion_event);
         motion_connected = true;
     }
 
@@ -453,7 +451,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
             return;
         }
 
-        wf::get_core().disconnect_signal(&on_motion_event);
+        on_motion_event.disconnect();
         motion_connected = false;
     }
 
@@ -483,11 +481,9 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         update_backgrounds();
     };
 
-    wf::signal_connection_t on_motion_event = [=] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> on_motion_event =
+        [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
     {
-        auto ev = static_cast<
-            wf::input_event_signal<wlr_pointer_motion_event>*>(data);
-
         if (wf::get_core().get_active_output() != output)
         {
             return;
@@ -534,17 +530,16 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::signal_connection_t output_config_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::output_configuration_changed_signal> output_config_changed{[this] (wf::
+                                                                                                    output_configuration_changed_signal
+                                                                                                    *ev)
         {
-            wf::output_configuration_changed_signal *signal =
-                static_cast<wf::output_configuration_changed_signal*>(data);
-
-            if (!signal->changed_fields)
+            if (!ev->changed_fields)
             {
                 return;
             }
 
-            if (signal->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
+            if (ev->changed_fields & wf::OUTPUT_SOURCE_CHANGE)
             {
                 return;
             }
@@ -553,10 +548,11 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::signal_connection_t view_output_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_pre_moved_to_output_signal> view_output_changed{[this] (wf::
+                                                                                              view_pre_moved_to_output_signal
+                                                                                              *ev)
         {
-            auto signal = static_cast<wf::view_pre_moved_to_output_signal*>(data);
-            auto view   = signal->view;
+            auto view = ev->view;
             auto background = backgrounds.find(view);
 
             if (background == backgrounds.end())
@@ -566,22 +562,22 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
 
             toggle_fullscreen(view);
 
-            auto instance = wayfire_force_fullscreen_instances[signal->new_output];
+            auto instance = wayfire_force_fullscreen_instances[ev->new_output];
             instance->toggle_fullscreen(view);
         }
     };
 
-    wf::signal_connection_t view_focused{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::focus_view_signal> view_focused{[this] (wf::focus_view_signal *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
 
             update_motion_signal(view);
         }
     };
 
-    wf::signal_connection_t view_unmapped{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_unmapped_signal> view_unmapped{[this] (wf::view_unmapped_signal *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
             auto background = backgrounds.find(view);
 
             if (background == backgrounds.end())
@@ -593,10 +589,11 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::signal_connection_t view_fullscreened{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_fullscreen_request_signal> view_fullscreened{[this] (wf::
+                                                                                           view_fullscreen_request_signal
+                                                                                           *ev)
         {
-            auto signal = static_cast<wf::view_fullscreen_signal*>(data);
-            auto view   = signal->view;
+            auto view = ev->view;
             auto background = backgrounds.find(view);
 
             if (background == backgrounds.end())
@@ -604,20 +601,22 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
                 return;
             }
 
-            if (signal->state || signal->carried_out)
+            if (ev->state || ev->carried_out)
             {
                 return;
             }
 
             toggle_fullscreen(view);
 
-            signal->carried_out = true;
+            ev->carried_out = true;
         }
     };
 
-    wf::signal_connection_t view_geometry_changed{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_geometry_changed_signal> view_geometry_changed{[this] (wf::
+                                                                                             view_geometry_changed_signal
+                                                                                             *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
             auto background = backgrounds.find(view);
 
             if (background == backgrounds.end())

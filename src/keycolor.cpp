@@ -289,7 +289,7 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
 
         program_ref_count++;
 
-        output->connect_signal("view-attached", &view_attached);
+        output->connect(&view_attached);
 
         for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
         {
@@ -302,9 +302,11 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
         }
     }
 
-    wf::signal_connection_t view_attached{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_layer_attached_signal> view_attached{[this] (wf::
+                                                                                   view_layer_attached_signal
+                                                                                   *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
             if (!view)
             {
                 return;

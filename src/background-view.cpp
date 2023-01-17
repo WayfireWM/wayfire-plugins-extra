@@ -86,8 +86,8 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
         command.set_callback(option_changed);
         file.set_callback(option_changed);
 
-        output->connect_signal("view-mapped", &view_mapped);
-        output->connect_signal("view-detached", &view_detached);
+        output->connect(&view_mapped);
+        output->connect(&view_detached);
 
         option_changed();
     }
@@ -142,9 +142,10 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
         views[o].view = view;
     }
 
-    wf::signal_connection_t view_detached{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_disappeared_signal> view_detached{[this] (wf::view_disappeared_signal*
+                                                                                ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
 
             if (!view)
             {
@@ -158,9 +159,9 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
         }
     };
 
-    wf::signal_connection_t view_mapped{[this] (wf::signal_data_t *data)
+    wf::signal::connection_t<wf::view_mapped_signal> view_mapped{[this] (wf::view_mapped_signal *ev)
         {
-            auto view = get_signaled_view(data);
+            auto view = ev->view;
 
             if (!view)
             {

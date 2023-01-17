@@ -40,10 +40,11 @@ class wayfire_hide_cursor
     {
         hidden = false;
         setup_hide_timer();
-        wf::get_core().connect_signal("pointer_motion", &pointer_motion);
+        wf::get_core().connect(&pointer_motion);
     }
 
-    wf::signal_connection_t pointer_motion = [=] (wf::signal_data_t* /*data*/)
+    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> pointer_motion =
+        [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
     {
         setup_hide_timer();
         if (hidden)
@@ -70,7 +71,7 @@ class wayfire_hide_cursor
 
     ~wayfire_hide_cursor()
     {
-        wf::get_core().disconnect_signal(&pointer_motion);
+        pointer_motion.disconnect();
         hide_timer.disconnect();
         if (hidden)
         {

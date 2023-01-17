@@ -93,16 +93,6 @@ class mag_view_t : public wf::view_interface_t
             return {view->geometry.x, view->geometry.y, view->geometry.width, view->geometry.height};
         }
 
-        bool accepts_input(int x, int y)
-        {
-            if ((0 <= x) && (x < view->geometry.width) && (0 <= y) && (y < view->geometry.height))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         std::optional<wf::scene::input_node_t> find_node_at(const wf::pointf_t& at) override
         {
             if ((view->geometry.x <= at.x) && (at.x < view->geometry.x + view->geometry.width) &&
@@ -122,6 +112,7 @@ class mag_view_t : public wf::view_interface_t
     wf::option_wrapper_t<int> default_height{"mag/default_height"};
     wf::wl_idle_call idle_set_geometry;
     wf::geometry_t geometry;
+    uint32_t edges = 0;
     bool _is_mapped;
     double aspect;
 
@@ -141,6 +132,12 @@ class mag_view_t : public wf::view_interface_t
         this->get_root_node()->set_enabled(true);
     }
 
+    void set_resizing(bool resizing, uint32_t edges) override
+    {
+        this->edges = edges;
+        geometry    = get_wm_geometry();
+    }
+
     void move(int x, int y) override
     {
         geometry.x = x;
@@ -149,11 +146,44 @@ class mag_view_t : public wf::view_interface_t
 
     void resize(int w, int h) override
     {
+        auto vg = get_wm_geometry();
+        int x   = vg.x;
+        int y   = vg.y;
+
+        wf::view_interface_t::resize(w, h);
+
+        if (!this->edges)
+        {
+            return;
+        }
+
+        if (this->edges & WLR_EDGE_LEFT)
+        {
+            x += geometry.width - w;
+        }
+
+        if (this->edges & WLR_EDGE_TOP)
+        {
+            y += geometry.height - h;
+        }
+
         geometry.width  = w;
         geometry.height = h;
+
+        this->move(x, y);
+
+        view_geometry_changed_signal data;
+        data.view = self();
+        data.old_geometry = vg;
+        wf::get_core().emit(&data);
     }
 
     wf::geometry_t get_output_geometry() override
+    {
+        return geometry;
+    }
+
+    wf::geometry_t get_wm_geometry() override
     {
         return geometry;
     }
