@@ -7,3 +7,6 @@
 [submodule "subprojects/wayfire-shadows"]
 	path = subprojects/wayfire-shadows
 	url = https://github.com/timgott/wayfire-shadows
+[submodule "subprojects/focus-request"]
+	path = subprojects/focus-request
+	url = https://gitlab.com/wayfireplugins/focus-request.git
