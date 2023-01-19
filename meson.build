@@ -16,10 +16,6 @@ project(
 wayfire = dependency('wayfire')
 giomm = dependency('giomm-2.4', required: false)
 
-if get_option('enable_dbus') == true
-    dbus = subproject('dbus')
-endif
-
 if get_option('enable_windecor') == true
     windecor = subproject('windecor')
 endif
