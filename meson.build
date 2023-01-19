@@ -16,16 +16,16 @@ project(
 wayfire = dependency('wayfire')
 giomm = dependency('giomm-2.4', required: false)
 
-if get_option('enable_dbus') == true
-    dbus = subproject('dbus')
-endif
-
 if get_option('enable_windecor') == true
     windecor = subproject('windecor')
 endif
 
 if get_option('enable_wayfire_shadows') == true
     wayfire_shadows = subproject('wayfire-shadows')
+endif
+
+if get_option('enable_focus_request') == true
+    wayfire_shadows = subproject('focus-request')
 endif
 
 add_project_arguments(['-DWLR_USE_UNSTABLE'], language: ['cpp', 'c'])
