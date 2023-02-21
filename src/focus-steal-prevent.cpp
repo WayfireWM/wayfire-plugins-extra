@@ -63,6 +63,13 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
         if (ev->view != focus_view)
         {
             output->focus_view(focus_view, true);
+
+            /** Emit the view-hints-changed signal for use with panels */
+            wf::view_hints_changed_signal hints_signal;
+            hints_signal.view = ev->view;
+            hints_signal.demands_attention = true;
+            ev->view->emit(&hints_signal);
+            wf::get_core().emit(&hints_signal);
         }
     };
 
