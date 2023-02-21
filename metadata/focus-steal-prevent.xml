@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="focus-steal-prevent">
+		<_short>Focus Stealing Prevention</_short>
+		<category>Window Management</category>
+		<option name="timeout" type="int">
+			<_short>The timeout (in ms) to prevent focus stealing</_short>
+			<_long>A timer will be reset to the timeout (in ms) on every keystroke. If the timer is active when another window would normally gain focus, the focus is reset to the window that is accepting keyboard events.</_long>
+			<default>500</default>
+			<min>0</min>
+		</option>
+	</plugin>
+</wayfire>

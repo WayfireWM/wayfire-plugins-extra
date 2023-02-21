@@ -20,6 +20,10 @@ crosshair = shared_module('crosshair', 'crosshair.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+focus_steal_prevent = shared_module('focus-steal-prevent', 'focus-steal-prevent.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 follow_focus = shared_module('follow-focus', 'follow-focus.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
