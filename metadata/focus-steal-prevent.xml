@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="focus-steal-prevent">
+		<_short>Focus Stealing Prevention</_short>
+		<category>Window Management</category>
+		<option name="timeout" type="int">
+			<_short>The timeout (in ms) to prevent focus stealing</_short>
+			<_long>A timer will be reset to the timeout (in ms) on every keystroke. If the timer is active when another window would normally gain focus, the focus is reset to the window that is accepting input.</_long>
+			<default>1000</default>
+			<min>0</min>
+		</option>
+		<option name="deny_focus_views" type="string">
+			<_short>Deny focus to views matching this criteria</_short>
+			<_long>If a view matches when mapped, focus is reset to the last view with focus.</_long>
+			<default>none</default>
+		</option>
+		<option name="cancel_keys" type="string">
+			<_short>Cancel focus stealing prevention on these keys</_short>
+			<_long>Cancel focus stealing prevention when any of these keys are pressed. The string consists of keycode names delimited by | character.</_long>
+			<default>KEY_ENTER</default>
+		</option>
+	</plugin>
+</wayfire>
