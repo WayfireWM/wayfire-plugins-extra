@@ -53,7 +53,9 @@ struct parent_view
 static std::map<wf::output_t*, struct parent_view> views;
 
 class wayfire_background_view : public wf::per_output_plugin_instance_t,
-    public wf::pointer_interaction_t
+    public wf::keyboard_interaction_t,
+    public wf::pointer_interaction_t,
+    public wf::touch_interaction_t
 {
     const std::string transformer_name = "background-view";
 
@@ -73,6 +75,11 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
      */
     wf::option_wrapper_t<std::string> app_id{"background-view/app-id"};
 
+    /* When this option is true, keyboard, pointer and touch input will
+     * be inhibited on the background layer.
+     */
+    wf::option_wrapper_t<bool> inhibit_input{"background-view/inhibit_input"};
+
     /* To grab input on the background layer */
     std::unique_ptr<wf::input_grab_t> grab;
 
@@ -80,15 +87,16 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
     void init() override
     {
         grab = std::make_unique<wf::input_grab_t>(
-            "background-view", output, nullptr, this, nullptr);
-        grab->grab_input(wf::scene::layer::BACKGROUND);
+            "background-view", output, this, this, this);
 
+        inhibit_input.set_callback(inhibit_input_changed);
         command.set_callback(option_changed);
         file.set_callback(option_changed);
 
         output->connect(&view_mapped);
         output->connect(&view_detached);
 
+        inhibit_input_changed();
         option_changed();
     }
 
@@ -96,6 +104,17 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
     {
         wf::get_core().set_cursor("default");
     }
+
+    wf::config::option_base_t::updated_callback_t inhibit_input_changed = [=] ()
+    {
+        if ((bool)inhibit_input)
+        {
+            grab->grab_input(wf::scene::layer::BACKGROUND);
+        } else
+        {
+            grab->ungrab_input();
+        }
+    };
 
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
     {

@@ -16,5 +16,9 @@
 		<_short>Application Identifier</_short>
 		<default>mpv</default>
 	</option>
+	<option name="inhibit_input" type="bool">
+		<_short>Inhibit Input</_short>
+		<default>true</default>
+	</option>
 	</plugin>
 </wayfire>
