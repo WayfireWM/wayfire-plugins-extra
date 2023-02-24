@@ -12,7 +12,7 @@
 		<hint>file</hint>
 		<default></default>
 	</option>
-	<option name="app-id" type="string">
+	<option name="app_id" type="string">
 		<_short>Application Identifier</_short>
 		<default>mpv</default>
 	</option>

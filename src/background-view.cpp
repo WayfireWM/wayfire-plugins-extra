@@ -73,7 +73,7 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
      * is not set or does not match the launched app-id, the plugin will
      * not be able to set the client surface as the background.
      */
-    wf::option_wrapper_t<std::string> app_id{"background-view/app-id"};
+    wf::option_wrapper_t<std::string> app_id{"background-view/app_id"};
 
     /* When this option is true, keyboard, pointer and touch input will
      * be inhibited on the background layer.
