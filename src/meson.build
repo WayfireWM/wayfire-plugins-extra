@@ -66,6 +66,10 @@ water = shared_module('water', 'water.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+window_swallow = shared_module('window-swallow', 'window-swallow.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 window_zoom = shared_module('winzoom', 'window-zoom.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
