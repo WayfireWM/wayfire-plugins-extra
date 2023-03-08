@@ -190,8 +190,23 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
         reset_timeout();
     };
 
+    void validate_last_focus_view()
+    {
+        for (auto & view : wf::get_core().get_all_views())
+        {
+            if (view == last_focus_view)
+            {
+                return;
+            }
+        }
+
+        last_focus_view = nullptr;
+    }
+
     wf::signal::connection_t<wf::pre_focus_view_signal> pre_view_focused = [=] (wf::pre_focus_view_signal *ev)
     {
+        validate_last_focus_view();
+
         if (ev->view && deny_focus_views.matches(ev->view))
         {
             ev->can_focus = false;
