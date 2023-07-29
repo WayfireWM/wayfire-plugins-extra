@@ -36,7 +36,7 @@
 #include "wayfire/output.hpp"
 #include "wayfire/output-layout.hpp"
 #include "wayfire/render-manager.hpp"
-#include "wayfire/workspace-manager.hpp"
+#include "wayfire/workspace-set.hpp"
 #include "wayfire/per-output-plugin.hpp"
 #include "wayfire/signal-definitions.hpp"
 #include "wayfire/plugins/common/cairo-util.hpp"
@@ -198,7 +198,6 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 {
     uint32_t button;
     wlr_box last_bbox;
-    bool hook_set = false;
     annotate_draw_method draw_method;
     wf::pointf_t grab_point, last_cursor;
     std::vector<std::vector<std::shared_ptr<simple_node_t>>> overlays;
@@ -218,7 +217,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
   public:
     void init() override
     {
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         overlays.resize(wsize.width);
         for (int x = 0; x < wsize.width; x++)
         {
@@ -275,20 +274,20 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
     std::shared_ptr<simple_node_t> get_node_overlay()
     {
-        auto ws = output->workspace->get_current_workspace();
+        auto ws = output->wset()->get_current_workspace();
         return overlays[ws.x][ws.y];
     }
 
     std::shared_ptr<anno_ws_overlay> get_current_overlay()
     {
-        auto ws = output->workspace->get_current_workspace();
+        auto ws = output->wset()->get_current_workspace();
 
         return overlays[ws.x][ws.y]->overlay;
     }
 
     std::shared_ptr<anno_ws_overlay> get_shape_overlay()
     {
-        auto ws = output->workspace->get_current_workspace();
+        auto ws = output->wset()->get_current_workspace();
 
         return overlays[ws.x][ws.y]->shape_overlay;
     }
@@ -297,7 +296,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
                                                                                     workspace_changed_signal*
                                                                                     ev)
         {
-            auto wsize = output->workspace->get_workspace_grid_size();
+            auto wsize = output->wset()->get_workspace_grid_size();
             auto og    = output->get_relative_geometry();
             auto nvp   = ev->new_viewport;
 
@@ -744,7 +743,8 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
             return;
         }
 
-        input_grab->grab_input(wf::scene::layer::OVERLAY, true);
+        input_grab->grab_input(wf::scene::layer::OVERLAY);
+        input_grab->set_wants_raw_input(true);
     }
 
     void ungrab()
@@ -758,7 +758,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         ungrab();
         output->rem_binding(&draw_begin);
         output->rem_binding(&clear_workspace);
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)

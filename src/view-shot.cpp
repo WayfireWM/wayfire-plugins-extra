@@ -72,7 +72,8 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
             return false;
         }
 
-        const wf::render_target_t& offscreen_buffer = view->take_snapshot();
+        wf::render_target_t offscreen_buffer;
+        view->take_snapshot(offscreen_buffer);
         auto width  = offscreen_buffer.viewport_width;
         auto height = offscreen_buffer.viewport_height;
 
@@ -86,8 +87,8 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
         GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, offscreen_buffer.fb));
         GL_CALL(glViewport(0, 0, width, height));
 
-        GL_CALL(glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
-            pixels));
+        GL_CALL(glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
+        offscreen_buffer.release(); // free gpu memory
         OpenGL::render_end();
 
         char _file_name[255];
@@ -96,8 +97,7 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
             file_name.value().c_str(), std::localtime(&time));
         std::string formatted_file_name = _file_name;
 
-        image_io::write_to_file(formatted_file_name, pixels, width, height, "png",
-            true);
+        image_io::write_to_file(formatted_file_name, pixels, width, height, "png", true);
         free(pixels);
 
         wf::get_core().run(replaceAll(command, "%f", formatted_file_name));

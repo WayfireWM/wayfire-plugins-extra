@@ -33,7 +33,7 @@ bool hidden;
 class wayfire_hide_cursor
 {
     wf::option_wrapper_t<int> hide_delay{"hide-cursor/hide_delay"};
-    wf::wl_timer hide_timer;
+    wf::wl_timer<false> hide_timer;
 
   public:
     wayfire_hide_cursor()
@@ -64,8 +64,6 @@ class wayfire_hide_cursor
                 wf::get_core().hide_cursor();
                 hidden = true;
             }
-
-            return false; // disconnect
         });
     }
 

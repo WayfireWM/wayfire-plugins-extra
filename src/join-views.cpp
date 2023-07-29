@@ -1,6 +1,7 @@
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/shared-core-data.hpp>
+#include <wayfire/toplevel-view.hpp>
 
 class JoinViewsSingleton
 {
@@ -8,18 +9,18 @@ class JoinViewsSingleton
     wf::signal::connection_t<wf::view_geometry_changed_signal> on_geometry_changed{[=
         ] (wf::view_geometry_changed_signal *ev)
         {
-            auto view = ev->view;
-            if (!view->is_mapped())
+            auto view = wf::toplevel_cast(ev->view);
+            if (!view || !view->is_mapped())
             {
                 return;
             }
 
-            auto parent_geometry = view->get_wm_geometry();
+            auto parent_geometry = view->get_pending_geometry();
             int cx = parent_geometry.x + parent_geometry.width / 2;
             int cy = parent_geometry.y + parent_geometry.height / 2;
             for (auto child : view->children)
             {
-                auto target = child->get_wm_geometry();
+                auto target = child->get_pending_geometry();
                 target.x = cx - target.width / 2;
                 target.y = cy - target.height / 2;
                 child->set_geometry(target);

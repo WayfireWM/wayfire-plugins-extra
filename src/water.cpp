@@ -194,7 +194,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
     wf::pointf_t last_cursor;
     bool button_down = false;
     bool hook_set    = false;
-    wf::wl_timer timer;
+    wf::wl_timer<false> timer;
     int points_loc;
     std::unique_ptr<wf::input_grab_t> input_grab;
     wf::plugin_activation_data_t grab_interface{
@@ -253,17 +253,17 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
         last_cursor = output->get_cursor_position();
         animation.animate(animation, 1);
-        input_grab->grab_input(wf::scene::layer::OVERLAY, true);
+        input_grab->grab_input(wf::scene::layer::OVERLAY);
+        input_grab->set_wants_raw_input(true);
         timer.disconnect();
         button_down = true;
 
         return false;
     };
 
-    wf::wl_timer::callback_t timeout = [=] ()
+    wf::wl_timer<false>::callback_t timeout = [=] ()
     {
         animation.animate(animation, 0);
-        return false; // disconnect
     };
 
     wf::post_hook_t render = [=] (const wf::framebuffer_t& source,
