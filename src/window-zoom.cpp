@@ -226,7 +226,7 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
         output->deactivate_plugin(&grab_interface);
 
         auto layer = wf::get_view_layer(view);
-        if (layer == wf::scene::layer::BACKGROUND || layer == wf::scene::layer::TOP)
+        if ((layer == wf::scene::layer::BACKGROUND) || (layer == wf::scene::layer::TOP))
         {
             return false;
         }

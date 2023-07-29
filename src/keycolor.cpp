@@ -344,8 +344,8 @@ class wayfire_keycolor : public wf::plugin_interface_t
         wf::get_core().erase_data(program_name);
     }
 };
+}
+}
+}
 
-}
-}
-}
 DECLARE_WAYFIRE_PLUGIN(wf::scene::keycolor::wayfire_keycolor);
