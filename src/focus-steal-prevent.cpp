@@ -21,7 +21,7 @@
  */
 
 #include <wayfire/per-output-plugin.hpp>
-#include <wayfire/workspace-manager.hpp>
+#include <wayfire/view-helpers.hpp>
 #include <wayfire/matcher.hpp>
 #include <set>
 #include <linux/input-event-codes.h>
@@ -39,7 +39,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
     int modifiers_pressed = 0;
     std::multiset<uint32_t> pressed_keys;
     std::multiset<uint32_t> cancel_keycodes;
-    wf::wl_timer timer;
+    wf::wl_timer<false> timer;
 
     wf::option_wrapper_t<int> timeout{"focus-steal-prevent/timeout"};
     wf::view_matcher_t deny_focus_views{"focus-steal-prevent/deny_focus_views"};
@@ -110,7 +110,6 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
         timer.set_timeout(timeout, [=] ()
         {
             cancel();
-            return false; // disconnect
         });
     }
 
@@ -212,7 +211,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
             ev->can_focus = false;
             if (last_focus_view)
             {
-                output->workspace->bring_to_front(last_focus_view);
+                wf::view_bring_to_front(last_focus_view);
             }
         }
 
@@ -230,7 +229,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
             if (focus_view)
             {
                 ev->can_focus = false;
-                output->workspace->bring_to_front(focus_view);
+                wf::view_bring_to_front(focus_view);
             }
 
             if (ev->view)

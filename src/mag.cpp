@@ -22,30 +22,35 @@
  * SOFTWARE.
  */
 
+#include "wayfire/txn/transaction-manager.hpp"
 #include "wayfire/core.hpp"
-#include "wayfire/view.hpp"
+#include "wayfire/toplevel-view.hpp"
+#include "wayfire/workspace-set.hpp"
 #include "wayfire/plugin.hpp"
+#include <wayfire/geometry.hpp>
+#include <wayfire/scene-operations.hpp>
 #include "wayfire/output.hpp"
 #include "wayfire/signal-definitions.hpp"
-#include "wayfire/workspace-manager.hpp"
 #include "wayfire/output-layout.hpp"
 #include "wayfire/compositor-view.hpp"
 #include "wayfire/render-manager.hpp"
 #include "wayfire/opengl.hpp"
 #include "wayfire/per-output-plugin.hpp"
+#include <wayfire/scene.hpp>
+#include <wayfire/signal-provider.hpp>
+#include <wayfire/view-helpers.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <wayfire/nonstd/tracking-allocator.hpp>
+#include <wayfire/txn/transaction-object.hpp>
 #include <wayfire/util/log.hpp>
+#include <wayfire/view.hpp>
 
 namespace wf
 {
 namespace scene
 {
-namespace mag
-{
-wf::framebuffer_t mag_tex;
-
-class mag_view_t : public wf::view_interface_t
+class mag_view_t : public wf::toplevel_view_interface_t
 {
     class mag_node_t : public floating_inner_node_t
     {
@@ -55,6 +60,12 @@ class mag_view_t : public wf::view_interface_t
             using simple_render_instance_t::simple_render_instance_t;
             void render(const wf::render_target_t& target, const wf::region_t& region) override
             {
+                auto view = self->_view.lock();
+                if (!view)
+                {
+                    return;
+                }
+
                 auto geometry = self->get_bounding_box();
                 gl_geometry src_geometry = {(float)geometry.x, (float)geometry.y,
                     (float)geometry.x + geometry.width, (float)geometry.y + geometry.height};
@@ -63,23 +74,21 @@ class mag_view_t : public wf::view_interface_t
                 for (const auto& box : region)
                 {
                     target.logic_scissor(wlr_box_from_pixman_box(box));
-
                     /* Draw the inside of the rect */
-                    OpenGL::render_transformed_texture(wf::texture_t{mag_tex.tex}, src_geometry, {},
-                        target.get_orthographic_projection(),
-                        glm::vec4(1.0), 0);
+                    OpenGL::render_transformed_texture(wf::texture_t{view->mag_tex.tex}, src_geometry, {},
+                        target.get_orthographic_projection(), glm::vec4(1.0), 0);
                 }
 
                 OpenGL::render_end();
             }
         };
 
-        mag_view_t *view;
+        std::weak_ptr<mag_view_t> _view;
 
       public:
-        mag_node_t(mag_view_t *view) : floating_inner_node_t(false)
+        mag_node_t(std::weak_ptr<mag_view_t> view) : floating_inner_node_t(false)
         {
-            this->view = view;
+            _view = view;
         }
 
         void gen_render_instances(std::vector<scene::render_instance_uptr>& instances,
@@ -90,13 +99,25 @@ class mag_view_t : public wf::view_interface_t
 
         wf::geometry_t get_bounding_box() override
         {
-            return {view->geometry.x, view->geometry.y, view->geometry.width, view->geometry.height};
+            auto view = _view.lock();
+            if (view)
+            {
+                return view->get_geometry();
+            } else
+            {
+                return {0, 0, 0, 0};
+            }
         }
 
         std::optional<wf::scene::input_node_t> find_node_at(const wf::pointf_t& at) override
         {
-            if ((view->geometry.x <= at.x) && (at.x < view->geometry.x + view->geometry.width) &&
-                (view->geometry.y <= at.y) && (at.y < view->geometry.y + view->geometry.height))
+            auto view = _view.lock();
+            if (!view)
+            {
+                return {};
+            }
+
+            if ((view->get_geometry() & at))
             {
                 return wf::scene::input_node_t{
                     .node = this,
@@ -108,84 +129,75 @@ class mag_view_t : public wf::view_interface_t
         }
     };
 
+    /**
+     * Implementation of the toplevel interface for the mag view.
+     * It is rather simple, because we do not have to wait for a client to reconfigure itself.
+     */
+    class mag_toplevel_t : public wf::toplevel_t
+    {
+        std::weak_ptr<mag_view_t> _view;
+
+      public:
+        mag_toplevel_t(std::weak_ptr<mag_view_t> _view)
+        {
+            this->_view = _view;
+        }
+
+        void commit() override
+        {
+            _committed = _pending;
+            txn::emit_object_ready(this);
+        }
+
+        void apply() override
+        {
+            auto old_state = _current;
+            _current = _committed;
+            if (auto view = _view.lock())
+            {
+                if (!old_state.mapped && _current.mapped)
+                {
+                    view->map();
+                }
+
+                if (old_state.mapped && !_current.mapped)
+                {
+                    view->unmap();
+                }
+
+                wf::view_implementation::emit_toplevel_state_change_signals(view, old_state);
+            }
+        }
+    };
+
+    bool _is_mapped = false;
+
   public:
-    wf::option_wrapper_t<int> default_height{"mag/default_height"};
-    wf::wl_idle_call idle_set_geometry;
-    wf::geometry_t geometry;
-    uint32_t edges = 0;
-    bool _is_mapped;
-    double aspect;
+    wf::framebuffer_t mag_tex;
 
-    mag_view_t(wf::output_t *output, float aspect) : wf::view_interface_t(std::make_shared<mag_node_t>(this))
+    mag_view_t() : wf::toplevel_view_interface_t()
     {
-        this->geometry = {100, 100,
-            (int)(default_height * aspect),
-            default_height};
-        this->_is_mapped = true;
-        this->role   = wf::VIEW_ROLE_TOPLEVEL;
-        this->aspect = aspect;
+        this->role = wf::VIEW_ROLE_TOPLEVEL;
     }
 
-    void initialize() override
+    ~mag_view_t()
     {
-        wf::view_interface_t::initialize();
-        this->get_root_node()->set_enabled(true);
+        OpenGL::render_begin();
+        mag_tex.release();
+        OpenGL::render_end();
     }
 
-    void set_resizing(bool resizing, uint32_t edges) override
+    static std::shared_ptr<mag_view_t> create(wf::output_t *output)
     {
-        this->edges = edges;
-        geometry    = get_wm_geometry();
-    }
+        auto self = wf::view_interface_t::create<mag_view_t>();
 
-    void move(int x, int y) override
-    {
-        geometry.x = x;
-        geometry.y = y;
-    }
+        auto toplevel = std::make_shared<mag_toplevel_t>(self);
+        self->set_toplevel(toplevel);
+        auto surface_node = std::make_shared<mag_node_t>(self);
+        self->set_surface_root_node(surface_node);
 
-    void resize(int w, int h) override
-    {
-        auto vg = get_wm_geometry();
-        int x   = vg.x;
-        int y   = vg.y;
-
-        wf::view_interface_t::resize(w, h);
-
-        if (!this->edges)
-        {
-            return;
-        }
-
-        if (this->edges & WLR_EDGE_LEFT)
-        {
-            x += geometry.width - w;
-        }
-
-        if (this->edges & WLR_EDGE_TOP)
-        {
-            y += geometry.height - h;
-        }
-
-        geometry.width  = w;
-        geometry.height = h;
-
-        this->move(x, y);
-
-        view_geometry_changed_signal data;
-        data.view = self();
-        data.old_geometry = vg;
-        wf::get_core().emit(&data);
-    }
-
-    wf::geometry_t get_output_geometry() override
-    {
-        return geometry;
-    }
-
-    wf::geometry_t get_wm_geometry() override
-    {
-        return geometry;
+        self->set_output(output);
+        return self;
     }
 
     wlr_surface *get_keyboard_focus_surface() override
@@ -193,26 +205,32 @@ class mag_view_t : public wf::view_interface_t
         return nullptr;
     }
 
-    void set_output(wf::output_t *output) override
+    void map()
     {
-        wf::view_interface_t::set_output(output);
+        _is_mapped = true;
+        wf::scene::set_node_enabled(get_root_node(), true);
 
-        if (output)
+        if (get_output())
         {
-            output->workspace->add_view(self(), wf::LAYER_TOP);
-            idle_set_geometry.run_once([=] ()
-            {
-                wf::view_interface_t::set_geometry(this->geometry);
-            });
+            wf::scene::readd_front(get_output()->wset()->get_node(), get_root_node());
+            get_output()->wset()->add_view({this});
         }
+
+        emit_view_map();
+    }
+
+    void unmap()
+    {
+        emit_view_pre_unmap();
+        _is_mapped = false;
+        wf::scene::set_node_enabled(get_root_node(), false);
+        emit_view_unmap();
     }
 
     void close() override
     {
-        this->_is_mapped = false;
-
-        emit_view_unmap();
-        unref();
+        toplevel()->pending().mapped = false;
+        wf::get_core().tx_manager->schedule_object(toplevel());
     }
 
     bool is_mapped() const override
@@ -226,8 +244,8 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
     const std::string transformer_name = "mag";
     wf::option_wrapper_t<wf::activatorbinding_t> toggle_binding{"mag/toggle"};
     wf::option_wrapper_t<int> zoom_level{"mag/zoom_level"};
-    nonstd::observer_ptr<mag_view_t> mag_view;
-    bool active, hook_set;
+    std::shared_ptr<mag_view_t> mag_view;
+    bool active = false, hook_set = false;
     int width, height;
     wf::plugin_activation_data_t grab_interface{
         .name = transformer_name,
@@ -243,10 +261,17 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
         } else
         {
             deactivate();
-
             return true;
         }
     };
+
+    wf::signal::connection_t<view_unmapped_signal> on_mag_unmap = [=] (auto)
+    {
+        active = false;
+        deactivate();
+    };
+
+    wf::option_wrapper_t<int> default_height{"mag/default_height"};
 
   public:
     void init() override
@@ -262,13 +287,16 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
             return;
         }
 
-        auto og   = output->get_relative_geometry();
-        auto view =
-            std::make_unique<mag_view_t>(output, (float)og.width / og.height);
+        mag_view = mag_view_t::create(output);
+        mag_view->connect(&on_mag_unmap);
+    }
 
-        mag_view = {view};
-
-        wf::get_core().add_view(std::move(view));
+    wf::geometry_t get_default_geometry()
+    {
+        auto og = output->get_relative_geometry();
+        float aspect = (float)og.width / og.height;
+        wf::geometry_t start_geometry = {100, 100, (int)(default_height * aspect), default_height};
+        return start_geometry;
     }
 
     bool activate()
@@ -287,6 +315,9 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         ensure_preview();
 
+        mag_view->toplevel()->pending().mapped   = true;
+        mag_view->toplevel()->pending().geometry = get_default_geometry();
+        wf::get_core().tx_manager->schedule_object(mag_view->toplevel());
         return true;
     }
 
@@ -366,8 +397,8 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
          * read by the mag_view_t. */
 
         OpenGL::render_begin();
-        mag_tex.allocate(width, height);
-        mag_tex.bind();
+        mag_view->mag_tex.allocate(width, height);
+        mag_view->mag_tex.bind();
         GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER,
             output->render->get_target_framebuffer().fb));
         GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y2, zoom_box.x2, zoom_box.y1,
@@ -397,7 +428,6 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
         }
 
         mag_view->close();
-        mag_view = nullptr;
     }
 
     void fini() override
@@ -406,8 +436,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
         output->rem_binding(&toggle_cb);
     }
 };
+}
+}
 
-DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_magnifier>);
-}
-}
-}
+DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wf::scene::wayfire_magnifier>);
