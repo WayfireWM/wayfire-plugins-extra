@@ -23,12 +23,15 @@
  */
 
 #include <wayfire/core.hpp>
+#include <wayfire/scene.hpp>
+#include <wayfire/toplevel-view.hpp>
+#include <wayfire/view-helpers.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/render-manager.hpp>
 #include <wayfire/view-transform.hpp>
-#include <wayfire/workspace-manager.hpp>
+#include <wayfire/workspace-set.hpp>
 #include <wayfire/per-output-plugin.hpp>
 
 
@@ -55,7 +58,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
     };
 
     node_t *self;
-    wayfire_view view;
+    wayfire_toplevel_view view;
     float *scale_x, *scale_y;
     wlr_box *transformed_view_geometry;
     damage_callback push_damage;
@@ -63,7 +66,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
 
   public:
     simple_node_render_instance_t(node_t *self, damage_callback push_damage,
-        wayfire_view view, float *scale_x, float *scale_y,
+        wayfire_toplevel_view view, float *scale_x, float *scale_y,
         wlr_box *transformed_view_geometry) :
         transformer_render_instance_t<node_t>(self, push_damage,
             view->get_output())
@@ -86,7 +89,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage)
+        const wf::render_target_t& target, wf::region_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -103,7 +106,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
 
     wlr_box get_scaled_geometry()
     {
-        auto vg = view->get_wm_geometry();
+        auto vg = view->get_geometry();
         auto midpoint = get_center(vg);
         auto result   = wf::pointf_t{float(vg.x), float(vg.y)} - midpoint;
         result.x *= *scale_x;
@@ -117,7 +120,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
     }
 
     void render(const wf::render_target_t& target,
-        const wf::region_t& region)
+        const wf::region_t& region) override
     {
         auto src_tex = transformer_render_instance_t<node_t>::get_texture(1.0);
 
@@ -140,14 +143,14 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
 
 class winzoom_t : public view_2d_transformer_t
 {
-    wayfire_view view;
+    wayfire_toplevel_view view;
     wlr_box transformed_view_geometry;
 
   public:
-    winzoom_t(wayfire_view view) : view_2d_transformer_t(view)
+    winzoom_t(wayfire_toplevel_view view) : view_2d_transformer_t(view)
     {
         this->view = view;
-        this->transformed_view_geometry = view->get_wm_geometry();
+        this->transformed_view_geometry = view->get_geometry();
     }
 
     wf::pointf_t to_local(const wf::pointf_t& point) override
@@ -205,7 +208,7 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
         output->add_activator(dec_y_binding, &on_dec_y);
     }
 
-    bool update_winzoom(wayfire_view view, wf::point_t delta)
+    bool update_winzoom(wayfire_toplevel_view view, wf::point_t delta)
     {
         winzoom_t *transformer;
         wf::pointf_t zoom;
@@ -222,9 +225,8 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
 
         output->deactivate_plugin(&grab_interface);
 
-        auto layer = output->workspace->get_view_layer(view);
-
-        if (layer & (wf::LAYER_BACKGROUND | wf::LAYER_TOP))
+        auto layer = wf::get_view_layer(view);
+        if ((layer == wf::scene::layer::BACKGROUND) || (layer == wf::scene::layer::TOP))
         {
             return false;
         }
@@ -290,31 +292,31 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
 
     wf::activator_callback on_inc_x = [=] (auto)
     {
-        auto view = output->get_active_view();
+        auto view = toplevel_cast(output->get_active_view());
         return update_winzoom(view, wf::point_t{1, 0});
     };
 
     wf::activator_callback on_dec_x = [=] (auto)
     {
-        auto view = output->get_active_view();
+        auto view = toplevel_cast(output->get_active_view());
         return update_winzoom(view, wf::point_t{-1, 0});
     };
 
     wf::activator_callback on_inc_y = [=] (auto)
     {
-        auto view = output->get_active_view();
+        auto view = toplevel_cast(output->get_active_view());
         return update_winzoom(view, wf::point_t{0, 1});
     };
 
     wf::activator_callback on_dec_y = [=] (auto)
     {
-        auto view = output->get_active_view();
+        auto view = toplevel_cast(output->get_active_view());
         return update_winzoom(view, wf::point_t{0, -1});
     };
 
     wf::axis_callback axis_cb = [=] (wlr_pointer_axis_event *ev)
     {
-        auto view = wf::get_core().get_cursor_focus_view();
+        auto view = toplevel_cast(wf::get_core().get_cursor_focus_view());
         if (ev->orientation == WLR_AXIS_ORIENTATION_VERTICAL)
         {
             auto delta = (int)-std::clamp(ev->delta, -1.0, 1.0);

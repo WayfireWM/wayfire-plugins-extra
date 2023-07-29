@@ -27,9 +27,9 @@
 #include <numeric>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
+#include <wayfire/workarea.hpp>
 #include <wayfire/render-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
-#include <wayfire/workspace-manager.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
 
 extern "C"
@@ -116,7 +116,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 
     void update_texture_position()
     {
-        auto workarea = output->workspace->get_workarea();
+        auto workarea = output->workarea->get_workarea();
 
         cairo_recreate();
 

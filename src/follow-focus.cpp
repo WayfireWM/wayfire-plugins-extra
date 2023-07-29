@@ -26,11 +26,10 @@
 #include <wayfire/option-wrapper.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/output-layout.hpp>
-#include <wayfire/workspace-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
+#include <wayfire/view-helpers.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
-
 
 namespace follow_focus
 {
@@ -41,7 +40,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
 {
   private:
     wayfire_view focus_view = nullptr;
-    wf::wl_timer change_output_focus, change_view_focus;
+    wf::wl_timer<false> change_output_focus, change_view_focus;
     wf::point_t last_output_coords, last_view_coords;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
@@ -129,7 +128,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
         }
 
         if (!view || (view->role != wf::VIEW_ROLE_TOPLEVEL) ||
-            (output->workspace->get_view_layer(view) != wf::LAYER_WORKSPACE))
+            (wf::get_view_layer(view) != wf::scene::layer::WORKSPACE))
         {
             return;
         }

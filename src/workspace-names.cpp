@@ -35,6 +35,7 @@
 
 #include <map>
 #include <wayfire/geometry.hpp>
+#include <wayfire/workarea.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/region.hpp>
 #include <wayfire/scene-operations.hpp>
@@ -48,7 +49,7 @@
 #include <wayfire/util/duration.hpp>
 #include <wayfire/render-manager.hpp>
 #include <wayfire/workspace-stream.hpp>
-#include <wayfire/workspace-manager.hpp>
+#include <wayfire/workspace-set.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
@@ -191,7 +192,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
 
 class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 {
-    wf::wl_timer timer;
+    wf::wl_timer<false> timer;
     bool hook_set  = false;
     bool timed_out = false;
     std::vector<std::vector<std::shared_ptr<simple_node_t>>> workspaces;
@@ -213,7 +214,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         alpha_fade.set(0, 0);
         timed_out = false;
 
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         workspaces.resize(wsize.width);
         for (int x = 0; x < wsize.width; x++)
         {
@@ -278,7 +279,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     void update_name(int x, int y)
     {
         auto section = wf::get_core().config.get_section("workspace-names");
-        auto wsize   = output->workspace->get_workspace_grid_size();
+        auto wsize   = output->wset()->get_workspace_grid_size();
         auto wsn     = workspaces[x][y]->workspace;
         int ws_num   = x + y * wsize.width + 1;
 
@@ -313,7 +314,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void update_names()
     {
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)
@@ -332,7 +333,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void update_textures()
     {
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)
@@ -392,7 +393,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void update_texture_position(std::shared_ptr<workspace_name> wsn)
     {
-        auto workarea = output->workspace->get_workarea();
+        auto workarea = output->workarea->get_workarea();
 
         cairo_recreate(wsn);
 
@@ -455,8 +456,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void render_workspace_name(std::shared_ptr<workspace_name> wsn)
     {
-        double xc = wsn->rect.width / 2;
-        double yc = wsn->rect.height / 2;
+        double xc = wsn->rect.width / 2.0;
+        double yc = wsn->rect.height / 2.0;
         int x2, y2;
         const char *name = wsn->name.c_str();
         double radius = background_radius;
@@ -502,7 +503,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void set_alpha()
     {
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)
@@ -525,8 +526,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
                                                                                     workspace_changed_signal*
                                                                                     ev)
         {
-            auto wsize = output->workspace->get_workspace_grid_size();
-            auto nvp   = output->workspace->get_current_workspace();
+            auto wsize = output->wset()->get_workspace_grid_size();
+            auto nvp   = output->wset()->get_current_workspace();
             auto og    = output->get_relative_geometry();
 
             for (int x = 0; x < wsize.width; x++)
@@ -567,13 +568,11 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::wl_timer::callback_t timeout = [=] ()
+    wf::wl_timer<false>::callback_t timeout = [=] ()
     {
         output->render->damage_whole();
         alpha_fade.animate(1.0, 0.0);
         timed_out = true;
-
-        return false; // disconnect
     };
 
     wf::effect_hook_t post_hook = [=] ()
@@ -623,7 +622,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     void fini() override
     {
         deactivate();
-        auto wsize = output->workspace->get_workspace_grid_size();
+        auto wsize = output->wset()->get_workspace_grid_size();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)

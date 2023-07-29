@@ -27,7 +27,6 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/view-transform.hpp>
-#include <wayfire/workspace-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
 
@@ -146,7 +145,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
         wlr_box fb_geom =
             target.framebuffer_box_from_geometry_box(target.geometry);
         auto view_box = target.framebuffer_box_from_geometry_box(
-            this->view->get_wm_geometry());
+            self->get_children_bounding_box());
         view_box.x -= fb_geom.x;
         view_box.y -= fb_geom.y;
 
@@ -238,7 +237,7 @@ class wf_keycolor : public wf::scene::view_2d_transformer_t
     {}
 };
 
-class wayfire_keycolor : public wf::per_output_plugin_instance_t
+class wayfire_keycolor : public wf::plugin_interface_t
 {
     wf::wl_idle_call idle_attach;
     const std::string transformer_name = "keycolor";
@@ -266,7 +265,7 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
 
     void remove_transformers()
     {
-        for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
+        for (auto& view : wf::get_core().get_all_views())
         {
             pop_transformer(view);
         }
@@ -289,9 +288,9 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
 
         program_ref_count++;
 
-        output->connect(&view_attached);
+        wf::get_core().connect(&on_view_map);
 
-        for (auto& view : output->workspace->get_views_in_layer(wf::ALL_LAYERS))
+        for (auto& view : wf::get_core().get_all_views())
         {
             if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
             {
@@ -302,29 +301,26 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
         }
     }
 
-    wf::signal::connection_t<wf::view_layer_attached_signal> view_attached{[this] (wf::
-                                                                                   view_layer_attached_signal
-                                                                                   *ev)
+    wf::signal::connection_t<wf::view_mapped_signal> on_view_map = [=] (wf::view_mapped_signal *ev)
+    {
+        auto view = ev->view;
+        if (!view)
         {
-            auto view = ev->view;
-            if (!view)
-            {
-                return;
-            }
-
-            if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
-            {
-                return;
-            }
-
-            idle_attach.run_once([=] ()
-            {
-                if (!view->get_transformed_node()->get_transformer(transformer_name))
-                {
-                    add_transformer(view);
-                }
-            });
+            return;
         }
+
+        if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
+        {
+            return;
+        }
+
+        idle_attach.run_once([=] ()
+        {
+            if (!view->get_transformed_node()->get_transformer(transformer_name))
+            {
+                add_transformer(view);
+            }
+        });
     };
 
     void fini() override
@@ -348,8 +344,8 @@ class wayfire_keycolor : public wf::per_output_plugin_instance_t
         wf::get_core().erase_data(program_name);
     }
 };
+}
+}
+}
 
-DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_keycolor>);
-}
-}
-}
+DECLARE_WAYFIRE_PLUGIN(wf::scene::keycolor::wayfire_keycolor);
