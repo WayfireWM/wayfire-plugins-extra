@@ -8,9 +8,9 @@ autorotate = shared_module('autorotate-iio', 'autorotate-iio.cpp',
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 endif
 
-#background_view = shared_module('background-view', 'background-view.cpp',
-#    dependencies: [wayfire],
-#    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+background_view = shared_module('background-view', 'background-view.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
 benchmark = shared_module('bench', 'bench.cpp',
     dependencies: [wayfire],
@@ -28,9 +28,9 @@ follow_focus = shared_module('follow-focus', 'follow-focus.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
-#force_fullscreen = shared_module('force-fullscreen', 'force-fullscreen.cpp',
-#    dependencies: [wayfire],
-#    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+force_fullscreen = shared_module('force-fullscreen', 'force-fullscreen.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
 if giomm.found()
 glib_main_loop = shared_module('glib-main-loop', 'glib-main-loop.cpp',
