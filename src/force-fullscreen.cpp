@@ -551,8 +551,8 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
     };
 
     wf::signal::connection_t<wf::view_pre_moved_to_wset_signal> view_output_changed{[this] (wf::
-                                                                                              view_pre_moved_to_wset_signal
-                                                                                              *ev)
+                                                                                            view_pre_moved_to_wset_signal
+                                                                                            *ev)
         {
             auto view = ev->view;
             auto background = backgrounds.find(view);
