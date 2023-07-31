@@ -24,11 +24,14 @@
 
 #include <signal.h>
 #include <wayfire/core.hpp>
+#include <wayfire/scene-operations.hpp>
+#include <wayfire/scene.hpp>
+#include <wayfire/toplevel-view.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/signal-definitions.hpp>
-#include <wayfire/workspace-manager.hpp>
+#include <wayfire/workspace-set.hpp>
 #include <wayfire/output-layout.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/input-grab.hpp>
@@ -129,18 +132,14 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
         }
 
         views[output].view = nullptr;
-
         wf::get_core().run(std::string(
             command) + add_arg_if_not_empty(file));
     };
 
-    void set_view_for_output(wayfire_view view, wf::output_t *o)
+    void set_view_for_output(wayfire_toplevel_view view, wf::output_t *o)
     {
-        /* Get rid of decorations */
-        view->set_decoration(nullptr);
-
         /* Move to the respective output */
-        wf::get_core().move_view_to_output(view, o, false);
+        wf::move_view_to_output(view, o, false);
 
         /* A client should be used that can be resized to any size.
          * If we set it fullscreen, the screensaver would be inhibited
@@ -149,12 +148,10 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
         view->set_geometry(o->get_relative_geometry());
 
         /* Set it as the background */
-        o->workspace->add_view(view, wf::LAYER_BACKGROUND);
+        view->get_wset()->remove_view(view);
+        wf::scene::readd_front(o->node_for_layer(wf::scene::layer::BACKGROUND), view->get_root_node());
 
-        /* Make it show on all workspaces */
-        view->sticky = true;
-
-        /* Set role */
+        /* Make it show on all workspaces in Expo, Cube, etc. */
         view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
 
         /* Remember to close it later */
@@ -180,7 +177,7 @@ class wayfire_background_view : public wf::per_output_plugin_instance_t,
 
     wf::signal::connection_t<wf::view_mapped_signal> view_mapped{[this] (wf::view_mapped_signal *ev)
         {
-            auto view = ev->view;
+            auto view = wf::toplevel_cast(ev->view);
 
             if (!view)
             {
