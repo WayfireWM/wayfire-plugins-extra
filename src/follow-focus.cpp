@@ -160,16 +160,16 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
         });
     }
 
-    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> pointer_motion =
-        [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
+    wf::signal::connection_t<wf::post_input_event_signal<wlr_pointer_motion_event>> pointer_motion =
+        [=] (wf::post_input_event_signal<wlr_pointer_motion_event> *ev)
     {
         check_output();
         check_view();
     };
 
-    wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_absolute_event>>
+    wf::signal::connection_t<wf::post_input_event_signal<wlr_pointer_motion_absolute_event>>
     pointer_motion_absolute =
-        [=] (wf::input_event_signal<wlr_pointer_motion_absolute_event> *ev)
+        [=] (wf::post_input_event_signal<wlr_pointer_motion_absolute_event> *ev)
     {
         check_output();
         check_view();
