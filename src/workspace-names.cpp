@@ -186,7 +186,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
     wf::point_t offset)
 {
     auto subnode = std::make_shared<simple_node_t>(offset);
-    wf::scene::add_front(output->node_for_layer(wf::scene::layer::TOP), subnode);
+    wf::scene::add_front(output->node_for_layer(wf::scene::layer::OVERLAY), subnode);
     return subnode;
 }
 
