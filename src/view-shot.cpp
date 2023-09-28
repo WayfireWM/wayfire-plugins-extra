@@ -106,7 +106,9 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
     };
 
     void fini() override
-    {}
+    {
+        output->rem_binding(&on_capture);
+    }
 };
 
 DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_view_shot>);
