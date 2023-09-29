@@ -30,6 +30,7 @@
 #include <wayfire/view-helpers.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
+#include <wayfire/seat.hpp>
 
 namespace follow_focus
 {
@@ -53,7 +54,11 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
     {
         auto view = wf::get_core().get_cursor_focus_view();
 
-        output->focus_view(view, raise_on_top);
+        wf::get_core().seat->focus_view(view);
+        if (raise_on_top)
+        {
+            view_bring_to_front(view);
+        }
     }
 
     void change_output()
@@ -63,7 +68,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
 
         if (output->get_layout_geometry() & coords && (output == focus_output))
         {
-            wf::get_core().focus_output(output);
+            wf::get_core().seat->focus_output(output);
         }
     }
 
@@ -76,7 +81,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
             return;
         }
 
-        if (output == wf::get_core().get_active_output())
+        if (output == wf::get_core().seat->get_active_output())
         {
             return;
         }
@@ -120,7 +125,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
 
         auto view = wf::get_core().get_cursor_focus_view();
 
-        if (view == output->get_active_view())
+        if (view == wf::get_active_view_for_output(output))
         {
             focus_view = view;
 

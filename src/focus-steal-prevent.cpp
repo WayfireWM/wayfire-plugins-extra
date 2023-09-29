@@ -172,7 +172,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
             return;
         }
 
-        focus_view = output->get_active_view();
+        focus_view = wf::get_active_view_for_output(output);
         prevent_focus_steal = true;
         timer.disconnect();
     };
@@ -202,13 +202,14 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
         last_focus_view = nullptr;
     }
 
-    wf::signal::connection_t<wf::pre_focus_view_signal> pre_view_focused = [=] (wf::pre_focus_view_signal *ev)
+    wf::signal::connection_t<wf::view_focus_request_signal> pre_view_focused =
+        [=] (wf::view_focus_request_signal *ev)
     {
         validate_last_focus_view();
 
         if (ev->view && deny_focus_views.matches(ev->view))
         {
-            ev->can_focus = false;
+            ev->carried_out = true;
             if (last_focus_view)
             {
                 wf::view_bring_to_front(last_focus_view);
@@ -228,7 +229,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
 
             if (focus_view)
             {
-                ev->can_focus = false;
+                ev->carried_out = true;
                 wf::view_bring_to_front(focus_view);
             }
 
