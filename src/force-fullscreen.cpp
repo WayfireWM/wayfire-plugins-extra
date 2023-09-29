@@ -25,6 +25,7 @@
 
 #include <map>
 #include <wayfire/core.hpp>
+#include <wayfire/seat.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/toplevel-view.hpp>
@@ -371,7 +372,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
 
     wf::key_callback on_toggle_fullscreen = [=] (auto)
     {
-        auto view = wf::toplevel_cast(output->get_active_view());
+        auto view = wf::toplevel_cast(wf::get_active_view_for_output(output));
 
         if (!view || (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))
         {
@@ -474,7 +475,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
     wf::config::option_base_t::updated_callback_t constrain_pointer_option_changed =
         [=] ()
     {
-        auto view = wf::toplevel_cast(output->get_active_view());
+        auto view = wf::toplevel_cast(wf::get_active_view_for_output(output));
         update_motion_signal(view);
     };
 
@@ -486,7 +487,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
     wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> on_motion_event =
         [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
     {
-        if (wf::get_core().get_active_output() != output)
+        if (wf::get_core().seat->get_active_output() != output)
         {
             return;
         }
@@ -505,7 +506,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
 
         for (auto& b : backgrounds)
         {
-            auto view = output->get_active_view();
+            auto view = wf::get_active_view_for_output(output);
             wlr_box box;
 
             box    = b.second->transformed_view_box;
@@ -574,7 +575,8 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         }
     };
 
-    wf::signal::connection_t<wf::focus_view_signal> view_focused{[this] (wf::focus_view_signal *ev)
+    wf::signal::connection_t<wf::view_focus_request_signal> view_focused{[this] (wf::view_focus_request_signal
+                                                                                 *ev)
         {
             auto view = toplevel_cast(ev->view);
             update_motion_signal(view);

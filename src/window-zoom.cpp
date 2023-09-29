@@ -292,25 +292,25 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
 
     wf::activator_callback on_inc_x = [=] (auto)
     {
-        auto view = toplevel_cast(output->get_active_view());
+        auto view = toplevel_cast(wf::get_active_view_for_output(output));
         return update_winzoom(view, wf::point_t{1, 0});
     };
 
     wf::activator_callback on_dec_x = [=] (auto)
     {
-        auto view = toplevel_cast(output->get_active_view());
+        auto view = toplevel_cast(wf::get_active_view_for_output(output));
         return update_winzoom(view, wf::point_t{-1, 0});
     };
 
     wf::activator_callback on_inc_y = [=] (auto)
     {
-        auto view = toplevel_cast(output->get_active_view());
+        auto view = toplevel_cast(wf::get_active_view_for_output(output));
         return update_winzoom(view, wf::point_t{0, 1});
     };
 
     wf::activator_callback on_dec_y = [=] (auto)
     {
-        auto view = toplevel_cast(output->get_active_view());
+        auto view = toplevel_cast(wf::get_active_view_for_output(output));
         return update_winzoom(view, wf::point_t{0, -1});
     };
 
