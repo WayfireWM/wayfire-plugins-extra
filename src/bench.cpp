@@ -48,6 +48,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     uint32_t last_time = wf::get_current_time();
     double current_fps;
     double widget_radius;
+    wf::wl_timer<false> timer;
     wf::simple_texture_t bench_tex;
     wf::geometry_t cairo_geometry;
     cairo_surface_t *cairo_surface;
@@ -56,7 +57,6 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     int frames_since_last_update = 0;
     wf::option_wrapper_t<std::string> position{"bench/position"};
     wf::option_wrapper_t<int> average_frames{"bench/average_frames"};
-    wf::option_wrapper_t<int> frames_per_update{"bench/frames_per_update"};
 
   public:
     void init() override
@@ -68,6 +68,34 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         output->connect(&workarea_changed);
         position.set_callback(position_changed);
         update_texture_position();
+
+        reset_timeout();
+    }
+
+    void compute_timing()
+    {
+        uint32_t current_time = wf::get_current_time();
+        uint32_t elapsed = current_time - last_time;
+        last_time = current_time;
+        while ((int)last_frame_times.size() >= average_frames)
+        {
+            last_frame_times.pop_front();
+        }
+
+        last_frame_times.push_back(elapsed);
+
+        render_bench();
+
+        reset_timeout();
+    }
+
+    void reset_timeout()
+    {
+        timer.disconnect();
+        timer.set_timeout(1000, [=] ()
+        {
+            output->render->damage(cairo_geometry);
+        });
     }
 
     wf::config::option_base_t::updated_callback_t position_changed = [=] ()
@@ -203,7 +231,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
             last_frame_times.begin(), last_frame_times.end(), 0.0);
         average /= last_frame_times.size();
 
-        current_fps = (double)1000 / average;
+        current_fps = 1000.0 / average;
 
         if (current_fps > max_fps)
         {
@@ -218,7 +246,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         if (output->handle->current_mode)
         {
             fps_angle = max_angle + (current_fps /
-                ((double)output->handle->current_mode->refresh / 1000)) *
+                ((double)std::max(1, output->handle->current_mode->refresh) / 1000)) *
                 (target_angle - max_angle);
         } else
         {
@@ -266,24 +294,11 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 
     wf::effect_hook_t pre_hook = [=] ()
     {
-        uint32_t current_time = wf::get_current_time();
-        uint32_t elapsed = current_time - last_time;
-
-        while ((int)last_frame_times.size() >= average_frames)
+        if (!output->render->get_scheduled_damage().empty())
         {
-            last_frame_times.pop_front();
+            output->render->damage(cairo_geometry);
+            compute_timing();
         }
-
-        last_frame_times.push_back(elapsed);
-
-        if (++frames_since_last_update >= frames_per_update)
-        {
-            render_bench();
-            frames_since_last_update = 0;
-        }
-
-        last_time = current_time;
-        output->render->damage(cairo_geometry);
     };
 
     wf::effect_hook_t overlay_hook = [=] ()
@@ -298,6 +313,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 
     void fini() override
     {
+        timer.disconnect();
         output->render->set_redraw_always(false);
         output->render->rem_effect(&pre_hook);
         output->render->rem_effect(&overlay_hook);
