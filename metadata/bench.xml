@@ -4,16 +4,10 @@
 		<_short>Bench</_short>
 		<_long>Display fps on each output.</_long>
 		<category>Utility</category>
-		<option name="frames_per_update" type="int">
-			<_short>Frames per Update</_short>
-			<_long>How many frames will pass before each fps sample is displayed.</_long>
-			<default>3</default>
-			<min>1</min>
-		</option>
 		<option name="average_frames" type="int">
 			<_short>Average frames</_short>
 			<_long>How many frames to average to get the FPS value.</_long>
-			<default>1</default>
+			<default>25</default>
 			<min>1</min>
 		</option>
 		<option name="position" type="string">
