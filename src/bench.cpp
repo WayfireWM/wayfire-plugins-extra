@@ -63,7 +63,6 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     {
         output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
         output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
-        output->render->set_redraw_always();
 
         output->connect(&workarea_changed);
         position.set_callback(position_changed);
@@ -231,7 +230,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
             last_frame_times.begin(), last_frame_times.end(), 0.0);
         average /= last_frame_times.size();
 
-        current_fps = 1000.0 / average;
+        current_fps = 1000 / average;
 
         if (current_fps > max_fps)
         {
@@ -246,7 +245,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         if (output->handle->current_mode)
         {
             fps_angle = max_angle + (current_fps /
-                ((double)std::max(1, output->handle->current_mode->refresh) / 1000)) *
+                (output->handle->current_mode->refresh / 1000.0f)) *
                 (target_angle - max_angle);
         } else
         {
@@ -314,7 +313,6 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     void fini() override
     {
         timer.disconnect();
-        output->render->set_redraw_always(false);
         output->render->rem_effect(&pre_hook);
         output->render->rem_effect(&overlay_hook);
         cairo_surface_destroy(cairo_surface);
