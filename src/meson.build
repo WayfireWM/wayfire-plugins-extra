@@ -77,8 +77,3 @@ workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
 hinge = shared_module('hinge', 'hinge.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
-
-if get_option('enable_nk')
-    subdir('network-keyboard')
-endif
-
