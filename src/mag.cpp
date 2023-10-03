@@ -259,7 +259,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
     wf::activator_callback toggle_cb = [=] (auto)
     {
         active = !active;
-        if (active)
+        if (active || (mag_view && mag_view->minimized))
         {
             return activate();
         } else
@@ -288,6 +288,11 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
     {
         if (mag_view)
         {
+            if (mag_view->minimized)
+            {
+                mag_view->set_minimized(false);
+            }
+
             return;
         }
 
@@ -305,6 +310,12 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
     bool activate()
     {
+        if (mag_view && mag_view->minimized && hook_set)
+        {
+            mag_view->set_minimized(false);
+            return true;
+        }
+
         if (!output->activate_plugin(&grab_interface))
         {
             return false;
