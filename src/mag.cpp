@@ -162,7 +162,7 @@ class mag_view_t : public wf::toplevel_view_interface_t
 
                 if (old_state.mapped && !_current.mapped)
                 {
-                    view->unmap();
+                    view->unmap(true);
                 }
 
                 wf::view_implementation::emit_toplevel_state_change_signals(view, old_state);
@@ -219,9 +219,13 @@ class mag_view_t : public wf::toplevel_view_interface_t
         emit_view_map();
     }
 
-    void unmap()
+    void unmap(bool animate)
     {
-        emit_view_pre_unmap();
+        if (animate)
+        {
+            emit_view_pre_unmap();
+        }
+
         _is_mapped = false;
         wf::scene::set_node_enabled(get_root_node(), false);
         emit_view_unmap();
@@ -422,8 +426,9 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         output->render->damage_whole();
 
-        if (!mag_view)
+        if (!mag_view || !mag_view->is_mapped())
         {
+            active = false;
             return;
         }
 
@@ -432,6 +437,11 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
     void fini() override
     {
+        if (mag_view)
+        {
+            mag_view->unmap(false);
+        }
+
         deactivate();
         output->rem_binding(&toggle_cb);
     }
