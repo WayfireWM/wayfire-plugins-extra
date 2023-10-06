@@ -66,7 +66,7 @@ class wayfire_background_view_root_node : public wf::scene::translation_node_t
     std::unique_ptr<wf::wlr_view_keyboard_interaction_t> wlr_kb_interaction;
 
   public:
-    wayfire_background_view_root_node(wf::view_interface_t * _view) : translation_node_t(false)
+    wayfire_background_view_root_node(wf::view_interface_t *_view) : translation_node_t(false)
     {
         this->_view = _view->weak_from_this();
         this->wlr_kb_interaction = std::make_unique<wf::wlr_view_keyboard_interaction_t>(_view);
@@ -184,6 +184,7 @@ class wayfire_background_view_xdg : public wf::xdg_toplevel_view_base_t, public 
 class wayfire_background_view_xwl : public wf::xwayland_view_base_t, public unmappable_view_t
 {
     wf::option_wrapper_t<bool> inhibit_input{"background-view/inhibit_input"};
+
   public:
     wayfire_background_view_xwl(wlr_xwayland_surface *xw) : xwayland_view_base_t(xw)
     {
@@ -273,16 +274,19 @@ class wayfire_background_view : public wf::plugin_interface_t
             wlr_xdg_toplevel_set_size(toplevel, o->get_screen_size().width, o->get_screen_size().height);
             new_view = unmappable_view_t::create<wayfire_background_view_xdg>(toplevel, o);
             new_view->on_unmap.connect(&toplevel->base->events.unmap);
+        }
+
 #if WF_HAS_XWAYLAND
-        } else if (wlr_surface_is_xwayland_surface(surface))
+        else if (wlr_surface_is_xwayland_surface(surface))
         {
             auto xw = wlr_xwayland_surface_from_wlr_surface(surface);
             wlr_xwayland_surface_configure(xw, o->get_layout_geometry().x, o->get_layout_geometry().y,
                 o->get_layout_geometry().width, o->get_layout_geometry().height);
             new_view = unmappable_view_t::create<wayfire_background_view_xwl>(xw, o);
             new_view->on_unmap.connect(&xw->events.unmap);
-        } else
+        }
 #endif
+        else
         {
             LOGE("Failed to set background view: the view is neither xdg-toplevel nor a xwayland surface!");
             return;
@@ -337,7 +341,6 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     void remove_idle_inhibitors()
     {
-
         idle_cleanup_inhibitors.run_once([=] ()
         {
             auto& mgr = wf::get_core().protocols.idle_inhibit;
@@ -349,8 +352,8 @@ class wayfire_background_view : public wf::plugin_interface_t
                 {
                     if (inhibitor->surface == view->get_wlr_surface())
                     {
-                        // Tell core that the inhibitor was destroyed. It was not really destroyed, but core will
-                        // adjust its internal state as if the inhibitor wasn't there.
+                        // Tell core that the inhibitor was destroyed. It was not really destroyed, but core
+                        // will adjust its internal state as if the inhibitor wasn't there.
                         wl_signal_emit(&inhibitor->events.destroy, inhibitor->surface);
                         break;
                     }
