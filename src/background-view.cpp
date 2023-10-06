@@ -223,6 +223,9 @@ class wayfire_background_view : public wf::plugin_interface_t
     // List of all background views assigned to an output
     std::map<wf::output_t*, std::shared_ptr<unmappable_view_t>> views;
 
+    wf::wl_listener_wrapper on_new_inhibitor;
+    wf::wl_idle_call idle_cleanup_inhibitors;
+
   public:
     void init() override
     {
@@ -230,6 +233,9 @@ class wayfire_background_view : public wf::plugin_interface_t
         file.set_callback(option_changed);
         wf::get_core().connect(&on_view_pre_map);
         option_changed();
+
+        on_new_inhibitor.set_callback([=] (auto) { remove_idle_inhibitors(); });
+        on_new_inhibitor.connect(&wf::get_core().protocols.idle_inhibit->events.new_inhibitor);
     }
 
     void close_all_views()
@@ -288,6 +294,9 @@ class wayfire_background_view : public wf::plugin_interface_t
             views.erase(o);
         });
         views[o] = new_view;
+
+        // Remove any idle inhibitors which were already set
+        remove_idle_inhibitors();
     }
 
     wf::signal::connection_t<wf::view_pre_map_signal> on_view_pre_map = [=] (wf::view_pre_map_signal *ev)
@@ -324,6 +333,30 @@ class wayfire_background_view : public wf::plugin_interface_t
         {
             return " \"" + in + "\"";
         }
+    }
+
+    void remove_idle_inhibitors()
+    {
+
+        idle_cleanup_inhibitors.run_once([=] ()
+        {
+            auto& mgr = wf::get_core().protocols.idle_inhibit;
+            wlr_idle_inhibitor_v1 *inhibitor;
+
+            wl_list_for_each(inhibitor, &mgr->inhibitors, link)
+            {
+                for (auto& [_, view] : views)
+                {
+                    if (inhibitor->surface == view->get_wlr_surface())
+                    {
+                        // Tell core that the inhibitor was destroyed. It was not really destroyed, but core will
+                        // adjust its internal state as if the inhibitor wasn't there.
+                        wl_signal_emit(&inhibitor->events.destroy, inhibitor->surface);
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     void fini() override
