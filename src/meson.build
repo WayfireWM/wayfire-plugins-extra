@@ -9,7 +9,7 @@ autorotate = shared_module('autorotate-iio', 'autorotate-iio.cpp',
 endif
 
 background_view = shared_module('background-view', 'background-view.cpp',
-    dependencies: [wayfire],
+    dependencies: [wayfire, wf_protos],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
 benchmark = shared_module('bench', 'bench.cpp',
@@ -77,8 +77,3 @@ workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
 hinge = shared_module('hinge', 'hinge.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
-
-if get_option('enable_nk')
-    subdir('network-keyboard')
-endif
-
