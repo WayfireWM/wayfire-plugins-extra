@@ -49,6 +49,7 @@
 #include <wayfire/view-helpers.hpp>
 #include <wayfire/config.h>
 
+
 class wayfire_bgview_set_pointer_interaction : public wf::pointer_interaction_t
 {
   public:
@@ -137,7 +138,12 @@ class wayfire_background_view_root_node : public wf::scene::translation_node_t
 class unmappable_view_t : public virtual wf::view_interface_t
 {
   public:
-    virtual void bg_view_unmap() = 0;
+    virtual void bg_view_unmap()
+    {}
+    wlr_surface *get_keyboard_focus_surface()
+    {
+        return nullptr;
+    }
 
     wf::wl_listener_wrapper on_unmap;
     std::shared_ptr<wayfire_background_view_root_node> root_node;
@@ -172,6 +178,10 @@ class wayfire_background_view_xdg : public wf::xdg_toplevel_view_base_t, public 
   public:
     wayfire_background_view_xdg(wlr_xdg_toplevel *toplevel) : xdg_toplevel_view_base_t(toplevel, true)
     {}
+    wlr_surface *get_keyboard_focus_surface()
+    {
+        return nullptr;
+    }
 
     void bg_view_unmap() override
     {
@@ -191,6 +201,11 @@ class wayfire_background_view_xwl : public wf::xwayland_view_base_t, public unma
         this->kb_focus_enabled = !inhibit_input;
     }
 
+    wlr_surface *get_keyboard_focus_surface()
+    {
+        return nullptr;
+    }
+
     void map()
     {
         do_map(xw->surface, true);
@@ -202,6 +217,12 @@ class wayfire_background_view_xwl : public wf::xwayland_view_base_t, public unma
     }
 };
 #endif
+
+struct background_view
+{
+    std::shared_ptr<unmappable_view_t> view;
+    pid_t pid;
+};
 
 class wayfire_background_view : public wf::plugin_interface_t
 {
@@ -222,7 +243,7 @@ class wayfire_background_view : public wf::plugin_interface_t
     wf::option_wrapper_t<std::string> app_id{"background-view/app_id"};
 
     // List of all background views assigned to an output
-    std::map<wf::output_t*, std::shared_ptr<unmappable_view_t>> views;
+    std::map<wf::output_t*, background_view> views;
 
     wf::wl_listener_wrapper on_new_inhibitor;
     wf::wl_idle_call idle_cleanup_inhibitors;
@@ -239,13 +260,53 @@ class wayfire_background_view : public wf::plugin_interface_t
         on_new_inhibitor.connect(&wf::get_core().protocols.idle_inhibit->events.new_inhibitor);
     }
 
+    /* Borrowed from sway */
+    pid_t get_parent_pid(pid_t child)
+    {
+        pid_t parent = -1;
+        char file_name[100];
+        char *buffer    = NULL;
+        const char *sep = " ";
+        FILE *stat = NULL;
+        size_t buf_size = 0;
+
+        snprintf(file_name, sizeof(file_name), "/proc/%d/stat", child);
+
+        if ((stat = fopen(file_name, "r")))
+        {
+            if (getline(&buffer, &buf_size, stat) != -1)
+            {
+                strtok(buffer, sep); // pid
+                strtok(NULL, sep); // executable name
+                strtok(NULL, sep); // state
+                char *token = strtok(NULL, sep); // parent pid
+                parent = strtol(token, NULL, 10);
+            }
+
+            free(buffer);
+            fclose(stat);
+        }
+
+        if (parent)
+        {
+            return (parent == child) ? -1 : parent;
+        }
+
+        return -1;
+    }
+
     void close_all_views()
     {
-        for (auto& [output, view] : views)
+        for (auto& [output, bg_view] : views)
         {
-            view->close();
-            view->on_unmap.disconnect();
-            view->bg_view_unmap();
+            if (!bg_view.view)
+            {
+                continue;
+            }
+
+            bg_view.view->close();
+            bg_view.view->on_unmap.disconnect();
+            bg_view.view->bg_view_unmap();
         }
 
         views.clear();
@@ -259,9 +320,9 @@ class wayfire_background_view : public wf::plugin_interface_t
             return;
         }
 
-        for (size_t i = 0; i < wf::get_core().output_layout->get_outputs().size(); i++)
+        for (auto & o : wf::get_core().output_layout->get_outputs())
         {
-            wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
+            views[o].pid = wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
         }
     };
 
@@ -294,10 +355,10 @@ class wayfire_background_view : public wf::plugin_interface_t
 
         new_view->on_unmap.set_callback([this, o] (auto)
         {
-            views[o]->bg_view_unmap();
+            views[o].view->bg_view_unmap();
             views.erase(o);
         });
-        views[o] = new_view;
+        views[o].view = new_view;
 
         // Remove any idle inhibitors which were already set
         remove_idle_inhibitors();
@@ -305,25 +366,81 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     wf::signal::connection_t<wf::view_pre_map_signal> on_view_pre_map = [=] (wf::view_pre_map_signal *ev)
     {
-        auto view = wf::toplevel_cast(ev->view);
+        pid_t pid = 0;
+#if WF_HAS_XWAYLAND
+        pid_t x_pid = 0;
+#endif
+        pid_t wl_pid = 0;
+        auto view    = ev->view;
         if (!view)
         {
             return;
         }
 
+#if WF_HAS_XWAYLAND
+        wlr_surface *wlr_surface = ev->surface;
+        wlr_xwayland_surface *xwayland_surface = nullptr;
+        if (wlr_surface && wlr_surface_is_xwayland_surface(wlr_surface))
+        {
+            xwayland_surface = wlr_xwayland_surface_from_wlr_surface(wlr_surface);
+        }
+
+        if (xwayland_surface)
+        {
+            /* Get pid for xwayland view */
+            x_pid = xwayland_surface->pid;
+        } else
+#endif
+        if (ev->surface)
+        {
+            /* Get pid for native view */
+            wl_client_get_credentials(wl_resource_get_client(ev->surface->resource), &wl_pid, 0, 0);
+        }
+
         for (auto& o : wf::get_core().output_layout->get_outputs())
         {
-            if (views.count(o))
+            if (views[o].view)
             {
                 continue;
             }
 
-            /* Try to match application identifier */
+            /* First try to match pid */
+            if ((views[o].pid == wl_pid)
+#if WF_HAS_XWAYLAND
+                || (views[o].pid == x_pid)
+#endif
+            )
+            {
+                set_view_for_output(wf::toplevel_cast(view), ev->surface, o);
+                ev->override_implementation = true;
+                return;
+            }
+
+#if WF_HAS_XWAYLAND
+            if (xwayland_surface)
+            {
+                pid = get_parent_pid(x_pid);
+            } else
+#endif
+            {
+                pid = get_parent_pid(wl_pid);
+            }
+
+            do {
+                if (views[o].pid == pid)
+                {
+                    set_view_for_output(wf::toplevel_cast(view), ev->surface, o);
+                    ev->override_implementation = true;
+                    return;
+                }
+            } while ((pid = get_parent_pid(pid)) != -1);
+
+            /* Next, try to match application identifier */
             if (std::string(app_id) == view->get_app_id())
             {
-                set_view_for_output(view, ev->surface, o);
+                set_view_for_output(wf::toplevel_cast(view), ev->surface, o);
                 ev->override_implementation = true;
-                break;
+                return;
             }
         }
     };
@@ -348,9 +465,9 @@ class wayfire_background_view : public wf::plugin_interface_t
 
             wl_list_for_each(inhibitor, &mgr->inhibitors, link)
             {
-                for (auto& [_, view] : views)
+                for (auto& [_, bg_view] : views)
                 {
-                    if (inhibitor->surface == view->get_wlr_surface())
+                    if (bg_view.view && (inhibitor->surface == bg_view.view->get_wlr_surface()))
                     {
                         // Tell core that the inhibitor was destroyed. It was not really destroyed, but core
                         // will adjust its internal state as if the inhibitor wasn't there.
@@ -365,6 +482,7 @@ class wayfire_background_view : public wf::plugin_interface_t
     void fini() override
     {
         close_all_views();
+        wf::get_core().disconnect(&on_view_pre_map);
     }
 };
 
