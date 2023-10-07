@@ -61,7 +61,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
-        output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
+        output->render->add_effect(&damage_hook, wf::OUTPUT_EFFECT_DAMAGE);
         output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
 
         output->connect(&workarea_changed);
@@ -291,7 +291,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
         OpenGL::render_end();
     }
 
-    wf::effect_hook_t pre_hook = [=] ()
+    wf::effect_hook_t damage_hook = [=] ()
     {
         if (!output->render->get_scheduled_damage().empty())
         {
@@ -313,7 +313,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     void fini() override
     {
         timer.disconnect();
-        output->render->rem_effect(&pre_hook);
+        output->render->rem_effect(&damage_hook);
         output->render->rem_effect(&overlay_hook);
         cairo_surface_destroy(cairo_surface);
         cairo_destroy(cr);
