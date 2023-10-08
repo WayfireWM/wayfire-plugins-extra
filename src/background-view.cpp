@@ -247,6 +247,7 @@ class wayfire_background_view : public wf::plugin_interface_t
 
     wf::wl_listener_wrapper on_new_inhibitor;
     wf::wl_idle_call idle_cleanup_inhibitors;
+    size_t output_count;
 
   public:
     void init() override
@@ -324,6 +325,7 @@ class wayfire_background_view : public wf::plugin_interface_t
             wf::get_core().connect(&on_view_pre_map);
         }
 
+        output_count = 0;
         for (auto & o : wf::get_core().output_layout->get_outputs())
         {
             views[o].pid = wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
@@ -364,9 +366,14 @@ class wayfire_background_view : public wf::plugin_interface_t
         });
         views[o].view = new_view;
 
-        // Remove any idle inhibitors which were already set
+        /* Remove any idle inhibitors which were already set */
         remove_idle_inhibitors();
-        on_view_pre_map.disconnect();
+        /* Disconnect the pre_map handler in case the view goes away,
+         * we don't want to background-view the wrong view. */
+        if (++output_count == wf::get_core().output_layout->get_outputs().size())
+        {
+            on_view_pre_map.disconnect();
+        }
     }
 
     wf::signal::connection_t<wf::view_pre_map_signal> on_view_pre_map = [=] (wf::view_pre_map_signal *ev)
