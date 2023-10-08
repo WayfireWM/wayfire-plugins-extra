@@ -17,6 +17,7 @@ wayfire = dependency('wayfire')
 giomm = dependency('giomm-2.4', required: false)
 wayland_protos = dependency('wayland-protocols', version: '>=1.12')
 wayland_server = dependency('wayland-server')
+evdev = dependency('libevdev')
 
 if get_option('enable_windecor') == true
     windecor = subproject('windecor')
