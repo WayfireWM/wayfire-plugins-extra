@@ -56,12 +56,13 @@ class simple_node_render_instance_t : public render_instance_t
     wayfire_toplevel_view view;
     damage_callback push_to_parent;
     int *x, *y, *w, *h;
+    wlr_box *transparent_box;
     wf::option_wrapper_t<bool> transparent_behind_views{
         "force-fullscreen/transparent_behind_views"};
 
   public:
     simple_node_render_instance_t(node_t *self, damage_callback push_damage,
-        wayfire_toplevel_view view, int *x, int *y, int *w, int *h)
+        wayfire_toplevel_view view, int *x, int *y, int *w, int *h, wlr_box *transparent_box)
     {
         this->x    = x;
         this->y    = y;
@@ -69,7 +70,8 @@ class simple_node_render_instance_t : public render_instance_t
         this->h    = h;
         this->self = self;
         this->view = view;
-        this->push_to_parent = push_damage;
+        this->transparent_box = transparent_box;
+        this->push_to_parent  = push_damage;
         self->connect(&on_node_damaged);
     }
 
@@ -98,7 +100,7 @@ class simple_node_render_instance_t : public render_instance_t
         wf::region_t scissor_region{region};
         if (transparent_behind_views)
         {
-            auto bbox = this->view->get_bounding_box();
+            auto bbox = *transparent_box;
             bbox.x     += 1;
             bbox.y     += 1;
             bbox.width -= 2;
@@ -120,18 +122,20 @@ class simple_node_render_instance_t : public render_instance_t
 class black_border_node_t : public node_t
 {
     wayfire_toplevel_view view;
+    wlr_box transparent_box;
 
   public:
     int x, y, w, h;
 
     black_border_node_t(wayfire_toplevel_view view, int x, int y, int w,
-        int h) : node_t(false)
+        int h, wlr_box transparent_box) : node_t(false)
     {
         this->x    = x;
         this->y    = y;
         this->w    = w;
         this->h    = h;
         this->view = view;
+        this->transparent_box = transparent_box;
     }
 
     void gen_render_instances(std::vector<render_instance_uptr>& instances,
@@ -142,7 +146,7 @@ class black_border_node_t : public node_t
         // this simple nodes does not need any transformations, so the push_damage
         // callback is just passed along.
         instances.push_back(std::make_unique<simple_node_render_instance_t>(
-            this, push_damage, view, &x, &y, &w, &h));
+            this, push_damage, view, &x, &y, &w, &h, &transparent_box));
     }
 
     wf::geometry_t get_bounding_box() override
@@ -253,7 +257,7 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
 
             auto og = output->get_relative_geometry();
             background->black_border_node = std::make_shared<black_border_node_t>(
-                view, 0, 0, og.width, og.height);
+                view, 0, 0, og.width, og.height, transformed_view_box);
             wf::scene::add_back(view->get_root_node(),
                 background->black_border_node);
             background->black_border = true;
@@ -299,14 +303,16 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
         box.x = std::ceil((og.width - box.width) / 2.0);
         box.y = std::ceil((og.height - box.height) / 2.0);
 
-        if (preserve_aspect)
+        destroy_subsurface(view);
+        if (!transparent_behind_views || preserve_aspect)
         {
             ensure_subsurface(view, box);
+        }
+
+        if (preserve_aspect)
+        {
             scale_x += 1.0 / vg.width;
             translation_x -= 1.0;
-        } else
-        {
-            destroy_subsurface(view);
         }
 
         backgrounds[view]->transformed_view_box = box;
