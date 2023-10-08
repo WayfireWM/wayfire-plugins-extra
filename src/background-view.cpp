@@ -253,7 +253,6 @@ class wayfire_background_view : public wf::plugin_interface_t
     {
         command.set_callback(option_changed);
         file.set_callback(option_changed);
-        wf::get_core().connect(&on_view_pre_map);
         option_changed();
 
         on_new_inhibitor.set_callback([=] (auto) { remove_idle_inhibitors(); });
@@ -320,6 +319,11 @@ class wayfire_background_view : public wf::plugin_interface_t
             return;
         }
 
+        if (!on_view_pre_map.is_connected())
+        {
+            wf::get_core().connect(&on_view_pre_map);
+        }
+
         for (auto & o : wf::get_core().output_layout->get_outputs())
         {
             views[o].pid = wf::get_core().run(std::string(command) + add_arg_if_not_empty(file));
@@ -362,6 +366,7 @@ class wayfire_background_view : public wf::plugin_interface_t
 
         // Remove any idle inhibitors which were already set
         remove_idle_inhibitors();
+        on_view_pre_map.disconnect();
     }
 
     wf::signal::connection_t<wf::view_pre_map_signal> on_view_pre_map = [=] (wf::view_pre_map_signal *ev)
