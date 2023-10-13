@@ -53,11 +53,13 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
     void change_view()
     {
         auto view = wf::get_core().get_cursor_focus_view();
-
-        wf::get_core().seat->focus_view(view);
-        if (raise_on_top)
+        if (view)
         {
-            view_bring_to_front(view);
+            wf::get_core().seat->focus_view(view);
+            if (raise_on_top)
+            {
+                view_bring_to_front(view);
+            }
         }
     }
 
