@@ -46,7 +46,6 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     double max_fps = 0;
     double widget_xc;
     uint32_t last_time = wf::get_current_time();
-    double current_fps;
     double widget_radius;
     wf::wl_timer<false> timer;
     wf::simple_texture_t bench_tex;
@@ -83,9 +82,9 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 
         last_frame_times.push_back(elapsed);
 
-        render_bench();
-
         reset_timeout();
+
+        render_bench();
     }
 
     void reset_timeout()
@@ -118,7 +117,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
             CAIRO_FONT_WEIGHT_BOLD);
         cairo_set_font_size(cr, font_size);
 
-        cairo_text_extents(cr, "234.5", &text_extents);
+        cairo_text_extents(cr, "1000.0", &text_extents);
 
         widget_xc = text_extents.width / 2 + text_extents.x_bearing + WIDGET_PADDING;
         text_y    = text_extents.height + WIDGET_PADDING;
@@ -230,14 +229,11 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
             last_frame_times.begin(), last_frame_times.end(), 0.0);
         average /= last_frame_times.size();
 
-        current_fps = 1000 / average;
+        double current_fps = 1000 / average;
 
         if (current_fps > max_fps)
         {
             max_fps = current_fps;
-        } else
-        {
-            max_fps -= 1;
         }
 
         sprintf(fps_buf, "%.1f", current_fps);
@@ -295,9 +291,10 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     {
         if (!output->render->get_scheduled_damage().empty())
         {
-            output->render->damage(cairo_geometry);
             compute_timing();
         }
+
+        output->render->damage(cairo_geometry, false);
     };
 
     wf::effect_hook_t overlay_hook = [=] ()
