@@ -18,15 +18,15 @@ def output_realized(output):
     return False
 
 def sort_views():
-    for v in commands_sock.list_views():
-        if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
-            continue
-        if v["state"] != {} and v["state"]["minimized"]:
-            continue
-        if not output_realized(v["output"]):
-            outputs.append(v["output"])
-    for o in outputs:
-        try:
+    try:
+        for v in commands_sock.list_views():
+            if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
+                continue
+            if v["state"] != {} and v["state"]["minimized"]:
+                continue
+            if not output_realized(v["output"]):
+                outputs.append(v["output"])
+        for o in outputs:
             i = 0
             for v in commands_sock.list_views():
                 if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
@@ -51,8 +51,8 @@ def sort_views():
                 commands_sock.set_view_opacity(v["id"], o_value, 1000)
                 commands_sock.set_view_brightness(v["id"], b_value, 1000)
                 commands_sock.set_view_saturation(v["id"], s_value, 1000)
-        except:
-            pass
+    except:
+        pass
 
 sort_views()
 
