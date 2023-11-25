@@ -247,6 +247,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
         if (!hook_set)
         {
+            output->render->add_effect(&damage_hook, wf::OUTPUT_EFFECT_DAMAGE);
             output->render->add_post(&render);
             hook_set = true;
         }
@@ -264,6 +265,11 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
     wf::wl_timer<false>::callback_t timeout = [=] ()
     {
         animation.animate(animation, 0);
+    };
+
+    wf::effect_hook_t damage_hook = [=] ()
+    {
+        output->render->damage_whole();
     };
 
     wf::post_hook_t render = [=] (const wf::framebuffer_t& source,
@@ -396,6 +402,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         if (!button_down && !timer.is_connected() && !animation.running())
         {
             hook_set = false;
+            output->render->rem_effect(&damage_hook);
             output->render->rem_post(&render);
             OpenGL::render_begin();
             buffer[0].release();
@@ -414,6 +421,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         timer.disconnect();
         if (hook_set)
         {
+            output->render->rem_effect(&damage_hook);
             output->render->rem_post(&render);
         }
 
