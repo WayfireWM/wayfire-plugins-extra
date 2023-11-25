@@ -19,16 +19,20 @@ def output_realized(output):
 
 def sort_views():
     try:
-        for v in commands_sock.list_views():
+        views = commands_sock.list_views()
+        timestamps = []
+        for v in views:
             if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                 continue
             if v["state"] != {} and v["state"]["minimized"]:
                 continue
+            timestamps.append(v["last-focus-timestamp"])
             if not output_realized(v["output"]):
                 outputs.append(v["output"])
+        timestamps.sort()
         for o in outputs:
             i = 0
-            for v in commands_sock.list_views():
+            for v in views:
                 if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                     continue
                 if v["state"] != {} and v["state"]["minimized"]:
@@ -40,17 +44,21 @@ def sort_views():
             o_value = 0.8
             b_value = 0.5
             s_value = 0.0
-            for v in commands_sock.list_views()[::-1]:
-                if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
-                    continue
-                if v["state"] != {} and v["state"]["minimized"]:
-                    continue
-                o_value += o_step
-                b_value += b_step
-                s_value += s_step
-                commands_sock.set_view_opacity(v["id"], o_value, 1000)
-                commands_sock.set_view_brightness(v["id"], b_value, 1000)
-                commands_sock.set_view_saturation(v["id"], s_value, 1000)
+            for t in timestamps:
+                for v in views:
+                    if t != v["last-focus-timestamp"]:
+                        continue
+                    if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
+                        break
+                    if v["state"] != {} and v["state"]["minimized"]:
+                        break
+                    o_value += o_step
+                    b_value += b_step
+                    s_value += s_step
+                    commands_sock.set_view_opacity(v["id"], o_value, 1000)
+                    commands_sock.set_view_brightness(v["id"], b_value, 1000)
+                    commands_sock.set_view_saturation(v["id"], s_value, 1000)
+                    break
     except:
         pass
 
