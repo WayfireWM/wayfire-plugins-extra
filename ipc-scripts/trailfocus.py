@@ -20,11 +20,12 @@ def output_realized(output):
 def sort_views():
     try:
         views = commands_sock.list_views()
+        outputs.clear()
         timestamps = []
         for v in views:
             if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                 continue
-            if v["state"] != {} and v["state"]["minimized"]:
+            if "parent" in v and v["state"]["minimized"]:
                 continue
             timestamps.append(v["last-focus-timestamp"])
             if not output_realized(v["output"]):
@@ -35,7 +36,7 @@ def sort_views():
             for v in views:
                 if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                     continue
-                if v["state"] != {} and v["state"]["minimized"]:
+                if "parent" in v and v["state"]["minimized"]:
                     continue
                 i += 1
             o_step = 0.2 / i
@@ -50,7 +51,7 @@ def sort_views():
                         continue
                     if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                         break
-                    if v["state"] != {} and v["state"]["minimized"]:
+                    if "parent" in v and v["state"]["minimized"]:
                         break
                     o_value += o_step
                     b_value += b_step
@@ -59,7 +60,8 @@ def sort_views():
                     commands_sock.set_view_brightness(v["id"], b_value, 1000)
                     commands_sock.set_view_saturation(v["id"], s_value, 1000)
                     break
-    except:
+    except Exception as error:
+        print("An exception occurred:", error)
         pass
 
 sort_views()
