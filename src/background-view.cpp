@@ -335,22 +335,21 @@ class wayfire_background_view : public wf::plugin_interface_t
     void set_view_for_output(wayfire_toplevel_view view, wlr_surface *surface, wf::output_t *o)
     {
         std::shared_ptr<unmappable_view_t> new_view;
-        if (wlr_surface_is_xdg_surface(surface))
+        if (wlr_xdg_surface *surf = wlr_xdg_surface_try_from_wlr_surface(surface))
         {
-            auto toplevel = wlr_xdg_surface_from_wlr_surface(surface)->toplevel;
+            auto toplevel = surf->toplevel;
             wlr_xdg_toplevel_set_size(toplevel, o->get_screen_size().width, o->get_screen_size().height);
             new_view = unmappable_view_t::create<wayfire_background_view_xdg>(toplevel, o);
-            new_view->on_unmap.connect(&toplevel->base->events.unmap);
+            new_view->on_unmap.connect(&toplevel->base->surface->events.unmap);
         }
 
 #if WF_HAS_XWAYLAND
-        else if (wlr_surface_is_xwayland_surface(surface))
+        else if (wlr_xwayland_surface *surf = wlr_xwayland_surface_try_from_wlr_surface(surface))
         {
-            auto xw = wlr_xwayland_surface_from_wlr_surface(surface);
-            wlr_xwayland_surface_configure(xw, o->get_layout_geometry().x, o->get_layout_geometry().y,
+            wlr_xwayland_surface_configure(surf, o->get_layout_geometry().x, o->get_layout_geometry().y,
                 o->get_layout_geometry().width, o->get_layout_geometry().height);
-            new_view = unmappable_view_t::create<wayfire_background_view_xwl>(xw, o);
-            new_view->on_unmap.connect(&xw->events.unmap);
+            new_view = unmappable_view_t::create<wayfire_background_view_xwl>(surf, o);
+            new_view->on_unmap.connect(&surf->surface->events.unmap);
         }
 #endif
         else
@@ -391,11 +390,7 @@ class wayfire_background_view : public wf::plugin_interface_t
 
 #if WF_HAS_XWAYLAND
         wlr_surface *wlr_surface = ev->surface;
-        wlr_xwayland_surface *xwayland_surface = nullptr;
-        if (wlr_surface && wlr_surface_is_xwayland_surface(wlr_surface))
-        {
-            xwayland_surface = wlr_xwayland_surface_from_wlr_surface(wlr_surface);
-        }
+        wlr_xwayland_surface *xwayland_surface = wlr_xwayland_surface_try_from_wlr_surface(wlr_surface);
 
         if (xwayland_surface)
         {
