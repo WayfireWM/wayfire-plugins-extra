@@ -21,24 +21,24 @@ def sort_views():
     try:
         views = commands_sock.list_views()
         outputs.clear()
-        timestamps = []
         for v in views:
             if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                 continue
             if "parent" in v and v["state"]["minimized"]:
                 continue
-            timestamps.append(v["last-focus-timestamp"])
             if not output_realized(v["output"]):
                 outputs.append(v["output"])
-        timestamps.sort()
         for o in outputs:
             i = 0
+            timestamps = []
             for v in views:
                 if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
                     continue
                 if "parent" in v and v["state"]["minimized"]:
                     continue
+                timestamps.append(v["last-focus-timestamp"])
                 i += 1
+            timestamps.sort()
             o_step = 0.2 / i
             b_step = 0.5 / i
             s_step = 1.0 / i
