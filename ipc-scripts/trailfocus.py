@@ -9,30 +9,15 @@ addr = os.getenv('WAYFIRE_SOCKET')
 commands_sock = WayfireSocket(addr)
 commands_sock.watch()
 
-outputs = []
-
-def output_realized(output):
-    for o in outputs:
-        if output == o:
-            return True
-    return False
-
 def sort_views():
     try:
         views = commands_sock.list_views()
-        outputs.clear()
-        for v in views:
-            if v["role"] == "desktop-environment":
-                continue
-            if "parent" in v and v["state"]["minimized"]:
-                continue
-            if not output_realized(v["output"]):
-                outputs.append(v["output"])
+        outputs = commands_sock.list_outputs()
         for o in outputs:
             i = 0
             timestamps = []
             for v in views:
-                if v["output"] != o or v["role"] == "desktop-environment":
+                if v["output"] != o["name"] or v["role"] == "desktop-environment":
                     continue
                 if "parent" in v and v["state"]["minimized"]:
                     continue
@@ -53,7 +38,7 @@ def sort_views():
                 for v in views:
                     if t != v["last-focus-timestamp"]:
                         continue
-                    if v["output"] != o or v["role"] == "desktop-environment":
+                    if v["output"] != o["name"] or v["role"] == "desktop-environment":
                         break
                     if "parent" in v and v["state"]["minimized"]:
                         break

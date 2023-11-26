@@ -44,6 +44,10 @@ class WayfireSocket:
         message = get_msg_template("window-rules/list-views")
         return self.send_json(message)
 
+    def list_outputs(self):
+        message = get_msg_template("window-rules/list-outputs")
+        return self.send_json(message)
+
     def set_view_opacity(self, view_id: int, opacity: float, duration: int):
         message = get_msg_template("wf/obs/set-view-opacity")
         message["data"] = {}
