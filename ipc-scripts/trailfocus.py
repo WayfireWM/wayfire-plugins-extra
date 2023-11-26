@@ -36,8 +36,12 @@ def sort_views():
                     continue
                 if "parent" in v and v["state"]["minimized"]:
                     continue
+                if v["last-focus-timestamp"] <= 0:
+                    continue
                 timestamps.append(v["last-focus-timestamp"])
                 i += 1
+            if i == 0:
+                continue
             timestamps.sort()
             o_step = 0.2 / i
             b_step = 0.5 / i
