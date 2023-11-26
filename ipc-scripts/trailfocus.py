@@ -22,7 +22,7 @@ def sort_views():
         views = commands_sock.list_views()
         outputs.clear()
         for v in views:
-            if v["app-id"] == "$unfocus panel" or v["layer"] == "background":
+            if v["role"] == "desktop-environment":
                 continue
             if "parent" in v and v["state"]["minimized"]:
                 continue
@@ -32,7 +32,7 @@ def sort_views():
             i = 0
             timestamps = []
             for v in views:
-                if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
+                if v["output"] != o or v["role"] == "desktop-environment":
                     continue
                 if "parent" in v and v["state"]["minimized"]:
                     continue
@@ -53,7 +53,7 @@ def sort_views():
                 for v in views:
                     if t != v["last-focus-timestamp"]:
                         continue
-                    if v["output"] != o or v["app-id"] == "$unfocus panel" or v["layer"] == "background":
+                    if v["output"] != o or v["role"] == "desktop-environment":
                         break
                     if "parent" in v and v["state"]["minimized"]:
                         break
