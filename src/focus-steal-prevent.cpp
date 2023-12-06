@@ -243,7 +243,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
                 wf::get_core().emit(&hints_signal);
             }
 
-            output->connect(&pre_view_focused);
+            wf::get_core().connect(&pre_view_focused);
         }
     };
 
@@ -256,7 +256,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
     void init() override
     {
         cancel_keys.set_callback(cancel_keys_changed);
-        output->connect(&pre_view_focused);
+        wf::get_core().connect(&pre_view_focused);
         wf::get_core().connect(&on_key_event);
         wf::get_core().connect(&on_button_event);
         cancel_keys_changed();
