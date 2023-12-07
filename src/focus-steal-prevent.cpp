@@ -128,6 +128,25 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
         return false;
     }
 
+    wf::signal::connection_t<wf::view_unmapped_signal> on_unmap_event =
+        [=] (wf::view_unmapped_signal *ev)
+    {
+        if (!ev->view)
+        {
+            return;
+        }
+
+        if (ev->view == focus_view)
+        {
+            focus_view = nullptr;
+        }
+
+        if (ev->view == last_focus_view)
+        {
+            last_focus_view = nullptr;
+        }
+    };
+
     wf::signal::connection_t<wf::post_input_event_signal<wlr_keyboard_key_event>> on_key_event =
         [=] (wf::post_input_event_signal<wlr_keyboard_key_event> *ev)
     {
@@ -265,8 +284,9 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
     {
         cancel_keys.set_callback(cancel_keys_changed);
         wf::get_core().connect(&pre_view_focused);
-        wf::get_core().connect(&on_key_event);
         wf::get_core().connect(&on_button_event);
+        wf::get_core().connect(&on_unmap_event);
+        wf::get_core().connect(&on_key_event);
         cancel_keys_changed();
     }
 
@@ -274,6 +294,7 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
     {
         timer.disconnect();
         on_key_event.disconnect();
+        on_unmap_event.disconnect();
         on_button_event.disconnect();
         pre_view_focused.disconnect();
     }
