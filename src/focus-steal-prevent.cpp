@@ -185,6 +185,14 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
             return;
         }
 
+        auto view = wf::get_core().get_cursor_focus_view();
+        if ((!view || (view && (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))) &&
+            (ev->event->state == WLR_BUTTON_PRESSED) && prevent_focus_steal)
+        {
+            cancel();
+            return;
+        }
+
         focus_view = wf::get_core().get_cursor_focus_view();
         reset_timeout();
     };
