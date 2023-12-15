@@ -50,12 +50,12 @@
     </option>
     <option name="scan-height" type="int">
       <_short>scan height</_short>
-      <_long>the height of the bounding box used to scan for windows to the left or right. If zero it will be the height of the view</_long>
+      <_long>the height of the bounding box used to scan for windows to the left or right. If zero it will be the height of the view. If negative it will be the height of the view subtracted by the value</_long>
       <default>0</default>
     </option>
     <option name="scan-width" type="int">
       <_short>scan width</_short>
-      <_long>the width of the bounding box used to scan for window above or below. If zero it will be the width of the view</_long>
+      <_long>the width of the bounding box used to scan for window above or below. If zero it will be the width of the view. If negative it will be the width of the view subtracted by the value</_long>
       <default>0</default>
     </option>
   </plugin>
