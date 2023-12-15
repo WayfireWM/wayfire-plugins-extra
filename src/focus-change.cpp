@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2023 Scott Moreau
+ * Copyright (c) 2023 Edwin Ljung
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
  * associated documentation files (the "Software"), to deal in the Software without restriction, including
@@ -53,12 +53,12 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
     key_down{"focus-change/down"},
     key_right{"focus-change/right"},
     key_left{"focus-change/left"};
-    wf::option_wrapper_t<int32_t> grace_up{"focus-change/grace-up"},
+    wf::option_wrapper_t<int> grace_up{"focus-change/grace-up"},
     grace_down{"focus-change/grace-down"},
     grace_right{"focus-change/grace-right"},
     grace_left{"focus-change/grace-left"};
     wf::option_wrapper_t<bool> cross_outputs{"focus-change/cross-output"};
-    wf::option_wrapper_t<int32_t> scan_height{"focus-change/scan-height"},
+    wf::option_wrapper_t<int> scan_height{"focus-change/scan-height"},
     scan_width{"focus-change/scan-width"};
 
 
@@ -192,7 +192,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
         return true;
     };
 
-    void rebind()
+    void bind()
     {
         auto& core = wf::get_core();
         core.bindings->add_key(key_up, &on_key_up);
@@ -204,11 +204,17 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
   public:
     void init() override
     {
-        rebind();
+        bind();
     }
 
     void fini() override
-    {}
+    {
+        auto& core = wf::get_core();
+        core.bindings->rem_binding(&on_key_up);
+        core.bindings->rem_binding(&on_key_down);
+        core.bindings->rem_binding(&on_key_right);
+        core.bindings->rem_binding(&on_key_left);
+    }
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_focus_change_t);
