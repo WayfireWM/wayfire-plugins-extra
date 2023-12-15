@@ -208,8 +208,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
     }
 
     void fini() override
-    {
-    }
+    {}
 };
 
 DECLARE_WAYFIRE_PLUGIN(wayfire_focus_change_t);
