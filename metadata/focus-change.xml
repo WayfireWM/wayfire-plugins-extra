@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<wayfire>
+  <plugin name = "focus-change">
+    <_short>Focus Change</_short>
+    <category>Desktop</category>
+    <option name="up" type="key">
+      <_short>focus up</_short>
+      <_long>move focus to the closest window above</_long>
+      <default>&lt;super&gt; &lt;shift&gt; KEY_UP</default>
+    </option>
+    <option name="down" type="key">
+      <_short>focus down</_short>
+      <_long>move focus to the closest window below</_long>
+      <default>&lt;super&gt; &lt;shift&gt; KEY_DOWN</default>
+    </option>
+    <option name="right" type="key">
+      <_short>focus right</_short>
+      <_long>move focus to the closest window to the right</_long>
+      <default>&lt;super&gt; &lt;shift&gt; KEY_RIGHT</default>
+    </option>
+    <option name="left" type="key">
+      <_short>focus left</_short>
+      <_long>move focus to the closest window to the left</_long>
+      <default>&lt;super&gt; &lt;shift&gt; KEY_LEFT</default>
+    </option>
+    <option name="grace-up" type="int">
+      <_short>upwards grace in pixels</_short>
+      <_long>add an amount of pixel upwards in which windows will be ignored. Can be negative</_long>
+      <default>1</default>
+    </option>
+    <option name="grace-down" type="int">
+      <_short>downwards grace in pixels</_short>
+      <_long>add an amount of pixel downwards in which windows will be ignored. Can be negative</_long>
+      <default>1</default>
+    </option>
+    <option name="grace-right" type="int">
+      <_short>rightwards grace in pixels</_short>
+      <_long>add an amount of pixel to the right in which windows will be ignored. Can be negative</_long>
+      <default>1</default>
+    </option>
+    <option name="grace-left" type="int">
+      <_short>leftwards grace in pixels</_short>
+      <_long>add an amount of pixel to the left in which windows will be ignored. Can be negative</_long>
+      <default>1</default>
+    </option>
+    <option name="cross-output" type="bool">
+      <_short>ignores output boundraries</_short>
+      <_long>enables moving focus between different outputs</_long>
+      <default>false</default>
+    </option>
+    <option name="scan-height" type="int">
+      <_short>scan height</_short>
+      <_long>the height of the bounding box used to scan for windows to the left or right. If zero it will be the height of the view</_long>
+      <default>0</default>
+    </option>
+    <option name="scan-width" type="int">
+      <_short>scan width</_short>
+      <_long>the width of the bounding box used to scan for window above or below. If zero it will be the width of the view</_long>
+      <default>0</default>
+    </option>
+  </plugin>
+</wayfire>
