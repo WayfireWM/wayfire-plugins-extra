@@ -102,10 +102,10 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
 
             const int32_t scan_w_intrm = scan_width.value() > 0 ?
                 scan_width.value() : scan_width.value() < 0 ?
-                cur_bb.width - scan_width.value() : cur_bb.width;
+                cur_bb.width - abs(scan_width.value()) : cur_bb.width;
             const int32_t scan_h_intrm = scan_height.value() > 0 ?
                 scan_height.value() : scan_height.value() < 0 ?
-                cur_bb.height - scan_height.value() : cur_bb.height;
+                cur_bb.height - abs(scan_height.value()) : cur_bb.height;
 
             const int32_t scan_w = std::max(scan_w_intrm / 2, 1);
             const int32_t scan_h = std::max(scan_h_intrm / 2, 1);
