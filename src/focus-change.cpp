@@ -66,9 +66,10 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
     {
         const auto cur_view   = wf::get_core().seat->get_active_view();
         const auto cur_output = cur_view->get_output();
+        const auto cur_lg     = cur_output->get_layout_geometry();
         const auto cur_bb     = cur_view->get_bounding_box();
-        const int32_t cur_cx  = cur_bb.x + cur_bb.width / 2;
-        const int32_t cur_cy  = cur_bb.y + cur_bb.height / 2;
+        const int32_t cur_cx  = cur_bb.x + cur_bb.width / 2 + cur_lg.x;
+        const int32_t cur_cy  = cur_bb.y + cur_bb.height / 2 + cur_lg.y;
         wf::view_interface_t *new_focus = nullptr;
 
         auto iterating_output = std::vector<wayfire_toplevel_view>{};
@@ -88,6 +89,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
             iterating_output = cur_output->wset()->get_views();
         }
 
+        const bool should_pad_workspace = cross_outputs.value();
         int32_t closest_cur = INT32_MAX;
         for (auto&& view : std::move(iterating_output))
         {
@@ -97,8 +99,9 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
             }
 
             const auto bb    = view->get_bounding_box();
-            const int32_t cx = bb.x + bb.width / 2;
-            const int32_t cy = bb.y + bb.height / 2;
+            const auto lg    = view->get_output()->get_layout_geometry();
+            const int32_t cx = bb.x + bb.width / 2 + (should_pad_workspace ? lg.x : 0);
+            const int32_t cy = bb.y + bb.height / 2 + (should_pad_workspace ? lg.y : 0);
 
             const int32_t scan_w_intrm = scan_width.value() > 0 ?
                 scan_width.value() : scan_width.value() < 0 ?
@@ -164,6 +167,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
 
         if (new_focus != nullptr)
         {
+            wf::get_core().seat->focus_output(new_focus->get_output());
             wf::get_core().seat->focus_view(new_focus->self());
         }
     }
