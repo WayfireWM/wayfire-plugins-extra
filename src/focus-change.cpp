@@ -57,9 +57,9 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
     grace_right{"focus-change/grace-right"},
     grace_left{"focus-change/grace-left"};
     wf::option_wrapper_t<bool> cross_outputs{"focus-change/cross-output"};
+    wf::option_wrapper_t<bool> raise_on_change{"focus-change/raise-on-change"};
     wf::option_wrapper_t<int> scan_height{"focus-change/scan-height"},
     scan_width{"focus-change/scan-width"};
-    wf::option_wrapper_t<bool> raise_on_change{"focus-change/raise-on-change"};
 
 
     void change_focus(orientation_t orientation)

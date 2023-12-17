@@ -48,9 +48,9 @@
       <_long>enables moving focus between different outputs</_long>
       <default>false</default>
     </option>
-    <option name="raise-on-change", type="bool">
-      <_short>raises window on change</_short>
-      <_long>raises the newly focused window to the top</_long>
+    <option name="raise-on-change" type="bool">
+      <_short>raise window on change</_short>
+      <_long>raise the newly focused window to the top</_long>
       <default>true</default>
     </option>
     <option name="scan-height" type="int">
