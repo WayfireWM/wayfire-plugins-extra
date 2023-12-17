@@ -47,8 +47,6 @@ enum class orientation_t
 class wayfire_focus_change_t : public wf::plugin_interface_t
 {
   private:
-    wayfire_view focus_view = nullptr;
-
     wf::option_wrapper_t<wf::keybinding_t> key_up{"focus-change/up"},
     key_down{"focus-change/down"},
     key_right{"focus-change/right"},
