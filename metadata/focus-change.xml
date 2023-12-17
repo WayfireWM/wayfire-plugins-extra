@@ -48,6 +48,11 @@
       <_long>enables moving focus between different outputs</_long>
       <default>false</default>
     </option>
+    <option name="raise-on-change", type="bool">
+      <_short>raises window on change</_short>
+      <_long>raises the newly focused window to the top</_long>
+      <default>true</default>
+    </option>
     <option name="scan-height" type="int">
       <_short>scan height</_short>
       <_long>the height of the bounding box used to scan for windows to the left or right. If zero it will be the height of the view. If negative it will be the height of the view subtracted by the value</_long>

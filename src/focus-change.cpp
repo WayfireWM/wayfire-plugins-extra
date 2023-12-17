@@ -33,6 +33,7 @@
 #include <wayfire/view.hpp>
 #include <wayfire/workspace-set.hpp>
 #include <wayfire/bindings-repository.hpp>
+#include <wayfire/window-manager.hpp>
 
 namespace focus_change
 {
@@ -58,6 +59,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
     wf::option_wrapper_t<bool> cross_outputs{"focus-change/cross-output"};
     wf::option_wrapper_t<int> scan_height{"focus-change/scan-height"},
     scan_width{"focus-change/scan-width"};
+    wf::option_wrapper_t<bool> raise_on_change{"focus-change/raise-on-change"};
 
 
     void change_focus(orientation_t orientation)
@@ -167,6 +169,10 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
         {
             wf::get_core().seat->focus_output(new_focus->get_output());
             wf::get_core().seat->focus_view(new_focus->self());
+            if (raise_on_change.value())
+            {
+                wf::get_core().default_wm->focus_request(new_focus);
+            }
         }
     }
 
