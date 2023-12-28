@@ -236,11 +236,11 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
                     switch (orientation)
                     {
                       case orientation_t::UP:
-                        distance = cy;
+                        distance = pos.height - cy;
                         break;
 
                       case orientation_t::DOWN:
-                        distance = pos.height - cy;
+                        distance = cy;
                         break;
 
                       case orientation_t::RIGHT:
