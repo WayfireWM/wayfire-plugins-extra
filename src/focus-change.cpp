@@ -74,6 +74,11 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
         const int32_t cur_cy  = cur_bb.y + cur_bb.height / 2;
         wf::toplevel_view_interface_t *new_focus = nullptr;
 
+        if (cur_output == nullptr)
+        {
+            return;
+        }
+
         const bool cross_ws  = cross_workspace.value();
         const auto workspace =
             cross_ws ? std::optional<wf::point_t>{} : std::optional{cur_output->wset()->
@@ -89,7 +94,13 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
             }
 
             const auto bb     = view->get_bounding_box();
-            const auto lg     = view->get_output()->get_layout_geometry();
+            const auto output = view->get_output();
+            if (output == nullptr)
+            {
+                continue;
+            }
+
+            const auto lg     = output->get_layout_geometry();
             const int32_t cxr = bb.width / 2;
             const int32_t cyr = bb.height / 2;
             const int32_t cx  = bb.x + cxr;
