@@ -267,9 +267,13 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
         if (new_focus != nullptr)
         {
             auto op = new_focus->get_output();
-            const auto ws = op->wset()->get_view_main_workspace(new_focus);
-            op->wset()->set_workspace(ws);
-            wf::get_core().seat->focus_output(op);
+            if (op != nullptr)
+            {
+                const auto ws = op->wset()->get_view_main_workspace(new_focus);
+                op->wset()->request_workspace(ws);
+                wf::get_core().seat->focus_output(op);
+            }
+
             wf::get_core().seat->focus_view(new_focus->self());
             if (raise_on_change.value())
             {
