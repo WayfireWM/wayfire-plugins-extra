@@ -67,17 +67,22 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
 
     void change_focus(orientation_t orientation)
     {
-        const auto cur_view   = wf::get_core().seat->get_active_view();
-        const auto cur_output = cur_view->get_output();
-        const auto cur_bb     = cur_view->get_bounding_box();
-        const int32_t cur_cx  = cur_bb.x + cur_bb.width / 2;
-        const int32_t cur_cy  = cur_bb.y + cur_bb.height / 2;
-        wf::toplevel_view_interface_t *new_focus = nullptr;
+        const auto cur_view = wf::get_core().seat->get_active_view();
+        if (cur_view.get() == nullptr)
+        {
+            return;
+        }
 
+        const auto cur_output = cur_view->get_output();
         if (cur_output == nullptr)
         {
             return;
         }
+
+        const auto cur_bb    = cur_view->get_bounding_box();
+        const int32_t cur_cx = cur_bb.x + cur_bb.width / 2;
+        const int32_t cur_cy = cur_bb.y + cur_bb.height / 2;
+        wf::toplevel_view_interface_t *new_focus = nullptr;
 
         const bool cross_ws  = cross_workspace.value();
         const auto workspace =
@@ -179,7 +184,7 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
             int32_t closest_output = INT32_MAX;
             for (auto op : outputs)
             {
-                if (op->get_id() == cur_output->get_id())
+                if ((op == nullptr) || (op->get_id() == cur_output->get_id()))
                 {
                     continue;
                 }
@@ -235,6 +240,11 @@ class wayfire_focus_change_t : public wf::plugin_interface_t
                 int32_t closest_cur = INT32_MAX;
                 for (auto&& view : std::move(views))
                 {
+                    if (view.get() == nullptr)
+                    {
+                        continue;
+                    }
+
                     const auto bb = view.get()->get_bounding_box();
                     const auto cx = bb.x + bb.width / 2;
                     const auto cy = bb.y + bb.height / 2;
