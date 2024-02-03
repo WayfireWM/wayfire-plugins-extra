@@ -560,11 +560,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
                 alpha_fade.animate(alpha_fade, 1.0);
             }
 
-            if (timer.is_connected())
-            {
-                timer.disconnect();
-                timer.set_timeout((int)display_duration, timeout);
-            }
+            timer.disconnect();
+            timer.set_timeout((int)display_duration, timeout);
         }
     };
 
