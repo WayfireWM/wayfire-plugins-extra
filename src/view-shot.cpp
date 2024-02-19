@@ -23,12 +23,15 @@
  */
 
 #include <wayfire/core.hpp>
+#include <wayfire/plugins/common/shared-core-data.hpp>
+#include <wayfire/plugins/ipc/ipc-helpers.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/img.hpp>
-#include <wayfire/per-output-plugin.hpp>
+#include <wayfire/bindings-repository.hpp>
+#include <wayfire/plugins/ipc/ipc-method-repository.hpp>
 
 #include <ctime>
 
@@ -50,17 +53,19 @@ static std::string replaceAll(std::string s, const std::string& from,
     return s;
 }
 
-class wayfire_view_shot : public wf::per_output_plugin_instance_t
+class wayfire_view_shot : public wf::plugin_interface_t
 {
     const std::string transformer_name = "view_shot";
     wf::option_wrapper_t<wf::activatorbinding_t> capture_binding{"view-shot/capture"};
     wf::option_wrapper_t<std::string> file_name{"view-shot/filename"};
     wf::option_wrapper_t<std::string> command{"view-shot/command"};
+    wf::shared_data::ref_ptr_t<wf::ipc::method_repository_t> ipc_repo;
 
   public:
     void init() override
     {
-        output->add_activator(capture_binding, &on_capture);
+        wf::get_core().bindings->add_activator(capture_binding, &on_capture);
+        ipc_repo->register_method("view-shot/capture", on_ipc_capture);
     }
 
     wf::activator_callback on_capture = [=] (auto)
@@ -72,6 +77,42 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
             return false;
         }
 
+        char _file_name[255];
+        auto time = std::time(nullptr);
+        std::strftime(_file_name, sizeof(_file_name),
+            file_name.value().c_str(), std::localtime(&time));
+        std::string formatted_file_name = _file_name;
+
+        if (take_snapshot(view, formatted_file_name))
+        {
+            wf::get_core().run(replaceAll(command, "%f", formatted_file_name));
+            return true;
+        }
+
+        return false;
+    };
+
+    wf::ipc::method_callback on_ipc_capture = [=] (nlohmann::json data)
+    {
+        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
+        WFJSON_EXPECT_FIELD(data, "file", string);
+
+        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        if (!view)
+        {
+            return wf::ipc::json_error("No such view found!");
+        }
+
+        if (take_snapshot(view, data["file"]))
+        {
+            return wf::ipc::json_ok();
+        }
+
+        return wf::ipc::json_error("Failed to capture view.");
+    };
+
+    bool take_snapshot(wayfire_view view, std::string filename)
+    {
         wf::render_target_t offscreen_buffer;
         view->take_snapshot(offscreen_buffer);
         auto width  = offscreen_buffer.viewport_width;
@@ -91,24 +132,16 @@ class wayfire_view_shot : public wf::per_output_plugin_instance_t
         offscreen_buffer.release(); // free gpu memory
         OpenGL::render_end();
 
-        char _file_name[255];
-        auto time = std::time(nullptr);
-        std::strftime(_file_name, sizeof(_file_name),
-            file_name.value().c_str(), std::localtime(&time));
-        std::string formatted_file_name = _file_name;
-
-        image_io::write_to_file(formatted_file_name, pixels, width, height, "png", true);
+        image_io::write_to_file(filename, pixels, width, height, "png", true);
         free(pixels);
-
-        wf::get_core().run(replaceAll(command, "%f", formatted_file_name));
-
         return true;
-    };
+    }
 
     void fini() override
     {
-        output->rem_binding(&on_capture);
+        wf::get_core().bindings->rem_binding(&on_capture);
+        ipc_repo->unregister_method("view-shot/capture");
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_view_shot>);
+DECLARE_WAYFIRE_PLUGIN(wayfire_view_shot);
