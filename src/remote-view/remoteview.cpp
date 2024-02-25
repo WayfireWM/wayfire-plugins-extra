@@ -150,13 +150,12 @@ class wayfire_remoteview : public wf::per_output_plugin_instance_t,
   std::unique_ptr<wf::input_grab_t> input_grab;
 
  public:
-  // this function reads workspace-related key bindings from a configuration,
+  // reads workspace-related key bindings from a configuration,
   // sets up corresponding callbacks, and associates them with the plugin's
-  // behavior, particularly related to workspace switching and
-  // activation/deactivation.
+  // behavior
 
   void setup_workspace_bindings_from_config() {
-    printf("setup_workspace_bindings_from_config \n");
+   // printf("setup_workspace_bindings_from_config \n");
     for (const auto& [workspace, binding] : workspace_bindings.value()) {
       int workspace_index = atoi(workspace.c_str());
       auto wsize = output->wset()->get_workspace_grid_size();
@@ -321,8 +320,7 @@ class wayfire_remoteview : public wf::per_output_plugin_instance_t,
     return output->is_plugin_active(grab_interface.name);
   }
 
-  //   In summary, this code appears to handle the snap-off signal during a move
-  //   drag operation.
+  //   handle the snap-off signal during a move drag operation.
   //"Snapping off" typically refers to the action of detaching a view from its
   //current position and allowing it to be freely moved or attached to a
   //different location.
@@ -342,7 +340,7 @@ class wayfire_remoteview : public wf::per_output_plugin_instance_t,
         dragging_window = true;
       };
 
-  // This code appears to handle the completion of a move drag operation,
+  // handle the completion of a move drag operation,
   // including wobbly view translation and workspace change signal emission
   wf::signal::connection_t<wf::remoteview_move_drag::snap_off_signal> on_drag_snap_off =
       [=](wf::remoteview_move_drag::snap_off_signal* ev) {
@@ -479,7 +477,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
         rectangle.height = fullh;
         zoom_animation.set_end(rectangle);  // u need this
       } else {
-        //    zoom_animation.set_start(zoom_animation); //andy note
+        //    zoom_animation.set_start(zoom_animation); //
         zoom_animation.set_end(wall->get_workspace_rectangle(target_ws));
 
         //   zoom_animation.set_end(wall->get_workspace_rectangle(initial_ws));
@@ -550,7 +548,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
     state.zoom_in = zoom_in;  // u need this
     zoom_animation.start();   // for sliding animation
     wall->set_viewport(
-        zoom_animation);  // andy note set desktop sliding animation
+        zoom_animation);  //  set desktop sliding animation
   }
 
   void finish_zoom(bool zoom_in) {
@@ -585,7 +583,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
         rectangle.height = fullh;
         zoom_animation.set_end(rectangle);  // u need this
       } else {
-        //    zoom_animation.set_start(zoom_animation); //andy note
+        //    zoom_animation.set_start(zoom_animation); //
         zoom_animation.set_end(wall->get_workspace_rectangle(target_ws));
 
         //   zoom_animation.set_end(wall->get_workspace_rectangle(initial_ws));
@@ -656,7 +654,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
         rectangle2.height = fullh;
 
         zoom_animation.set_start(rectangle);
-        //    zoom_animation.set_start(zoom_animation); //andy note
+        //    zoom_animation.set_start(zoom_animation); //
         zoom_animation.set_end(rectangle2);
         // zoom_animation.set_end(wf::geometry_t{rectangle.x, rectangle.y,
         // rectangle.width, rectangle.height});
@@ -668,7 +666,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
     state.zoom_in = zoom_in;  // u need this
     zoom_animation.start();   // for sliding animation
     wall->set_viewport(
-        zoom_animation);  // andy note set desktop sliding animation
+        zoom_animation);  //  set desktop sliding animation
   }
 
   void deactivate() {
@@ -734,8 +732,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
       update_target_workspace(x, y);
     }
   }
-  // The start_moving function you provided is designed to initiate the movement
-  // of a toplevel view, which typically represents a window in a graphical
+  // initiate the movement of a toplevel view, which typically represents a window in a graphical
   // desktop environment. Toplevel views are the highest level of the view
   // hierarchy and usually correspond to individual application windows.
 
@@ -767,12 +764,12 @@ workspaceSet->set_workspace_grid_size(newGridSize);
 
     drag_helper->start_drag(view, grab + output_offset,
                             wf::remoteview_move_drag::find_relative_grab(bbox, ws_coords),
-                            opts);  // andy note disbale this to get to desktop
+                            opts);  //  disbale this to get to desktop
                                     // movement of windows nnormally
     move_started_ws = target_ws;
     input_grab->set_wants_raw_input(true);
   }
-  // this is whre it drag a window about
+  // this is where it drags a window about
   const wf::point_t offscreen_point = {-10, -10};
   void handle_input_move(wf::point_t to) {
     if (!state.button_pressed) {
@@ -990,7 +987,7 @@ workspaceSet->set_workspace_grid_size(newGridSize);
    * to output-workspace-local coordinates
    */
 
-  // In summary, the function takes an input point in output-local coordinates,
+  // takes an input point in output-local coordinates,
   // converts it to global coordinates, and then translates it into the
   // output-workspace-local coordinate system relative to the current workspace.
   // The final result is the coordinate of the given point in the
@@ -1158,7 +1155,7 @@ if (target_ws == initial_ws)
 
 }else{
     output->wset()->set_workspace(
-        {workspaceX_pos,target_ws.y});  // andy note change desktop after zoom
+        {workspaceX_pos,target_ws.y});  //  change desktop after zoom
 }
     output->deactivate_plugin(&grab_interface);  //
     input_grab->ungrab_input();
