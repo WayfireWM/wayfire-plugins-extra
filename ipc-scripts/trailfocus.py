@@ -17,11 +17,11 @@ def sort_views():
             i = 0
             timestamps = []
             for v in views:
-                if v["output"] != o["name"] or v["role"] == "desktop-environment":
+                if v["output-name"] != o["name"] or v["role"] == "desktop-environment":
                     continue
-                if not v["state"]["mapped"]:
+                if not v["mapped"]:
                     continue
-                if "parent" in v and v["state"]["minimized"]:
+                if "parent" in v and v["minimized"]:
                     continue
                 if v["last-focus-timestamp"] <= 0:
                     continue
@@ -40,11 +40,11 @@ def sort_views():
                 for v in views:
                     if t != v["last-focus-timestamp"]:
                         continue
-                    if v["output"] != o["name"] or v["role"] == "desktop-environment":
+                    if v["output-name"] != o["name"] or v["role"] == "desktop-environment":
                         break
-                    if not v["state"]["mapped"]:
+                    if not v["mapped"]:
                         break
-                    if "parent" in v and v["state"]["minimized"]:
+                    if "parent" in v and v["minimized"]:
                         break
                     o_value += o_step
                     b_value += b_step
