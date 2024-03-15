@@ -13,7 +13,7 @@ project(
 	],
 )
 
-wayfire = dependency('wayfire')
+wayfire = dependency('wayfire', version: '>=0.8.1')
 giomm = dependency('giomm-2.4', required: false)
 wayland_protos = dependency('wayland-protocols', version: '>=1.12')
 wayland_server = dependency('wayland-server')
