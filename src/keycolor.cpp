@@ -90,7 +90,7 @@ class keycolor_custom_data_t : public wf::custom_data_t
     OpenGL::program_t program;
 };
 
-class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<node_t>
+class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<transformer_base_node_t>
 {
     wf::signal::connection_t<node_damage_signal> on_node_damaged =
         [=] (node_damage_signal *ev)
@@ -107,8 +107,8 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
     wf::option_wrapper_t<double> threshold{"keycolor/threshold"};
 
   public:
-    simple_node_render_instance_t(node_t *self, damage_callback push_damage,
-        wayfire_view view) : wf::scene::transformer_render_instance_t<node_t>(self,
+    simple_node_render_instance_t(transformer_base_node_t *self, damage_callback push_damage,
+        wayfire_view view) : wf::scene::transformer_render_instance_t<transformer_base_node_t>(self,
             push_damage,
             view->get_output())
     {
@@ -176,7 +176,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
             ((wf::color_t)color).g,
             ((wf::color_t)color).b,
             (double)opacity};
-        auto src_tex = wf::scene::transformer_render_instance_t<node_t>::get_texture(
+        auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
             1.0);
         data->program.use(src_tex.type);
         data->program.uniform4f("color", color_data);

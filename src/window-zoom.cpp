@@ -49,7 +49,7 @@ static wf::pointf_t get_center(wf::geometry_t view)
     };
 }
 
-class simple_node_render_instance_t : public transformer_render_instance_t<node_t>
+class simple_node_render_instance_t : public transformer_render_instance_t<transformer_base_node_t>
 {
     wf::signal::connection_t<node_damage_signal> on_node_damaged =
         [=] (node_damage_signal *ev)
@@ -65,10 +65,10 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
     wf::option_wrapper_t<bool> nearest_filtering{"winzoom/nearest_filtering"};
 
   public:
-    simple_node_render_instance_t(node_t *self, damage_callback push_damage,
+    simple_node_render_instance_t(transformer_base_node_t *self, damage_callback push_damage,
         wayfire_toplevel_view view, float *scale_x, float *scale_y,
         wlr_box *transformed_view_geometry) :
-        transformer_render_instance_t<node_t>(self, push_damage,
+        transformer_render_instance_t<transformer_base_node_t>(self, push_damage,
             view->get_output())
     {
         this->self    = self;
@@ -122,7 +122,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<node_
     void render(const wf::render_target_t& target,
         const wf::region_t& region) override
     {
-        auto src_tex = transformer_render_instance_t<node_t>::get_texture(1.0);
+        auto src_tex = transformer_render_instance_t<transformer_base_node_t>::get_texture(1.0);
 
         OpenGL::render_begin(target);
         GL_CALL(glBindTexture(GL_TEXTURE_2D, src_tex.tex_id));
