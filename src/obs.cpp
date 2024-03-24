@@ -107,7 +107,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
     std::unique_ptr<wf::animation::simple_animation_t> saturation;
 
   public:
-    class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<node_t>
+    class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<wf_obs>
     {
         wf::signal::connection_t<node_damage_signal> on_node_damaged =
             [=] (node_damage_signal *ev)
@@ -123,7 +123,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
 
       public:
         simple_node_render_instance_t(wf_obs *self, damage_callback push_damage,
-            wayfire_view view) : wf::scene::transformer_render_instance_t<node_t>(self,
+            wayfire_view view) : wf::scene::transformer_render_instance_t<wf_obs>(self,
                 push_damage,
                 view->get_output())
         {
@@ -207,7 +207,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
             OpenGL::render_begin(target);
 
             /* Upload data to shader */
-            auto src_tex = wf::scene::transformer_render_instance_t<node_t>::get_texture(
+            auto src_tex = wf::scene::transformer_render_instance_t<wf_obs>::get_texture(
                 1.0);
             this->self->program->use(src_tex.type);
             this->self->program->uniform1f("opacity", this->self->get_opacity());
