@@ -10,3 +10,6 @@
 [submodule "subprojects/pixdecor"]
 	path = subprojects/pixdecor
 	url = https://github.com/soreau/pixdecor
+[submodule "subprojects/filters"]
+	path = subprojects/filters
+	url = https://github.com/soreau/filters
