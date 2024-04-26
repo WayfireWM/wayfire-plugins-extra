@@ -7,3 +7,6 @@
 [submodule "subprojects/focus-request"]
 	path = subprojects/focus-request
 	url = https://gitlab.com/wayfireplugins/focus-request.git
+[submodule "subprojects/pixdecor"]
+	path = subprojects/pixdecor
+	url = https://github.com/soreau/pixdecor
