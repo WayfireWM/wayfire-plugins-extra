@@ -1,3 +1,5 @@
 option('enable_windecor', type: 'boolean', value: 'false', description: 'Install windecor plugin')
 option('enable_wayfire_shadows', type: 'boolean', value: 'false', description: 'Install wayfire shadows plugin')
 option('enable_focus_request', type: 'boolean', value: 'false', description: 'Install wayfire focus-request plugin')
+option('enable_pixdecor', type: 'boolean', value: 'false', description: 'Install wayfire pixdecor plugin')
+option('enable_filters', type: 'boolean', value: 'false', description: 'Install wayfire filters plugin')

@@ -32,6 +32,14 @@ if get_option('enable_focus_request') == true
     focus_request = subproject('focus-request')
 endif
 
+if get_option('enable_pixdecor') == true
+    pixdecor = subproject('pixdecor')
+endif
+
+if get_option('enable_filters') == true
+    filters = subproject('filters')
+endif
+
 add_project_arguments(['-DWLR_USE_UNSTABLE'], language: ['cpp', 'c'])
 add_project_arguments(['-DWAYFIRE_PLUGIN'], language: ['cpp', 'c'])
 add_project_link_arguments(['-rdynamic'], language:'cpp')
