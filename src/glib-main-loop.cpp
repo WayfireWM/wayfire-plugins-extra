@@ -14,11 +14,19 @@
 static gboolean on_wayland_fd_event(gint fd, GIOCondition condition,
     gpointer user_data);
 
+static int glib_signal_handler(gpointer raw_glib_loop)
+{
+    Glib::RefPtr<Glib::MainLoop> g_loop = Glib::wrap((GMainLoop*)raw_glib_loop);
+    g_loop->quit();
+    return G_SOURCE_REMOVE;
+}
+
 namespace wf
 {
 class glib_main_loop_t : public wf::plugin_interface_t
 {
     Glib::RefPtr<Glib::MainLoop> g_loop;
+    wf::wl_idle_call idle_shutdown;
 
   public:
     void init()
@@ -48,7 +56,9 @@ class glib_main_loop_t : public wf::plugin_interface_t
 
         g_loop = Glib::MainLoop::create();
         wf::get_core().connect(&glib_loop_run);
-        wf::get_core().connect(&glib_loop_quit);
+
+        g_unix_signal_add_full(G_PRIORITY_DEFAULT, SIGTERM, glib_signal_handler, g_loop.get(), NULL);
+        g_unix_signal_add_full(G_PRIORITY_DEFAULT, SIGINT, glib_signal_handler, g_loop.get(), NULL);
     }
 
     void handle_wayland_fd_in(GIOCondition flag)
@@ -73,14 +83,10 @@ class glib_main_loop_t : public wf::plugin_interface_t
         g_unix_fd_add(fd, G_IO_HUP, on_wayland_fd_event, this);
 
         g_loop->run();
-    };
-
-    wf::signal::connection_t<wf::core_shutdown_signal> glib_loop_quit = [=] (auto)
-    {
-        auto display = wf::get_core().display;
-        wl_display_destroy_clients(display);
-        wl_display_destroy(display);
-        std::exit(0);
+        idle_shutdown.run_once([=] ()
+        {
+            wl_display_terminate(wf::get_core().display);
+        });
     };
 
     /**
