@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="ghost">
+	<_short>Ghost Windows</_short>
+	<category>Window Management</category>
+	<option name="ghost_match" type="string">
+		<_short>Ghosted Windows</_short>
+		<_long>Automatically sets the matched windows to be click-through.</_long>
+		<default></default>
+	</option>
+	<option name="ghost_toggle" type="activator">
+		<_short>Toggle Ghost Window</_short>
+		<_long>Toggles the active window being click-through to whatever is below.</_long>
+		<default></default>
+	</option>
+	</plugin>
+</wayfire>
