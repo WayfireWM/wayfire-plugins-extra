@@ -71,3 +71,8 @@ class WayfireSocket:
         message["data"]["saturation"] = saturation
         message["data"]["duration"] = duration
         return self.send_json(message)
+
+    def ghost_view_toggle(self, view_id: int):
+        message = get_msg_template("ghost/ghost_toggle")
+        message["data"]["view-id"] = view_id
+        return self.send_json(message)
