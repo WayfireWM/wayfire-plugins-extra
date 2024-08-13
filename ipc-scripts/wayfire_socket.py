@@ -76,3 +76,19 @@ class WayfireSocket:
         message = get_msg_template("ghost/ghost_toggle")
         message["data"]["view-id"] = view_id
         return self.send_json(message)
+
+    def pin_view(self, view_id: int, layer: str, ws_x: int, ws_y: int):
+        message = get_msg_template("pin-view/pin")
+        message["data"]["view-id"] = view_id
+        message["data"]["layer"] = layer
+        if ws_x != None:
+            message["data"]["x"] = ws_x
+            message["data"]["y"] = 0
+            if ws_y != None:
+                message["data"]["y"] = ws_y
+        return self.send_json(message)
+
+    def unpin_view(self, view_id: int):
+        message = get_msg_template("pin-view/unpin")
+        message["data"]["view-id"] = view_id
+        return self.send_json(message)
