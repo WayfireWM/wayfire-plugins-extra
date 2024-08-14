@@ -8,10 +8,6 @@ autorotate = shared_module('autorotate-iio', 'autorotate-iio.cpp',
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 endif
 
-background_view = shared_module('background-view', 'background-view.cpp',
-    dependencies: [wayfire, wf_protos],
-    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
-
 benchmark = shared_module('bench', 'bench.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
