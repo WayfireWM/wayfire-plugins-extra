@@ -154,6 +154,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     {
                         toplevel->set_geometry(og);
                     }
+
+                    output->wset()->remove_view(toplevel);
                 }
 
                 view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
