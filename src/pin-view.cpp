@@ -46,7 +46,7 @@ class pin_view_data : public wf::custom_data_t
   public:
     wf::geometry_t geometry;
     wf::point_t workspace;
-    wf::view_role_t role, current_role;
+    wf::view_role_t role;
 };
 class wayfire_pin_view : public wf::plugin_interface_t
 {
@@ -63,6 +63,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
     {
         WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
         WFJSON_EXPECT_FIELD(data, "layer", string);
+        WFJSON_EXPECT_FIELD(data, "resize", boolean);
         /* workspace x,y */
         WFJSON_OPTIONAL_FIELD(data, "x", number_unsigned);
         WFJSON_OPTIONAL_FIELD(data, "y", number_unsigned);
@@ -75,11 +76,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
             if (!view->get_data<pin_view_data>())
             {
                 pin_view_data pv_data;
-                pv_data.current_role = pv_data.role = view->role;
-                if (!data.contains("x"))
-                {
-                    pv_data.current_role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
-                }
+                pv_data.role = view->role;
 
                 if (auto toplevel = toplevel_cast(view))
                 {
@@ -117,6 +114,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
                 layer = wf::scene::layer::TOP;
             }
 
+            bool resize = data["resize"];
             auto og = output->get_relative_geometry();
             int x = 0, y = 0;
             if (data.contains("x"))
@@ -130,19 +128,24 @@ class wayfire_pin_view : public wf::plugin_interface_t
                 wf::point_t nws{x, y};
                 if (auto toplevel = toplevel_cast(view))
                 {
+                    auto vg  = toplevel->get_geometry();
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
                     toplevel->set_geometry(wf::geometry_t{(nws.x - cws.x) * og.width,
-                        (nws.y - cws.y) * og.height, og.width, og.height});
+                        (nws.y - cws.y) * og.height, resize ? og.width : vg.width,
+                        resize ? og.height : vg.height});
                 }
             } else
             {
                 if (auto toplevel = toplevel_cast(view))
                 {
+                    auto vg = toplevel->get_geometry();
                     wf::point_t nws = output->wset()->get_current_workspace();
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
-                    auto vg  = toplevel->get_geometry();
                     toplevel->move(vg.x + (nws.x - cws.x) * og.width, vg.y + (nws.y - cws.y) * og.height);
-                    toplevel->set_geometry(og);
+                    if (resize)
+                    {
+                        toplevel->set_geometry(og);
+                    }
                 }
 
                 view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
@@ -199,7 +202,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
         for (auto & view : wf::get_core().get_all_views())
         {
             auto pvd = view->get_data<pin_view_data>();
-            if (!pvd || (pvd->current_role != wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))
+            if (!pvd || (view->role != wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))
             {
                 continue;
             }
