@@ -125,14 +125,22 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     y = data["y"].get<int>();
                 }
 
+                view->role = view->get_data<pin_view_data>()->role;
+
                 wf::point_t nws{x, y};
                 if (auto toplevel = toplevel_cast(view))
                 {
-                    auto vg  = toplevel->get_geometry();
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
-                    toplevel->set_geometry(wf::geometry_t{(nws.x - cws.x) * og.width,
-                        (nws.y - cws.y) * og.height, resize ? og.width : vg.width,
-                        resize ? og.height : vg.height});
+                    if (resize)
+                    {
+                        toplevel->set_geometry(wf::geometry_t{(nws.x - cws.x) * og.width,
+                            (nws.y - cws.y) * og.height, og.width, og.height});
+                    } else
+                    {
+                        auto vg = toplevel->get_geometry();
+                        toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
+                            vg.y + (nws.y - cws.y) * og.height, vg.width, vg.height});
+                    }
                 }
             } else
             {
