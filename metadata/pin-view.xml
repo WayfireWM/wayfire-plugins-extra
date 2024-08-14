@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="pin-view">
+	<_short>Pin View</_short>
+	<_long>Set a view layer, role and workspace</_long>
+	<category>Window Management</category>
+	</plugin>
+</wayfire>
