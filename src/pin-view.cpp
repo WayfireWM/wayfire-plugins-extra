@@ -118,6 +118,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
                 layer = wf::scene::layer::TOP;
             }
 
+            auto pvd = view->get_data<pin_view_data>();
             bool resize = data["resize"];
             auto og = output->get_relative_geometry();
             int x = 0, y = 0;
@@ -132,7 +133,6 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     y = data["y"].get<int>();
                 }
 
-                auto pvd = view->get_data<pin_view_data>();
                 view->role = pvd->role;
 
                 wf::point_t nws{x, y};
@@ -141,20 +141,23 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
                     if (resize)
                     {
-                        toplevel->set_geometry(wf::geometry_t{(nws.x - cws.x) * og.width,
-                            (nws.y - cws.y) * og.height, og.width, og.height});
+                        auto vg = toplevel->get_geometry();
+                        toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
+                            vg.y + (nws.y - cws.y) * og.height, og.width, og.height});
                     } else
                     {
                         auto vg = was_pinned ? pvd->geometry : toplevel->get_geometry();
                         toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
                             vg.y + (nws.y - cws.y) * og.height, vg.width, vg.height});
                     }
+
+                    output->wset()->remove_view(toplevel);
                 }
             } else
             {
                 if (auto toplevel = toplevel_cast(view))
                 {
-                    auto vg = toplevel->get_geometry();
+                    auto vg = was_pinned ? pvd->geometry : toplevel->get_geometry();
                     wf::point_t nws = output->wset()->get_current_workspace();
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
                     toplevel->move(vg.x + (nws.x - cws.x) * og.width, vg.y + (nws.y - cws.y) * og.height);
@@ -162,11 +165,11 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     {
                         toplevel->set_geometry(og);
                     }
+
+                    output->wset()->remove_view(toplevel);
                 }
 
                 view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
-                wf::scene::readd_front(view->get_output()->node_for_layer(layer), view->get_root_node());
-                return wf::ipc::json_ok();
             }
 
             wf::scene::readd_front(output->node_for_layer(layer), view->get_root_node());
@@ -191,6 +194,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
                 auto og     = output->get_relative_geometry();
                 auto cws    = output->wset()->get_view_main_workspace(toplevel);
                 auto vg     = toplevel->get_geometry();
+                output->wset()->add_view(toplevel);
                 toplevel->move(vg.x + (pvd->workspace.x - cws.x) * og.width,
                     vg.y + (pvd->workspace.y - cws.y) * og.height);
                 toplevel->set_geometry(pvd->geometry);
@@ -225,22 +229,29 @@ class wayfire_pin_view : public wf::plugin_interface_t
     wf::signal::connection_t<wf::workspace_changed_signal> on_workspace_changed =
         [=] (wf::workspace_changed_signal *ev)
     {
+        auto ows    = ev->old_viewport;
         auto nws    = ev->new_viewport;
         auto output = ev->output;
         auto og     = output->get_relative_geometry();
         for (auto & view : wf::get_core().get_all_views())
         {
             auto pvd = view->get_data<pin_view_data>();
-            if (!pvd || (view->role != wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))
+            if (!pvd)
             {
                 continue;
             }
 
             if (auto toplevel = toplevel_cast(view))
             {
-                auto cws = output->wset()->get_view_main_workspace(toplevel);
-                auto vg  = toplevel->get_geometry();
-                toplevel->move(vg.x + (nws.x - cws.x) * og.width, vg.y + (nws.y - cws.y) * og.height);
+                auto vg = toplevel->get_geometry();
+                if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
+                {
+                    auto cws = output->wset()->get_view_main_workspace(toplevel);
+                    toplevel->move(vg.x + (nws.x - cws.x) * og.width, vg.y + (nws.y - cws.y) * og.height);
+                } else
+                {
+                    toplevel->move(vg.x + (ows.x - nws.x) * og.width, vg.y + (ows.y - nws.y) * og.height);
+                }
             }
         }
     };
