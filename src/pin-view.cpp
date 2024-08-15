@@ -172,11 +172,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
         return wf::ipc::json_ok();
     };
 
-    wf::ipc::method_callback ipc_unpin_view = [=] (nlohmann::json data) -> nlohmann::json
+    bool unpin(wayfire_view view)
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
         if (view && view->get_data<pin_view_data>())
         {
             auto pvd = view->get_data<pin_view_data>();
@@ -194,7 +191,19 @@ class wayfire_pin_view : public wf::plugin_interface_t
             }
 
             view->release_data<pin_view_data>();
-        } else
+            on_workspace_changed.disconnect();
+            return true;
+        }
+
+        return false;
+    }
+
+    wf::ipc::method_callback ipc_unpin_view = [=] (nlohmann::json data) -> nlohmann::json
+    {
+        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
+
+        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        if (!unpin(view))
         {
             LOGE("Failed to find view with given id. Perhaps it is not pinned.");
             return wf::ipc::json_error("Failed to find view with given id. Perhaps it is not pinned.");
@@ -232,7 +241,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
         {
             if (view->get_data<pin_view_data>())
             {
-                view->release_data<pin_view_data>();
+                unpin(view);
             }
         }
 
