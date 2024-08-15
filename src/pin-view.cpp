@@ -141,6 +141,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
                         toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
                             vg.y + (nws.y - cws.y) * og.height, vg.width, vg.height});
                     }
+
+                    output->wset()->remove_view(toplevel);
                 }
             } else
             {
