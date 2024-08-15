@@ -117,6 +117,9 @@ class wayfire_pin_view : public wf::plugin_interface_t
             bool resize = data["resize"];
             auto og = output->get_relative_geometry();
             int x = 0, y = 0;
+            wf::view_unmapped_signal unmap_signal;
+            unmap_signal.view = view;
+            wf::get_core().emit(&unmap_signal);
             if (data.contains("x"))
             {
                 x = data["x"].get<int>();
@@ -194,6 +197,9 @@ class wayfire_pin_view : public wf::plugin_interface_t
 
             view->release_data<pin_view_data>();
             on_workspace_changed.disconnect();
+            wf::view_mapped_signal map_signal;
+            map_signal.view = view;
+            wf::get_core().emit(&map_signal);
             return true;
         }
 
