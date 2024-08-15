@@ -71,7 +71,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
         auto view = wf::ipc::find_view_by_id(data["view-id"]);
         if (view)
         {
-            auto output = view->get_output();
+            bool was_pinned = unpin(view);
+            auto output     = view->get_output();
             output->connect(&on_workspace_changed);
             if (!view->get_data<pin_view_data>())
             {
@@ -80,8 +81,11 @@ class wayfire_pin_view : public wf::plugin_interface_t
 
                 if (auto toplevel = toplevel_cast(view))
                 {
-                    pv_data.workspace = output->wset()->get_view_main_workspace(toplevel);
-                    pv_data.geometry  = toplevel->get_geometry();
+                    if (!was_pinned)
+                    {
+                        pv_data.workspace = output->wset()->get_view_main_workspace(toplevel);
+                        pv_data.geometry  = toplevel->get_geometry();
+                    }
                 }
 
                 view->store_data(std::make_unique<pin_view_data>(pv_data));
@@ -128,7 +132,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     y = data["y"].get<int>();
                 }
 
-                view->role = view->get_data<pin_view_data>()->role;
+                auto pvd = view->get_data<pin_view_data>();
+                view->role = pvd->role;
 
                 wf::point_t nws{x, y};
                 if (auto toplevel = toplevel_cast(view))
@@ -140,12 +145,10 @@ class wayfire_pin_view : public wf::plugin_interface_t
                             (nws.y - cws.y) * og.height, og.width, og.height});
                     } else
                     {
-                        auto vg = toplevel->get_geometry();
+                        auto vg = was_pinned ? pvd->geometry : toplevel->get_geometry();
                         toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
                             vg.y + (nws.y - cws.y) * og.height, vg.width, vg.height});
                     }
-
-                    output->wset()->remove_view(toplevel);
                 }
             } else
             {
@@ -159,8 +162,6 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     {
                         toplevel->set_geometry(og);
                     }
-
-                    output->wset()->remove_view(toplevel);
                 }
 
                 view->role = wf::VIEW_ROLE_DESKTOP_ENVIRONMENT;
@@ -195,7 +196,6 @@ class wayfire_pin_view : public wf::plugin_interface_t
                 toplevel->set_geometry(pvd->geometry);
             }
 
-            view->release_data<pin_view_data>();
             on_workspace_changed.disconnect();
             wf::view_mapped_signal map_signal;
             map_signal.view = view;
@@ -216,6 +216,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
             LOGE("Failed to find view with given id. Perhaps it is not pinned.");
             return wf::ipc::json_error("Failed to find view with given id. Perhaps it is not pinned.");
         }
+
+        view->release_data<pin_view_data>();
 
         return wf::ipc::json_ok();
     };
@@ -250,6 +252,7 @@ class wayfire_pin_view : public wf::plugin_interface_t
             if (view->get_data<pin_view_data>())
             {
                 unpin(view);
+                view->release_data<pin_view_data>();
             }
         }
 
