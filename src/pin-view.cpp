@@ -57,6 +57,10 @@ class wayfire_pin_view : public wf::plugin_interface_t
     {
         ipc_repo->register_method("pin-view/pin", ipc_pin_view);
         ipc_repo->register_method("pin-view/unpin", ipc_unpin_view);
+        for (auto & output : wf::get_core().output_layout->get_outputs())
+        {
+            output->connect(&on_workspace_changed);
+        }
     }
 
     wf::ipc::method_callback ipc_pin_view = [=] (nlohmann::json data) -> nlohmann::json
@@ -73,7 +77,6 @@ class wayfire_pin_view : public wf::plugin_interface_t
         {
             bool was_pinned = unpin(view);
             auto output     = view->get_output();
-            output->connect(&on_workspace_changed);
             if (!view->get_data<pin_view_data>())
             {
                 pin_view_data pv_data;
@@ -141,9 +144,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
                     auto cws = output->wset()->get_view_main_workspace(toplevel);
                     if (resize)
                     {
-                        auto vg = toplevel->get_geometry();
-                        toplevel->set_geometry(wf::geometry_t{vg.x + (nws.x - cws.x) * og.width,
-                            vg.y + (nws.y - cws.y) * og.height, og.width, og.height});
+                        toplevel->set_geometry(wf::geometry_t{(nws.x - cws.x) * og.width,
+                            (nws.y - cws.y) * og.height, og.width, og.height});
                     } else
                     {
                         auto vg = was_pinned ? pvd->geometry : toplevel->get_geometry();
@@ -191,16 +193,10 @@ class wayfire_pin_view : public wf::plugin_interface_t
             if (auto toplevel = toplevel_cast(view))
             {
                 auto output = view->get_output();
-                auto og     = output->get_relative_geometry();
-                auto cws    = output->wset()->get_view_main_workspace(toplevel);
-                auto vg     = toplevel->get_geometry();
                 output->wset()->add_view(toplevel);
-                toplevel->move(vg.x + (pvd->workspace.x - cws.x) * og.width,
-                    vg.y + (pvd->workspace.y - cws.y) * og.height);
                 toplevel->set_geometry(pvd->geometry);
             }
 
-            on_workspace_changed.disconnect();
             wf::view_mapped_signal map_signal;
             map_signal.view = view;
             wf::get_core().emit(&map_signal);
