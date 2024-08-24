@@ -1,18 +1,16 @@
 #!/usr/bin/python3
 
-import os
-import sys
-from wayfire_socket import *
+from wayfire import WayfireSocket
+from wayfire.extra.wpe import WPE
 
-addr = os.getenv('WAYFIRE_SOCKET')
-
-commands_sock = WayfireSocket(addr)
-commands_sock.watch()
+socket = WayfireSocket()
+wpe = WPE(socket)
+socket.watch(['view-focused'])
 
 def sort_views():
     try:
-        views = commands_sock.list_views()
-        outputs = commands_sock.list_outputs()
+        views = socket.list_views()
+        outputs = socket.list_outputs()
         for o in outputs:
             i = 0
             timestamps = []
@@ -49,9 +47,9 @@ def sort_views():
                     o_value += o_step
                     b_value += b_step
                     s_value += s_step
-                    commands_sock.set_view_opacity(v["id"], o_value, 1000)
-                    commands_sock.set_view_brightness(v["id"], b_value, 1000)
-                    commands_sock.set_view_saturation(v["id"], s_value, 1000)
+                    wpe.set_view_opacity(v["id"], o_value, 1000)
+                    wpe.set_view_brightness(v["id"], b_value, 1000)
+                    wpe.set_view_saturation(v["id"], s_value, 1000)
                     break
     except Exception as error:
         print("An exception occurred:", error)
@@ -61,13 +59,11 @@ sort_views()
 
 while True:
     try:
-        msg = commands_sock.read_message()
+        msg = socket.read_next_event()
     except KeyboardInterrupt:
-        for v in commands_sock.list_views():
-            commands_sock.set_view_opacity(v["id"], 1.0, 500)
-            commands_sock.set_view_brightness(v["id"], 1.0, 500)
-            commands_sock.set_view_saturation(v["id"], 1.0, 500)
+        for v in socket.list_views():
+            wpe.set_view_opacity(v["id"], 1.0, 500)
+            wpe.set_view_brightness(v["id"], 1.0, 500)
+            wpe.set_view_saturation(v["id"], 1.0, 500)
         exit(0)
-
-    if "event" in msg and msg["event"] == "view-focused":
-        sort_views()
+    sort_views()
