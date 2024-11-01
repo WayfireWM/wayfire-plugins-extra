@@ -68,29 +68,31 @@ uniform vec2 finger2;
 uniform vec2 finger3;
 uniform vec2 finger4;
 uniform vec2 center;
-float radius = 25.0;
+uniform vec4 finger_color;
+uniform vec4 center_color;
+uniform float radius;
 
 void main()
 {
     vec4 c = get_pixel(uvpos);
     float m = distance(uvpos * resolution, finger0);
     if (m < radius)
-        c = mix(vec4(1.0, 0.0, 0.2, 1.0), c, m / (radius * 2.0));
+        c = mix(finger_color, c, m / (radius * 2.0));
     m = distance(uvpos * resolution, finger1);
     if (m < radius)
-        c = mix(vec4(1.0, 0.0, 0.4, 1.0), c, m / (radius * 2.0));
+        c = mix(finger_color, c, m / (radius * 2.0));
     m = distance(uvpos * resolution, finger2);
     if (m < radius)
-        c = mix(vec4(1.0, 0.0, 0.6, 1.0), c, m / (radius * 2.0));
+        c = mix(finger_color, c, m / (radius * 2.0));
     m = distance(uvpos * resolution, finger3);
     if (m < radius)
-        c = mix(vec4(1.0, 0.0, 0.8, 1.0), c, m / (radius * 2.0));
+        c = mix(finger_color, c, m / (radius * 2.0));
     m = distance(uvpos * resolution, finger4);
     if (m < radius)
-        c = mix(vec4(1.0, 0.0, 1.0, 1.0), c, m / (radius * 2.0));
+        c = mix(finger_color, c, m / (radius * 2.0));
     m = distance(uvpos * resolution, center);
     if (m < radius)
-        c = mix(vec4(1.0, 1.0, 0.0, 1.0), c, m / (radius * 2.0));
+        c = mix(center_color, c, m / (radius * 2.0));
     out_color = c;
 }
 )";
@@ -99,6 +101,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
 {
     wf::option_wrapper_t<wf::color_t> finger_color{"showtouch/finger_color"};
     wf::option_wrapper_t<wf::color_t> center_color{"showtouch/center_color"};
+    wf::option_wrapper_t<int> touch_radius{"showtouch/touch_radius"};
 
     OpenGL::program_t program;
 
@@ -153,6 +156,17 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
 
         const auto c = touch_state.get_center().current;
         program.uniform2f("center", c.x, c.y);
+        program.uniform4f("finger_color", glm::vec4(
+            wf::color_t(finger_color).r,
+            wf::color_t(finger_color).g,
+            wf::color_t(finger_color).b,
+            wf::color_t(finger_color).a));
+        program.uniform4f("center_color", glm::vec4(
+            wf::color_t(center_color).r,
+            wf::color_t(center_color).g,
+            wf::color_t(center_color).b,
+            wf::color_t(center_color).a));
+        program.uniform1f("radius", double(touch_radius));
         program.attrib_pointer("position", 2, 0, vertexData);
         program.attrib_pointer("texcoord", 2, 0, texCoords);
         program.uniform2f("resolution", og.width, og.height);
