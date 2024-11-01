@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="showtouch">
+		<_short>Showtouch</_short>
+		<_long>Render touchscreen fingers</_long>
+		<category>Utility</category>
+		<option name="finger_color" type="color">
+			<_short>Finger Color</_short>
+			<_long>Color used for rendering finger touches</_long>
+			<default>0.0 0.5 0.0 0.5</default>
+		</option>
+		<option name="center_color" type="color">
+			<_short>Center Color</_short>
+			<_long>Color used for rendering computed center of fingers</_long>
+			<default>0.5 0.0 0.5 0.5</default>
+		</option>
+	</plugin>
+</wayfire>
