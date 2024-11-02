@@ -19,5 +19,10 @@
 			<_long>Radius used to size the finger touch point renderings</_long>
 			<default>25</default>
 		</option>
+		<option name="touch_duration" type="animation">
+			<_short>Touch Duration</_short>
+			<_long>Milliseconds the visual finger indicator will stay on screen</_long>
+			<default>250ms sigmoid</default>
+		</option>
 	</plugin>
 </wayfire>
