@@ -291,7 +291,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
             0.0f, 1.0f
         };
 
-        auto og = output->get_relative_geometry();
+        auto og = output->get_layout_geometry();
 
         OpenGL::render_begin(dest);
         program.use(wf::TEXTURE_TYPE_RGBA);
@@ -337,23 +337,23 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
             switch (n)
             {
               case 0:
-                points[0] = {f.x, f.y};
+                points[0] = {f.x - og.x, f.y - og.y};
                 break;
 
               case 1:
-                points[1] = {f.x, f.y};
+                points[1] = {f.x - og.x, f.y - og.y};
                 break;
 
               case 2:
-                points[2] = {f.x, f.y};
+                points[2] = {f.x - og.x, f.y - og.y};
                 break;
 
               case 3:
-                points[3] = {f.x, f.y};
+                points[3] = {f.x - og.x, f.y - og.y};
                 break;
 
               case 4:
-                points[4] = {f.x, f.y};
+                points[4] = {f.x - og.x, f.y - og.y};
                 break;
 
               default:
@@ -361,7 +361,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
             }
 
             const auto c = touch_state.get_center().current;
-            points[5] = {c.x, c.y};
+            points[5] = {c.x - og.x, c.y - og.y};
         }
 
         for (int i = 0; i < 5; i++)
@@ -384,9 +384,6 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
         program.attrib_pointer("position", 2, 0, vertexData);
         program.attrib_pointer("texcoord", 2, 0, texCoords);
         program.uniform2f("resolution", og.width, og.height);
-
-        GL_CALL(glEnable(GL_BLEND));
-        GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
 
         GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
         GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
