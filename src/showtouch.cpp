@@ -106,11 +106,13 @@ void main()
 class wayfire_showtouch : public wf::per_output_plugin_instance_t
 {
     bool hook_set = false;
+    bool enabled  = true;
     wf::pointf_t points[6];
     wf::option_wrapper_t<wf::color_t> finger_color{"showtouch/finger_color"};
     wf::option_wrapper_t<wf::color_t> center_color{"showtouch/center_color"};
     wf::option_wrapper_t<int> touch_radius{"showtouch/touch_radius"};
     wf::option_wrapper_t<wf::animation_description_t> touch_duration{"showtouch/touch_duration"};
+    wf::option_wrapper_t<wf::activatorbinding_t> toggle{"showtouch/toggle"};
 
     OpenGL::program_t program;
     wf::animation::simple_animation_t fade0{touch_duration};
@@ -140,7 +142,26 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
         points[3] = {-100, -100};
         points[4] = {-100, -100};
         points[5] = {-100, -100};
+        output->add_activator(toggle, &toggle_cb);
     }
+
+    wf::activator_callback toggle_cb = [=] (auto)
+    {
+        enabled = !enabled;
+        if (enabled)
+        {
+            wf::get_core().connect(&on_touch_down);
+            wf::get_core().connect(&on_touch_up);
+        } else
+        {
+            unset_hook();
+            on_touch_up.disconnect();
+            on_touch_down.disconnect();
+            output->render->damage_whole();
+        }
+
+        return true;
+    };
 
     void set_hook()
     {
@@ -394,6 +415,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
 
     void fini() override
     {
+        output->rem_binding(&toggle_cb);
         on_touch_up.disconnect();
         on_touch_down.disconnect();
         unset_hook();

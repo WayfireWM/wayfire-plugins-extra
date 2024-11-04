@@ -24,5 +24,10 @@
 			<_long>Milliseconds the visual finger indicator will stay on screen</_long>
 			<default>250ms sigmoid</default>
 		</option>
+		<option name="toggle" type="activator">
+			<_short>Toggle</_short>
+			<_long>Toggles the finger indicators off and on</_long>
+			<default>&lt;super&gt; &lt;ctrl&gt; KEY_S</default>
+		</option>
 	</plugin>
 </wayfire>
