@@ -106,7 +106,7 @@ void main()
 class wayfire_showtouch : public wf::per_output_plugin_instance_t
 {
     bool hook_set = false;
-    bool enabled  = true;
+    bool enabled  = false;
     wf::pointf_t points[6];
     wf::option_wrapper_t<wf::color_t> finger_color{"showtouch/finger_color"};
     wf::option_wrapper_t<wf::color_t> center_color{"showtouch/center_color"};
@@ -128,8 +128,6 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
         OpenGL::render_begin();
         program.compile(vertex_shader, fragment_shader);
         OpenGL::render_end();
-        wf::get_core().connect(&on_touch_down);
-        wf::get_core().connect(&on_touch_up);
         fade0.set(0.0, 0.0);
         fade1.set(0.0, 0.0);
         fade2.set(0.0, 0.0);
