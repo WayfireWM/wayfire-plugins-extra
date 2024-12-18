@@ -226,7 +226,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
     void handle_pointer_button(const wlr_pointer_button_event& event) override
     {
-        if (event.state == WLR_BUTTON_RELEASED)
+        if (event.state == WL_POINTER_BUTTON_STATE_RELEASED)
         {
             output->deactivate_plugin(&grab_interface);
             timer.set_timeout(5000, timeout);
