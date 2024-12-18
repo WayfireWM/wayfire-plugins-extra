@@ -246,7 +246,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
     void handle_pointer_button(const wlr_pointer_button_event& event) override
     {
-        if ((event.button == button) && (event.state == WLR_BUTTON_RELEASED))
+        if ((event.button == button) && (event.state == WL_POINTER_BUTTON_STATE_RELEASED))
         {
             draw_end();
         }
