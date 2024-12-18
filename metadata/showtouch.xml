@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="showtouch">
+		<_short>Showtouch</_short>
+		<_long>Render touchscreen fingers</_long>
+		<category>Utility</category>
+		<option name="finger_color" type="color">
+			<_short>Finger Color</_short>
+			<_long>Color used for rendering finger touches</_long>
+			<default>0.0 0.5 0.0 0.5</default>
+		</option>
+		<option name="center_color" type="color">
+			<_short>Center Color</_short>
+			<_long>Color used for rendering computed center of fingers</_long>
+			<default>0.5 0.0 0.5 0.5</default>
+		</option>
+		<option name="touch_radius" type="int">
+			<_short>Touch Radius</_short>
+			<_long>Radius used to size the finger touch point renderings</_long>
+			<default>25</default>
+		</option>
+		<option name="touch_duration" type="animation">
+			<_short>Touch Duration</_short>
+			<_long>Milliseconds the visual finger indicator will stay on screen</_long>
+			<default>250ms sigmoid</default>
+		</option>
+		<option name="toggle" type="activator">
+			<_short>Toggle</_short>
+			<_long>Toggles the finger indicators off and on</_long>
+			<default>&lt;super&gt; &lt;ctrl&gt; KEY_S</default>
+		</option>
+	</plugin>
+</wayfire>
