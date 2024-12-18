@@ -20,10 +20,6 @@ wayland_server = dependency('wayland-server')
 evdev = dependency('libevdev')
 json = dependency('nlohmann_json', required: false)
 
-if get_option('enable_windecor') == true
-    windecor = subproject('windecor')
-endif
-
 if get_option('enable_wayfire_shadows') == true
     wayfire_shadows = subproject('wayfire-shadows')
 endif
