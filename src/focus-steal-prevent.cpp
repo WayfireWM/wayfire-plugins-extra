@@ -199,14 +199,14 @@ class wayfire_focus_steal_prevent : public wf::per_output_plugin_instance_t
     wf::signal::connection_t<wf::input_event_signal<wlr_pointer_button_event>> on_button_event =
         [=] (wf::input_event_signal<wlr_pointer_button_event> *ev)
     {
-        if ((ev->event->state == WLR_BUTTON_RELEASED) || !prevent_focus_steal)
+        if ((ev->event->state == WL_POINTER_BUTTON_STATE_RELEASED) || !prevent_focus_steal)
         {
             return;
         }
 
         auto view = wf::get_core().get_cursor_focus_view();
         if ((!view || (view && (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT))) &&
-            (ev->event->state == WLR_BUTTON_PRESSED) && prevent_focus_steal)
+            (ev->event->state == WL_POINTER_BUTTON_STATE_PRESSED) && prevent_focus_steal)
         {
             cancel();
             return;
