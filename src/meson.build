@@ -90,3 +90,5 @@ window_zoom = shared_module('winzoom', 'window-zoom.cpp',
 workspace_names = shared_module('workspace-names', 'workspace-names.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
+subdir('extra-animations')
