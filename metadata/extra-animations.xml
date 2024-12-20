@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="extra-animations">
+		<_short>Extra Animations</_short>
+		<_long>Extra animations to extend animate plugin</_long>
+		<category>Effects</category>
+		<group>
+			<_short>Blinds Settings</_short>
+			<option name="blinds_duration" type="animation">
+				<_short>Blinds duration</_short>
+				<_long>Sets the duration for the blinds animation in milliseconds.</_long>
+				<default>700ms linear</default>
+			</option>
+			<option name="blinds_strip_height" type="int">
+				<_short>Blinds strip height</_short>
+				<_long>Height of each blinds strip in pixels.</_long>
+				<default>20</default>
+				<min>10</min>
+			</option>
+		</group>
+		<group>
+			<_short>Helix Settings</_short>
+			<option name="helix_duration" type="animation">
+				<_short>Helix duration</_short>
+				<_long>Sets the duration for the helix animation in milliseconds.</_long>
+				<default>700ms linear</default>
+			</option>
+			<option name="helix_rotations" type="int">
+				<_short>Helix rotations</_short>
+				<_long>Number of rotations for the helix animation.</_long>
+				<default>2</default>
+				<min>1</min>
+			</option>
+			<option name="helix_strip_height" type="int">
+				<_short>Helix strip height</_short>
+				<_long>Height of each helix strip in pixels.</_long>
+				<default>20</default>
+				<min>10</min>
+			</option>
+		</group>
+		<group>
+			<_short>Shatter Settings</_short>
+			<option name="shatter_duration" type="animation">
+				<_short>Shatter duration</_short>
+				<_long>Sets the duration for the shatter animation in milliseconds.</_long>
+				<default>1000ms linear</default>
+			</option>
+		</group>
+		<group>
+			<_short>Vortex Settings</_short>
+			<option name="vortex_duration" type="animation">
+				<_short>Vortex duration</_short>
+				<_long>Sets the duration for the vortex animation in milliseconds.</_long>
+				<default>1000ms linear</default>
+			</option>
+		</group>
+	</plugin>
+</wayfire>
