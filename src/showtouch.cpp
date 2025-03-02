@@ -29,6 +29,7 @@
 #include <wayfire/util/duration.hpp>
 #include <wayfire/render-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
+#include <wayfire/signal-definitions.hpp>
 
 
 namespace wf

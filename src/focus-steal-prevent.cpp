@@ -23,6 +23,8 @@
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/view-helpers.hpp>
 #include <wayfire/matcher.hpp>
+#include <wayfire/option-wrapper.hpp>
+#include <wayfire/signal-definitions.hpp>
 #include <set>
 #include <linux/input-event-codes.h>
 #include <libevdev/libevdev.h>

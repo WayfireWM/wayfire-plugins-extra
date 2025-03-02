@@ -53,6 +53,7 @@
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
+#include <wayfire/config/config-manager.hpp>
 
 #define WIDGET_PADDING 20
 
@@ -278,7 +279,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void update_name(int x, int y)
     {
-        auto section = wf::get_core().config.get_section("workspace-names");
+        auto section = wf::get_core().config->get_section("workspace-names");
         auto wsize   = output->wset()->get_workspace_grid_size();
         auto wsn     = workspaces[x][y]->workspace;
         int ws_num   = x + y * wsize.width + 1;

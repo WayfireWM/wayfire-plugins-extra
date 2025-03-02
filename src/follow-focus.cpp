@@ -31,6 +31,7 @@
 #include <wayfire/view.hpp>
 #include <wayfire/util.hpp>
 #include <wayfire/seat.hpp>
+#include <wayfire/signal-definitions.hpp>
 
 namespace follow_focus
 {

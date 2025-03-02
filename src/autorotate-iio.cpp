@@ -6,6 +6,7 @@
 #include <wayfire/core.hpp>
 #include <wayfire/util/log.hpp>
 #include <wayfire/per-output-plugin.hpp>
+#include <wayfire/signal-definitions.hpp>
 
 #include <giomm/dbusconnection.h>
 #include <giomm/dbuswatchname.h>
