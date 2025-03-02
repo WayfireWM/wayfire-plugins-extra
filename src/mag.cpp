@@ -39,6 +39,7 @@
 #include <wayfire/scene.hpp>
 #include <wayfire/signal-provider.hpp>
 #include <wayfire/view-helpers.hpp>
+#include <wayfire/scene-render.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <wayfire/nonstd/tracking-allocator.hpp>

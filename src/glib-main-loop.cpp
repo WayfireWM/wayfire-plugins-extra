@@ -1,6 +1,7 @@
 #include <wayfire/plugin.hpp>
 #include <wayfire/core.hpp>
 #include <wayfire/signal-definitions.hpp>
+#include <wayfire/util.hpp>
 #include <glibmm/main.h>
 #include <giomm/init.h>
 #include <glibmm/init.h>

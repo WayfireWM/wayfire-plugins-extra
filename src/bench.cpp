@@ -31,6 +31,7 @@
 #include <wayfire/render-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
+#include <wayfire/signal-definitions.hpp>
 
 extern "C"
 {
