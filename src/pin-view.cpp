@@ -65,9 +65,9 @@ class wayfire_pin_view : public wf::plugin_interface_t
 
     wf::ipc::method_callback ipc_pin_view = [=] (wf::json_t data) -> wf::json_t
     {
-        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto view_id   = wf::ipc::json_get_uint64(data, "view-id");
         auto layer_str = wf::ipc::json_get_string(data, "layer");
-        auto resize = wf::ipc::json_get_bool(data, "resize");
+        auto resize    = wf::ipc::json_get_bool(data, "resize");
         /* workspace x,y */
         auto optional_x = wf::ipc::json_get_optional_uint64(data, "x");
         auto optional_y = wf::ipc::json_get_optional_uint64(data, "y");

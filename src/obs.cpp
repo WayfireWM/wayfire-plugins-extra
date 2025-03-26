@@ -414,8 +414,8 @@ class wayfire_obs : public wf::plugin_interface_t
 
     wf::ipc::method_callback ipc_set_view_opacity = [=] (wf::json_t data) -> wf::json_t
     {
-        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
-        auto opacity = wf::ipc::json_get_double(data, "opacity");
+        auto view_id  = wf::ipc::json_get_uint64(data, "view-id");
+        auto opacity  = wf::ipc::json_get_double(data, "opacity");
         auto duration = wf::ipc::json_get_uint64(data, "duration");
 
         auto view = wf::ipc::find_view_by_id(view_id);
@@ -433,10 +433,9 @@ class wayfire_obs : public wf::plugin_interface_t
 
     wf::ipc::method_callback ipc_set_view_brightness = [=] (wf::json_t data) -> wf::json_t
     {
-        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto view_id    = wf::ipc::json_get_uint64(data, "view-id");
         auto brightness = wf::ipc::json_get_double(data, "brightness");
-        auto duration = wf::ipc::json_get_uint64(data, "duration");
-
+        auto duration   = wf::ipc::json_get_uint64(data, "duration");
 
         auto view = wf::ipc::find_view_by_id(view_id);
         if (view && view->is_mapped())
@@ -453,9 +452,9 @@ class wayfire_obs : public wf::plugin_interface_t
 
     wf::ipc::method_callback ipc_set_view_saturation = [=] (wf::json_t data) -> wf::json_t
     {
-        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto view_id    = wf::ipc::json_get_uint64(data, "view-id");
         auto saturation = wf::ipc::json_get_double(data, "saturation");
-        auto duration = wf::ipc::json_get_uint64(data, "duration");
+        auto duration   = wf::ipc::json_get_uint64(data, "duration");
 
         auto view = wf::ipc::find_view_by_id(view_id);
         if (view && view->is_mapped())

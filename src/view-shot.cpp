@@ -95,7 +95,7 @@ class wayfire_view_shot : public wf::plugin_interface_t
     wf::ipc::method_callback on_ipc_capture = [=] (wf::json_t data)
     {
         auto view_id = wf::ipc::json_get_uint64(data, "view-id");
-        auto file = wf::ipc::json_get_string(data, "file");
+        auto file    = wf::ipc::json_get_string(data, "file");
 
         auto view = wf::ipc::find_view_by_id(view_id);
         if (!view)
