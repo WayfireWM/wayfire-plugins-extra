@@ -412,17 +412,17 @@ class wayfire_obs : public wf::plugin_interface_t
         }
     }
 
-    wf::ipc::method_callback ipc_set_view_opacity = [=] (nlohmann::json data) -> nlohmann::json
+    wf::ipc::method_callback ipc_set_view_opacity = [=] (wf::json_t data) -> wf::json_t
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-        WFJSON_EXPECT_FIELD(data, "opacity", number);
-        WFJSON_EXPECT_FIELD(data, "duration", number);
+        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto opacity = wf::ipc::json_get_double(data, "opacity");
+        auto duration = wf::ipc::json_get_uint64(data, "duration");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (view && view->is_mapped())
         {
             ensure_transformer(view);
-            adjust_opacity(view, data["opacity"], data["duration"]);
+            adjust_opacity(view, opacity, duration);
         } else
         {
             return wf::ipc::json_error("Failed to find view with given id. Maybe it was closed?");
@@ -431,17 +431,18 @@ class wayfire_obs : public wf::plugin_interface_t
         return wf::ipc::json_ok();
     };
 
-    wf::ipc::method_callback ipc_set_view_brightness = [=] (nlohmann::json data) -> nlohmann::json
+    wf::ipc::method_callback ipc_set_view_brightness = [=] (wf::json_t data) -> wf::json_t
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-        WFJSON_EXPECT_FIELD(data, "brightness", number);
-        WFJSON_EXPECT_FIELD(data, "duration", number);
+        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto brightness = wf::ipc::json_get_double(data, "brightness");
+        auto duration = wf::ipc::json_get_uint64(data, "duration");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (view && view->is_mapped())
         {
             ensure_transformer(view);
-            adjust_brightness(view, data["brightness"], data["duration"]);
+            adjust_brightness(view, brightness, duration);
         } else
         {
             return wf::ipc::json_error("Failed to find view with given id. Maybe it was closed?");
@@ -450,17 +451,17 @@ class wayfire_obs : public wf::plugin_interface_t
         return wf::ipc::json_ok();
     };
 
-    wf::ipc::method_callback ipc_set_view_saturation = [=] (nlohmann::json data) -> nlohmann::json
+    wf::ipc::method_callback ipc_set_view_saturation = [=] (wf::json_t data) -> wf::json_t
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-        WFJSON_EXPECT_FIELD(data, "saturation", number);
-        WFJSON_EXPECT_FIELD(data, "duration", number);
+        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto saturation = wf::ipc::json_get_double(data, "saturation");
+        auto duration = wf::ipc::json_get_uint64(data, "duration");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (view && view->is_mapped())
         {
             ensure_transformer(view);
-            adjust_saturation(view, data["saturation"], data["duration"]);
+            adjust_saturation(view, saturation, duration);
         } else
         {
             return wf::ipc::json_error("Failed to find view with given id. Maybe it was closed?");

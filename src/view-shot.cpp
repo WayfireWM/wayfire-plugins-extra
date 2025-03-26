@@ -92,18 +92,18 @@ class wayfire_view_shot : public wf::plugin_interface_t
         return false;
     };
 
-    wf::ipc::method_callback on_ipc_capture = [=] (nlohmann::json data)
+    wf::ipc::method_callback on_ipc_capture = [=] (wf::json_t data)
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-        WFJSON_EXPECT_FIELD(data, "file", string);
+        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
+        auto file = wf::ipc::json_get_string(data, "file");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (!view)
         {
             return wf::ipc::json_error("No such view found!");
         }
 
-        if (take_snapshot(view, data["file"]))
+        if (take_snapshot(view, file))
         {
             return wf::ipc::json_ok();
         }
