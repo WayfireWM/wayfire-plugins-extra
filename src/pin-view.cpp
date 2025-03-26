@@ -69,8 +69,8 @@ class wayfire_pin_view : public wf::plugin_interface_t
         auto layer_str = wf::ipc::json_get_string(data, "layer");
         auto resize = wf::ipc::json_get_bool(data, "resize");
         /* workspace x,y */
-        auto maybe_x = wf::ipc::json_get_optional_uint64(data, "x");
-        auto maybe_y = wf::ipc::json_get_optional_uint64(data, "y");
+        auto optional_x = wf::ipc::json_get_optional_uint64(data, "x");
+        auto optional_y = wf::ipc::json_get_optional_uint64(data, "y");
 
         auto view = wf::ipc::find_view_by_id(view_id);
         if (view)
@@ -122,18 +122,17 @@ class wayfire_pin_view : public wf::plugin_interface_t
             }
 
             auto pvd = view->get_data<pin_view_data>();
-            bool resize = resize;
             auto og = output->get_relative_geometry();
             int x = 0, y = 0;
             wf::view_unmapped_signal unmap_signal;
             unmap_signal.view = view;
             wf::get_core().emit(&unmap_signal);
-            if (maybe_x.has_value())
+            if (optional_x.has_value())
             {
-                x = maybe_x.value();
-                if (maybe_y.has_value())
+                x = optional_x.value();
+                if (optional_y.has_value())
                 {
-                    y = maybe_y.value();
+                    y = optional_y.value();
                 }
 
                 view->role = pvd->role;
