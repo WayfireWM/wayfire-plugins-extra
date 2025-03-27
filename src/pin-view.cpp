@@ -63,16 +63,16 @@ class wayfire_pin_view : public wf::plugin_interface_t
         }
     }
 
-    wf::ipc::method_callback ipc_pin_view = [=] (nlohmann::json data) -> nlohmann::json
+    wf::ipc::method_callback ipc_pin_view = [=] (wf::json_t data) -> wf::json_t
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
-        WFJSON_EXPECT_FIELD(data, "layer", string);
-        WFJSON_EXPECT_FIELD(data, "resize", boolean);
+        auto view_id   = wf::ipc::json_get_uint64(data, "view-id");
+        auto layer_str = wf::ipc::json_get_string(data, "layer");
+        auto resize    = wf::ipc::json_get_bool(data, "resize");
         /* workspace x,y */
-        WFJSON_OPTIONAL_FIELD(data, "x", number_unsigned);
-        WFJSON_OPTIONAL_FIELD(data, "y", number_unsigned);
+        auto optional_x = wf::ipc::json_get_optional_uint64(data, "x");
+        auto optional_y = wf::ipc::json_get_optional_uint64(data, "y");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (view)
         {
             bool was_pinned = unpin(view);
@@ -95,25 +95,25 @@ class wayfire_pin_view : public wf::plugin_interface_t
             }
 
             wf::scene::layer layer;
-            if (data["layer"] == "background")
+            if (layer_str == "background")
             {
                 layer = wf::scene::layer::BACKGROUND;
-            } else if (data["layer"] == "bottom")
+            } else if (layer_str == "bottom")
             {
                 layer = wf::scene::layer::BOTTOM;
-            } else if (data["layer"] == "workspace")
+            } else if (layer_str == "workspace")
             {
                 layer = wf::scene::layer::WORKSPACE;
-            } else if (data["layer"] == "top")
+            } else if (layer_str == "top")
             {
                 layer = wf::scene::layer::TOP;
-            } else if (data["layer"] == "unmanaged")
+            } else if (layer_str == "unmanaged")
             {
                 layer = wf::scene::layer::UNMANAGED;
-            } else if (data["layer"] == "overlay")
+            } else if (layer_str == "overlay")
             {
                 layer = wf::scene::layer::OVERLAY;
-            } else if (data["layer"] == "lock")
+            } else if (layer_str == "lock")
             {
                 layer = wf::scene::layer::LOCK;
             } else
@@ -122,18 +122,17 @@ class wayfire_pin_view : public wf::plugin_interface_t
             }
 
             auto pvd = view->get_data<pin_view_data>();
-            bool resize = data["resize"];
             auto og = output->get_relative_geometry();
             int x = 0, y = 0;
             wf::view_unmapped_signal unmap_signal;
             unmap_signal.view = view;
             wf::get_core().emit(&unmap_signal);
-            if (data.contains("x"))
+            if (optional_x.has_value())
             {
-                x = data["x"].get<int>();
-                if (data.contains("y"))
+                x = optional_x.value();
+                if (optional_y.has_value())
                 {
-                    y = data["y"].get<int>();
+                    y = optional_y.value();
                 }
 
                 view->role = pvd->role;
@@ -206,11 +205,11 @@ class wayfire_pin_view : public wf::plugin_interface_t
         return false;
     }
 
-    wf::ipc::method_callback ipc_unpin_view = [=] (nlohmann::json data) -> nlohmann::json
+    wf::ipc::method_callback ipc_unpin_view = [=] (wf::json_t data) -> wf::json_t
     {
-        WFJSON_EXPECT_FIELD(data, "view-id", number_unsigned);
+        auto view_id = wf::ipc::json_get_uint64(data, "view-id");
 
-        auto view = wf::ipc::find_view_by_id(data["view-id"]);
+        auto view = wf::ipc::find_view_by_id(view_id);
         if (!unpin(view))
         {
             LOGE("Failed to find view with given id. Perhaps it is not pinned.");

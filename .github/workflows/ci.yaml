@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine:edge
     steps:
-    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libdisplay-info-dev hwdata-dev nlohmann-json boost-dev
+    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libdisplay-info-dev hwdata-dev yyjson-dev boost-dev
     - name: Wayfire
       uses: actions/checkout@v2
       with:
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine:edge
     steps:
-    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libxcb-dev xcb-util-wm-dev xwayland libdisplay-info-dev hwdata-dev nlohmann-json boost-dev
+    - run: apk --no-cache add git gcc g++ binutils pkgconf meson ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libxcb-dev xcb-util-wm-dev xwayland libdisplay-info-dev hwdata-dev yyjson-dev boost-dev
     - name: Wayfire
       uses: actions/checkout@v2
       with:
