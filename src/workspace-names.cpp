@@ -22,17 +22,6 @@
  * SOFTWARE.
  */
 
-/*
- * To set a workspace name, use the following option format:
- *
- * [workspace-names]
- * HDMI-A-1_workspace_3 = Foo
- *
- * This will show Foo when switching to workspace 3 on HDMI-A-1.
- * Enabling show_option_names will show all possible option names
- * on the respective workspaces and outputs.
- */
-
 #include <map>
 #include <wayfire/bindings.hpp>
 #include <wayfire/geometry.hpp>
