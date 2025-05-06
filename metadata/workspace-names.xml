@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version="1.0"?>
 <wayfire>
 	<plugin name="workspace-names">
 		<_short>Workspace Names</_short>
@@ -84,8 +84,8 @@
 			<min>0</min>
 		</option>
 		<option name="names" type="dynamic-list" type-hint="dict">
-			<_short>WorkSpace names</_short>
-			<_long>names of the workspaces. By default, they will have the name Workspace #N, where #N is the workspace number</_long>
+			<_short>Workspace Names</_short>
+			<_long>Names of the workspaces. By default, they will have the name Workspace #N, where #N is the workspace number.</_long>
 			<entry prefix="" type="string">
 				<_short>Workspace Name</_short>
 				<_long>Sets the name of the workspace</_long>

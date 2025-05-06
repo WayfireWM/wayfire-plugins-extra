@@ -34,6 +34,7 @@
  */
 
 #include <map>
+#include <wayfire/bindings.hpp>
 #include <wayfire/geometry.hpp>
 #include <wayfire/workarea.hpp>
 #include <wayfire/opengl.hpp>
@@ -285,18 +286,18 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         auto wsn     = workspaces[x][y]->workspace;
         int ws_num   = x + y * wsize.width + 1;
 
-        // Get intended name of the workspace
-        std::string tmp_name = output->to_string() + "_workspace_" + std::to_string(ws_num);
+        // Get the option name (key) of the target workspace
+        std::string key = output->to_string() + "_workspace_" + std::to_string(ws_num);
 
         if (show_option_names)
         {
-            wsn->name = tmp_name;
+            wsn->name = key;
         } else
         {
             bool option_found = false;
             for (const auto& [wsid, wsname] : workspace_names.value())
             {
-                if (wsid == tmp_name)
+                if (wsid == key)
                 {
                     wsn->name    = wsname;
                     option_found = true;
