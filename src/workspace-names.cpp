@@ -22,18 +22,8 @@
  * SOFTWARE.
  */
 
-/*
- * To set a workspace name, use the following option format:
- *
- * [workspace-names]
- * HDMI-A-1_workspace_3 = Foo
- *
- * This will show Foo when switching to workspace 3 on HDMI-A-1.
- * Enabling show_option_names will show all possible option names
- * on the respective workspaces and outputs.
- */
-
 #include <map>
+#include <wayfire/bindings.hpp>
 #include <wayfire/geometry.hpp>
 #include <wayfire/workarea.hpp>
 #include <wayfire/opengl.hpp>
@@ -208,6 +198,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         "workspace-names/background_color"};
     wf::option_wrapper_t<bool> show_option_names{"workspace-names/show_option_names"};
     wf::animation::simple_animation_t alpha_fade{display_duration};
+    wf::option_wrapper_t<wf::config::compound_list_t<std::string>> workspace_names{"workspace-names/names"};
 
   public:
     void init() override
@@ -284,25 +275,22 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         auto wsn     = workspaces[x][y]->workspace;
         int ws_num   = x + y * wsize.width + 1;
 
+        // Get the option name (key) of the target workspace
+        std::string key = output->to_string() + "_workspace_" + std::to_string(ws_num);
+
         if (show_option_names)
         {
-            wsn->name = output->to_string() + "_workspace_" +
-                std::to_string(ws_num);
+            wsn->name = key;
         } else
         {
             bool option_found = false;
-            for (auto option : section->get_registered_options())
+            for (const auto& [wsid, wsname] : workspace_names.value())
             {
-                int ws;
-                if (sscanf(option->get_name().c_str(),
-                    (output->to_string() + "_workspace_%d").c_str(), &ws) == 1)
+                if (wsid == key)
                 {
-                    if (ws == ws_num)
-                    {
-                        wsn->name    = option->get_value_str();
-                        option_found = true;
-                        break;
-                    }
+                    wsn->name    = wsname;
+                    option_found = true;
+                    break;
                 }
             }
 

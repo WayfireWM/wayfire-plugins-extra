@@ -83,5 +83,13 @@
 			<default>30</default>
 			<min>0</min>
 		</option>
+		<option name="names" type="dynamic-list" type-hint="dict">
+			<_short>Workspace Names</_short>
+			<_long>Names of the workspaces. By default, they will have the name Workspace #N, where #N is the workspace number.</_long>
+			<entry prefix="" type="string">
+				<_short>Workspace Name</_short>
+				<_long>Sets the name of the workspace</_long>
+			</entry>
+		</option>
 	</plugin>
 </wayfire>
