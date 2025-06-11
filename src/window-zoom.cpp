@@ -119,25 +119,12 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
         return *transformed_view_geometry;
     }
 
-    void render(const wf::render_target_t& target,
-        const wf::region_t& region) override
+    void render(const wf::scene::render_instruction_t& data) override
     {
-        auto src_tex = transformer_render_instance_t<transformer_base_node_t>::get_texture(1.0);
-
-        OpenGL::render_begin(target);
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, src_tex.tex_id));
-        GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-            nearest_filtering ? GL_NEAREST : GL_LINEAR));
-        GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-            nearest_filtering ? GL_NEAREST : GL_LINEAR));
+        auto src_tex = get_texture(1.0);
         auto scaled_geometry = get_scaled_geometry();
-        for (const auto& box : region)
-        {
-            target.logic_scissor(wlr_box_from_pixman_box(box));
-            OpenGL::render_texture(src_tex, target, scaled_geometry, glm::vec4(1.0));
-        }
-
-        OpenGL::render_end();
+        src_tex.filter_mode = nearest_filtering ? WLR_SCALE_FILTER_NEAREST : WLR_SCALE_FILTER_BILINEAR;
+        data.pass->add_texture(src_tex, data.target, scaled_geometry, data.damage);
     }
 };
 

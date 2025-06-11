@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-#include <map>
 #include <wayfire/bindings.hpp>
 #include <wayfire/geometry.hpp>
 #include <wayfire/workarea.hpp>
@@ -51,7 +50,7 @@ struct workspace_name
 {
     wf::geometry_t rect;
     std::string name;
-    std::unique_ptr<wf::simple_texture_t> texture;
+    std::unique_ptr<wf::owned_texture_t> texture;
     cairo_t *cr = nullptr;
     cairo_surface_t *cairo_surface;
     cairo_text_extents_t text_extents;
@@ -92,7 +91,7 @@ class simple_node_render_instance_t : public render_instance_t
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage)
+        const wf::render_target_t& target, wf::region_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -102,22 +101,15 @@ class simple_node_render_instance_t : public render_instance_t
                     });
     }
 
-    void render(const wf::render_target_t& target,
-        const wf::region_t& region)
+    void render(const wf::scene::render_instruction_t& data) override
     {
         wf::geometry_t g{workspace->rect.x + offset->x,
             workspace->rect.y + offset->y,
             workspace->rect.width, workspace->rect.height};
-        OpenGL::render_begin(target);
-        for (auto& box : region)
+        if (workspace->texture)
         {
-            target.logic_scissor(wlr_box_from_pixman_box(box));
-            OpenGL::render_texture(wf::texture_t{workspace->texture->tex},
-                target, g, glm::vec4(1, 1, 1, *alpha_fade),
-                OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+            data.pass->add_texture(workspace->texture->get_texture(), data.target, g, data.damage);
         }
-
-        OpenGL::render_end();
     }
 };
 
@@ -346,7 +338,6 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             /* Setup dummy context to get initial font size */
             cairo_surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 1, 1);
             cr = cairo_create(cairo_surface);
-            wsn->texture = std::make_unique<wf::simple_texture_t>();
         }
 
         cairo_select_font_face(cr, std::string(
@@ -485,9 +476,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         cairo_show_text(cr, name);
         cairo_stroke(cr);
 
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(wsn->cairo_surface, *wsn->texture);
-        OpenGL::render_end();
+        wsn->texture = std::make_unique<wf::owned_texture_t>(wsn->cairo_surface);
     }
 
     void set_alpha()
@@ -616,8 +605,6 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
                 auto& wsn = workspaces[x][y]->workspace;
                 cairo_surface_destroy(wsn->cairo_surface);
                 cairo_destroy(wsn->cr);
-                wsn->texture->release();
-                wsn->texture.reset();
                 wf::scene::remove_child(workspaces[x][y]);
                 workspaces[x][y].reset();
             }

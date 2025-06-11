@@ -77,7 +77,7 @@ class simple_node_render_instance_t : public render_instance_t
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage)
+        const wf::render_target_t& target, wf::region_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -87,8 +87,7 @@ class simple_node_render_instance_t : public render_instance_t
                     });
     }
 
-    void render(const wf::render_target_t& target,
-        const wf::region_t& region)
+    void render(const wf::scene::render_instruction_t& data) override
     {
         auto output = view->get_output();
 
@@ -97,7 +96,7 @@ class simple_node_render_instance_t : public render_instance_t
             return;
         }
 
-        wf::region_t scissor_region{region};
+        wf::region_t scissor_region{data.damage};
         if (transparent_behind_views)
         {
             auto bbox = *transparent_box;
@@ -108,14 +107,7 @@ class simple_node_render_instance_t : public render_instance_t
             scissor_region ^= wf::region_t{bbox};
         }
 
-        OpenGL::render_begin(target);
-        for (auto& box : scissor_region)
-        {
-            target.logic_scissor(wlr_box_from_pixman_box(box));
-            OpenGL::clear({0, 0, 0, 1});
-        }
-
-        OpenGL::render_end();
+        data.pass->clear(scissor_region, {0, 0, 0, 1});
     }
 };
 

@@ -21,7 +21,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <iterator>
 #include <wayfire/bindings.hpp>
 #include <wayfire/config/option.hpp>
 #include <wayfire/core.hpp>

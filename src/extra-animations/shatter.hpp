@@ -39,6 +39,7 @@
 #include <wayfire/plugins/animate/animate.hpp>
 #include <boost/polygon/segment_data.hpp>
 #include <boost/polygon/voronoi.hpp>
+#include <wayfire/util.hpp>
 
 using boost::polygon::voronoi_builder;
 using boost::polygon::voronoi_diagram;
@@ -142,7 +143,7 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
             instructions.push_back(render_instruction_t{
                         .instance = this,
                         .target   = target,
-                        .damage   = damage // & self->get_bounding_box(),
+                        .damage   = damage & self->animation_geometry,
                     });
         }
 
@@ -151,135 +152,140 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
             damage |= wf::region_t{self->animation_geometry};
         }
 
-        void render(const wf::render_target_t& target,
-            const wf::region_t& region) override
+        void render(const wf::scene::render_instruction_t& data) override
         {
-            auto src_box = self->get_children_bounding_box();
-            auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
-                1.0);
+            auto src_box  = self->get_children_bounding_box();
+            auto src_tex  = get_texture(1.0);
+            auto gl_tex   = wf::gles_texture_t{src_tex};
             auto progress = self->progression.progress();
             auto progress_pt_one = (std::clamp(progress, 0.5, 1.0) - 0.5) * 2.0;
             auto progress_pt_two = std::clamp(progress, 0.0, 0.5) * 2.0;
             auto og = self->output->get_relative_geometry();
 
-            OpenGL::render_begin(target);
-            GL_CALL(glDisable(GL_CULL_FACE));
-            GL_CALL(glEnable(GL_BLEND));
-            GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
-            self->program.use(wf::TEXTURE_TYPE_RGBA);
-            self->program.set_active_texture(src_tex);
-            int i = 0;
-            glm::mat4 l = glm::lookAt(
-                glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 4.0) / 2)),
-                glm::vec3(0., 0., 0.),
-                glm::vec3(0., 1., 0.));
-            glm::mat4 p = glm::perspective(float(M_PI / 4.0), 1.0f, 0.1f, 100.0f);
-            for (voronoi_diagram<double>::const_cell_iterator cell = self->vd.cells().begin();
-                 cell != self->vd.cells().end();
-                 cell++, i++)
+            data.pass->custom_gles_subpass([&]
             {
-                const boost::polygon::voronoi_edge<double> *edge = cell->incident_edge();
-                std::vector<float> uv;
-                std::vector<float> vertices;
-                // bounding box of polygon
-                float x1 = std::numeric_limits<float>::max();
-                float y1 = std::numeric_limits<float>::max();
-                float x2 = std::numeric_limits<float>::min();
-                float y2 = std::numeric_limits<float>::min();
-                if (!edge)
+                wf::gles::bind_render_buffer(data.target);
+                GL_CALL(glDisable(GL_CULL_FACE));
+                GL_CALL(glEnable(GL_BLEND));
+                GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
+                self->program.use(wf::TEXTURE_TYPE_RGBA);
+                self->program.set_active_texture(gl_tex);
+                int i = 0;
+                glm::mat4 l = glm::lookAt(
+                    glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 4.0) / 2)),
+                    glm::vec3(0., 0., 0.),
+                    glm::vec3(0., 1., 0.));
+                glm::mat4 p = glm::perspective(float(M_PI / 4.0), 1.0f, 0.1f, 100.0f);
+                for (voronoi_diagram<double>::const_cell_iterator cell = self->vd.cells().begin();
+                     cell != self->vd.cells().end();
+                     cell++, i++)
                 {
-                    continue;
-                }
-
-                do {
+                    const boost::polygon::voronoi_edge<double> *edge = cell->incident_edge();
+                    std::vector<float> uv;
+                    std::vector<float> vertices;
+                    // bounding box of polygon
+                    float x1 = std::numeric_limits<float>::max();
+                    float y1 = std::numeric_limits<float>::max();
+                    float x2 = std::numeric_limits<float>::min();
+                    float y2 = std::numeric_limits<float>::min();
                     if (!edge)
                     {
                         continue;
                     }
 
-                    edge = edge->next();
-                    if (edge && edge->vertex0() && !std::isnan(edge->vertex0()->x()) &&
-                        !std::isnan(edge->vertex0()->y()))
+                    do {
+                        if (!edge)
+                        {
+                            continue;
+                        }
+
+                        edge = edge->next();
+                        if (edge && edge->vertex0() && !std::isnan(edge->vertex0()->x()) &&
+                            !std::isnan(edge->vertex0()->y()))
+                        {
+                            auto x = std::clamp(edge->vertex0()->x(), double(0.0), double(src_box.width));
+                            auto y = std::clamp(edge->vertex0()->y(), double(0.0), double(src_box.height));
+                            uv.push_back(x / src_box.width);
+                            uv.push_back(y / src_box.height);
+                            if (x1 > x)
+                            {
+                                x1 = x;
+                            }
+
+                            if (y1 > y)
+                            {
+                                y1 = y;
+                            }
+
+                            if (x2 < x)
+                            {
+                                x2 = x;
+                            }
+
+                            if (y2 < y)
+                            {
+                                y2 = y;
+                            }
+                        }
+                    } while (edge != cell->incident_edge());
+
+                    auto center = glm::vec2(x1 + (x2 - x1) / 2.0f, y1 + (y2 - y1) / 2.0f);
+                    do {
+                        if (!edge)
+                        {
+                            continue;
+                        }
+
+                        edge = edge->next();
+                        if (edge && edge->vertex0() && !std::isnan(edge->vertex0()->x()) &&
+                            !std::isnan(edge->vertex0()->y()))
+                        {
+                            auto x = std::clamp(edge->vertex0()->x(), double(0.0), double(src_box.width));
+                            auto y = std::clamp(edge->vertex0()->y(), double(0.0), double(src_box.height));
+                            glm::vec4 v, r;
+                            glm::mat4 m(1.0);
+                            m =
+                                glm::rotate(m,
+                                    float(progress_pt_one * progress_pt_one * self->rotations.data()[i].z),
+                                    glm::vec3(
+                                        0.0, 0.0,
+                                        1.0));
+                            m = glm::scale(m, glm::vec3(2.0f / og.width, 2.0f / og.height, 1.0));
+                            m = glm::translate(m, glm::vec3(-(center.x), -(center.y), 0.0));
+                            v = glm::vec4(x, y, 0.0, 1.0);
+                            r = m * v;
+                            vertices.push_back(r.x);
+                            vertices.push_back(r.y);
+                        }
+                    } while (edge != cell->incident_edge());
+
+                    glm::mat4 m(1.0);
+                    m = glm::translate(m, glm::vec3(
+                        ((progress_pt_one * progress_pt_one + progress_pt_two * 0.01) *
+                            (center.x - src_box.width / 2.0f) * self->rotations.data()[i].x) *
+                        (2.0f / og.width),
+                        ((progress_pt_one * progress_pt_one + progress_pt_two * 0.01) *
+                            (center.y - src_box.height / 2.0f) * self->rotations.data()[i].y) *
+                        (2.0f / og.width),
+                        (progress_pt_one * progress_pt_one * self->rotations.data()[i].z) * (2.0f / og.width)));
+                    m = glm::translate(m, glm::vec3(
+                        ((center.x - og.width / 2.0f) + src_box.x) * (2.0f / og.width),
+                        ((center.y - og.height / 2.0f) + (og.height - src_box.y - src_box.height)) *
+                        (2.0f / og.height), 0.0));
+                    auto alpha = std::clamp((1.0 - progress) * 2.0, 0.0, 1.0);
+                    self->program.uniformMatrix4f("matrix",
+                        wf::gles::output_transform(data.target) * m * p * l);
+                    self->program.uniform1f("alpha", alpha);
+                    self->program.attrib_pointer("position", 2, 0, vertices.data());
+                    self->program.attrib_pointer("uv_in", 2, 0, uv.data());
+                    if (vertices.size() / 2 >= 3)
                     {
-                        auto x = std::clamp(edge->vertex0()->x(), double(0.0), double(src_box.width));
-                        auto y = std::clamp(edge->vertex0()->y(), double(0.0), double(src_box.height));
-                        uv.push_back(x / src_box.width);
-                        uv.push_back(y / src_box.height);
-                        if (x1 > x)
-                        {
-                            x1 = x;
-                        }
-
-                        if (y1 > y)
-                        {
-                            y1 = y;
-                        }
-
-                        if (x2 < x)
-                        {
-                            x2 = x;
-                        }
-
-                        if (y2 < y)
-                        {
-                            y2 = y;
-                        }
+                        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 2));
                     }
-                } while (edge != cell->incident_edge());
-
-                auto center = glm::vec2(x1 + (x2 - x1) / 2.0f, y1 + (y2 - y1) / 2.0f);
-                do {
-                    if (!edge)
-                    {
-                        continue;
-                    }
-
-                    edge = edge->next();
-                    if (edge && edge->vertex0() && !std::isnan(edge->vertex0()->x()) &&
-                        !std::isnan(edge->vertex0()->y()))
-                    {
-                        auto x = std::clamp(edge->vertex0()->x(), double(0.0), double(src_box.width));
-                        auto y = std::clamp(edge->vertex0()->y(), double(0.0), double(src_box.height));
-                        glm::vec4 v, r;
-                        glm::mat4 m(1.0);
-                        m =
-                            glm::rotate(m,
-                                float(progress_pt_one * progress_pt_one * self->rotations.data()[i].z), glm::vec3(
-                                    0.0, 0.0,
-                                    1.0));
-                        m = glm::scale(m, glm::vec3(2.0f / og.width, 2.0f / og.height, 1.0));
-                        m = glm::translate(m, glm::vec3(-(center.x), -(center.y), 0.0));
-                        v = glm::vec4(x, y, 0.0, 1.0);
-                        r = m * v;
-                        vertices.push_back(r.x);
-                        vertices.push_back(r.y);
-                    }
-                } while (edge != cell->incident_edge());
-
-                glm::mat4 m(1.0);
-                m = glm::translate(m, glm::vec3(
-                    ((progress_pt_one * progress_pt_one + progress_pt_two * 0.01) *
-                        (center.x - src_box.width / 2.0f) * self->rotations.data()[i].x) * (2.0f / og.width),
-                    ((progress_pt_one * progress_pt_one + progress_pt_two * 0.01) *
-                        (center.y - src_box.height / 2.0f) * self->rotations.data()[i].y) * (2.0f / og.width),
-                    (progress_pt_one * progress_pt_one * self->rotations.data()[i].z) * (2.0f / og.width)));
-                m = glm::translate(m, glm::vec3(
-                    ((center.x - og.width / 2.0f) + src_box.x) * (2.0f / og.width),
-                    ((center.y - og.height / 2.0f) + (og.height - src_box.y - src_box.height)) *
-                    (2.0f / og.height), 0.0));
-                auto alpha = std::clamp((1.0 - progress) * 2.0, 0.0, 1.0);
-                self->program.uniformMatrix4f("matrix", target.transform * m * p * l);
-                self->program.uniform1f("alpha", alpha);
-                self->program.attrib_pointer("position", 2, 0, vertices.data());
-                self->program.attrib_pointer("uv_in", 2, 0, uv.data());
-                if (vertices.size() / 2 >= 3)
-                {
-                    GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 2));
                 }
-            }
 
-            self->program.deactivate();
-            OpenGL::render_end();
+                self->program.deactivate();
+            });
         }
     };
 
@@ -294,9 +300,10 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
 
         auto og = output->get_relative_geometry();
         animation_geometry = og;
-        OpenGL::render_begin();
-        program.compile(shatter_vert_source, shatter_frag_source);
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program.compile(shatter_vert_source, shatter_frag_source);
+        });
 
         std::srand(std::time(nullptr));
         auto offset_range = 100;
@@ -353,7 +360,10 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
             output->render->rem_effect(&pre_hook);
         }
 
-        program.free_resources();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program.free_resources();
+        });
     }
 };
 

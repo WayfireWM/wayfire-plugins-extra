@@ -190,7 +190,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
     wf::animation::simple_animation_t animation =
         wf::animation::simple_animation_t(wf::create_option<int>(5000));
     OpenGL::program_t program[3];
-    wf::framebuffer_t buffer[2];
+    wf::auxilliary_buffer_t buffer[2];
     wf::pointf_t last_cursor;
     bool button_down = false;
     bool hook_set    = false;
@@ -205,16 +205,23 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
   public:
     void init() override
     {
-        OpenGL::render_begin();
-        program[0].set_simple(
-            OpenGL::compile_program(vertex_shader, fragment_shader_a));
-        program[1].set_simple(
-            OpenGL::compile_program(vertex_shader, fragment_shader_b));
-        program[2].set_simple(
-            OpenGL::compile_program(vertex_shader, fragment_shader_c));
-        points_loc = GL_CALL(glGetUniformLocation(
-            program[0].get_program_id(wf::TEXTURE_TYPE_RGBA), "points"));
-        OpenGL::render_end();
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("water plugin requires GLES2 renderer!");
+            return;
+        }
+
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program[0].set_simple(
+                OpenGL::compile_program(vertex_shader, fragment_shader_a));
+            program[1].set_simple(
+                OpenGL::compile_program(vertex_shader, fragment_shader_b));
+            program[2].set_simple(
+                OpenGL::compile_program(vertex_shader, fragment_shader_c));
+            points_loc = GL_CALL(glGetUniformLocation(
+                program[0].get_program_id(wf::TEXTURE_TYPE_RGBA), "points"));
+        });
 
         input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
             nullptr);
@@ -272,14 +279,12 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         output->render->damage_whole();
     };
 
-    wf::post_hook_t render = [=] (const wf::framebuffer_t& source,
-                                  const wf::framebuffer_t& destination)
+    wf::post_hook_t render = [=] (wf::auxilliary_buffer_t& source, const wf::render_buffer_t& dest)
     {
-        auto transform = output->render->get_target_framebuffer().transform;
+        auto transform = get_output_matrix_from_transform(output->handle->transform);
         auto cursor_position = output->get_cursor_position();
         auto og  = output->get_relative_geometry();
-        auto fbg = output->render->get_target_framebuffer().
-            framebuffer_box_from_geometry_box(og);
+        auto fbg = output->render->get_target_framebuffer().framebuffer_box_from_geometry_box(og);
         transform = glm::inverse(transform);
 
         static const float vertexData[] = {
@@ -328,86 +333,91 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         last_cursor = cursor_position;
 
         /* First pass */
-        OpenGL::render_begin();
-        if (buffer[0].allocate(fbg.width, fbg.height))
+
+        for (size_t i = 0; i < 2; i++)
         {
-            buffer[0].bind();
-            OpenGL::clear({0, 0, 0, 1});
+            if (buffer[i].allocate(wf::dimensions(fbg)) == wf::buffer_reallocation_result_t::REALLOCATED)
+            {
+                wf::gles::run_in_context([&]
+                {
+                    wf::gles::bind_render_buffer(buffer[i].get_renderbuffer());
+                    OpenGL::clear({0, 0, 0, 1});
+                });
+            }
         }
 
-        if (buffer[1].allocate(fbg.width, fbg.height))
+        wf::gles_texture_t tex[2] = {
+            wf::gles_texture_t{buffer[0].get_texture()},
+            wf::gles_texture_t{buffer[1].get_texture()},
+        };
+        wf::gles_texture_t source_tex{source.get_texture()};
+
+        wf::gles::run_in_context([&]
         {
-            buffer[1].bind();
-            OpenGL::clear({0, 0, 0, 1});
-        }
+            wf::gles::bind_render_buffer(buffer[0].get_renderbuffer());
 
-        buffer[0].bind();
-        program[0].use(wf::TEXTURE_TYPE_RGBA);
-        program[0].attrib_pointer("position", 2, 0, vertexData);
-        program[0].attrib_pointer("uvPosition", 2, 0, coordData);
-        GL_CALL(glUniform2fv(points_loc, num_points, points.data()));
-        program[0].uniform1i("num_points", num_points);
-        program[0].uniform1i("button_down", button_down ? 1 : 0);
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[1].tex));
+            program[0].use(wf::TEXTURE_TYPE_RGBA);
+            program[0].attrib_pointer("position", 2, 0, vertexData);
+            program[0].attrib_pointer("uvPosition", 2, 0, coordData);
+            GL_CALL(glUniform2fv(points_loc, num_points, points.data()));
+            program[0].uniform1i("num_points", num_points);
+            program[0].uniform1i("button_down", button_down ? 1 : 0);
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[1].tex_id));
 
-        GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-        GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glDisable(GL_BLEND));
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            GL_CALL(glEnable(GL_BLEND));
 
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        program[0].deactivate();
-        OpenGL::render_end();
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            program[0].deactivate();
 
-        /* Second pass */
-        OpenGL::render_begin(buffer[1]);
-        program[1].use(wf::TEXTURE_TYPE_RGBA);
-        program[1].attrib_pointer("position", 2, 0, vertexData);
-        program[1].attrib_pointer("uvPosition", 2, 0, coordData);
-        program[1].uniform2f("resolution", 1.0 / fbg.width, 1.0 / fbg.height);
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[0].tex));
+            /* Second pass */
+            wf::gles::bind_render_buffer(buffer[1].get_renderbuffer());
+            program[1].use(wf::TEXTURE_TYPE_RGBA);
+            program[1].attrib_pointer("position", 2, 0, vertexData);
+            program[1].attrib_pointer("uvPosition", 2, 0, coordData);
+            program[1].uniform2f("resolution", 1.0 / fbg.width, 1.0 / fbg.height);
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[0].tex_id));
 
-        GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-        GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glDisable(GL_BLEND));
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            GL_CALL(glEnable(GL_BLEND));
 
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        program[1].deactivate();
-        OpenGL::render_end();
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            program[1].deactivate();
 
-        /* Final pass */
-        OpenGL::render_begin(destination);
-        program[2].use(wf::TEXTURE_TYPE_RGBA);
-        program[2].attrib_pointer("position", 2, 0, vertexData);
-        program[2].attrib_pointer("uvPosition", 2, 0, coordData);
-        program[2].uniform2f("resolution", 1.0 / fbg.width, 1.0 / fbg.height);
-        program[2].uniform1f("fade", animation);
-        program[2].uniform1i("water_texture", 1);
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, source.tex));
-        GL_CALL(glActiveTexture(GL_TEXTURE0 + 1));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer[1].tex));
+            /* Final pass */
+            wf::gles::bind_render_buffer(dest);
+            program[2].use(wf::TEXTURE_TYPE_RGBA);
+            program[2].attrib_pointer("position", 2, 0, vertexData);
+            program[2].attrib_pointer("uvPosition", 2, 0, coordData);
+            program[2].uniform2f("resolution", 1.0 / fbg.width, 1.0 / fbg.height);
+            program[2].uniform1f("fade", animation);
+            program[2].uniform1i("water_texture", 1);
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, source_tex.tex_id));
+            GL_CALL(glActiveTexture(GL_TEXTURE0 + 1));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[1].tex_id));
 
-        GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-        GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glDisable(GL_BLEND));
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            GL_CALL(glEnable(GL_BLEND));
 
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        program[2].deactivate();
-        OpenGL::render_end();
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            program[2].deactivate();
+        });
 
         if (!button_down && !timer.is_connected() && !animation.running())
         {
             hook_set = false;
             output->render->rem_effect(&damage_hook);
             output->render->rem_post(&render);
-            OpenGL::render_begin();
-            buffer[0].release();
-            buffer[1].release();
-            OpenGL::render_end();
+            buffer[0].free();
+            buffer[1].free();
         }
 
         output->render->schedule_redraw();
@@ -425,13 +435,12 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             output->render->rem_post(&render);
         }
 
-        OpenGL::render_begin();
-        buffer[0].release();
-        buffer[1].release();
-        program[0].free_resources();
-        program[1].free_resources();
-        program[2].free_resources();
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program[0].free_resources();
+            program[1].free_resources();
+            program[2].free_resources();
+        });
     }
 };
 

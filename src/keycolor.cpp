@@ -23,6 +23,7 @@
  */
 
 #include <wayfire/core.hpp>
+#include <wayfire/opengl.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
@@ -129,7 +130,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage)
+        const wf::render_target_t& target, wf::region_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -139,12 +140,10 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
                     });
     }
 
-    void render(const wf::render_target_t& target,
-        const wf::region_t& region)
+    void render(const wf::scene::render_instruction_t& data) override
     {
-        wlr_box fb_geom =
-            target.framebuffer_box_from_geometry_box(target.geometry);
-        auto view_box = target.framebuffer_box_from_geometry_box(
+        wlr_box fb_geom = data.target.framebuffer_box_from_geometry_box(data.target.geometry);
+        auto view_box   = data.target.framebuffer_box_from_geometry_box(
             self->get_children_bounding_box());
         view_box.x -= fb_geom.x;
         view_box.y -= fb_geom.y;
@@ -152,7 +151,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
         float x = view_box.x, y = view_box.y, w = view_box.width,
             h = view_box.height;
 
-        nonstd::observer_ptr<keycolor_custom_data_t> data =
+        nonstd::observer_ptr<keycolor_custom_data_t> key_data =
             wf::get_core().get_data<keycolor_custom_data_t>(program_name);
 
         static const float vertexData[] = {
@@ -168,46 +167,47 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
             0.0f, 1.0f
         };
 
-        OpenGL::render_begin(target);
-
-        /* Upload data to shader */
-        glm::vec4 color_data{
-            ((wf::color_t)color).r,
-            ((wf::color_t)color).g,
-            ((wf::color_t)color).b,
-            (double)opacity};
-        auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
-            1.0);
-        data->program.use(src_tex.type);
-        data->program.uniform4f("color", color_data);
-        data->program.uniform1f("threshold", threshold);
-        data->program.attrib_pointer("position", 2, 0, vertexData);
-        data->program.attrib_pointer("texcoord", 2, 0, texCoords);
-        data->program.uniformMatrix4f("mvp", target.transform);
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        data->program.set_active_texture(src_tex);
-
-        /* Render it to target */
-        target.bind();
-        GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
-
-        GL_CALL(glEnable(GL_BLEND));
-        GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
-
-        for (const auto& box : region)
+        data.pass->custom_gles_subpass(data.target, [&]
         {
-            target.logic_scissor(wlr_box_from_pixman_box(box));
-            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-        }
+            /* Upload data to shader */
+            glm::vec4 color_data{
+                ((wf::color_t)color).r,
+                ((wf::color_t)color).g,
+                ((wf::color_t)color).b,
+                (double)opacity};
+            auto src_tex = get_texture(1.0);
+            auto gl_tex  = wf::gles_texture_t{src_tex};
 
-        /* Disable stuff */
-        GL_CALL(glDisable(GL_BLEND));
-        GL_CALL(glActiveTexture(GL_TEXTURE0));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+            key_data->program.use(gl_tex.type);
+            key_data->program.uniform4f("color", color_data);
+            key_data->program.uniform1f("threshold", threshold);
+            key_data->program.attrib_pointer("position", 2, 0, vertexData);
+            key_data->program.attrib_pointer("texcoord", 2, 0, texCoords);
+            key_data->program.uniformMatrix4f("mvp", wf::gles::output_transform(data.target));
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            key_data->program.set_active_texture(gl_tex);
 
-        data->program.deactivate();
-        OpenGL::render_end();
+            /* Render it to target */
+            wf::gles::bind_render_buffer(data.target);
+            GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
+
+            GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
+
+            for (const auto& box : data.damage)
+            {
+                wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            }
+
+            /* Disable stuff */
+            GL_CALL(glDisable(GL_BLEND));
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+            key_data->program.deactivate();
+        });
     }
 };
 
@@ -274,14 +274,21 @@ class wayfire_keycolor : public wf::plugin_interface_t
   public:
     void init() override
     {
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("keycolor plugin requires OpenGL ES renderer!");
+            return;
+        }
+
         if (!wf::get_core().get_data<keycolor_custom_data_t>(program_name))
         {
             std::unique_ptr<keycolor_custom_data_t> data =
                 std::make_unique<keycolor_custom_data_t>();
 
-            OpenGL::render_begin();
-            data->program.compile(vertex_shader, fragment_shader);
-            OpenGL::render_end();
+            wf::gles::run_in_context([&]
+            {
+                data->program.compile(vertex_shader, fragment_shader);
+            });
 
             wf::get_core().store_data(std::move(data), program_name);
         }
@@ -337,9 +344,10 @@ class wayfire_keycolor : public wf::plugin_interface_t
         nonstd::observer_ptr<keycolor_custom_data_t> data =
             wf::get_core().get_data<keycolor_custom_data_t>(program_name);
 
-        OpenGL::render_begin();
-        data->program.free_resources();
-        OpenGL::render_end();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            data->program.free_resources();
+        });
 
         wf::get_core().erase_data(program_name);
     }

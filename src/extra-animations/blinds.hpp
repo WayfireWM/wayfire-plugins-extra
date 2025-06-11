@@ -36,6 +36,7 @@
 #include <wayfire/util/duration.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <wayfire/plugins/animate/animate.hpp>
+#include <wayfire/util.hpp>
 
 
 static const char *blinds_vert_source =
@@ -141,12 +142,11 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
             damage |= wf::region_t{self->animation_geometry};
         }
 
-        void render(const wf::render_target_t& target,
-            const wf::region_t& region) override
+        void render(const wf::scene::render_instruction_t& data) override
         {
-            auto src_box = self->get_children_bounding_box();
-            auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
-                1.0);
+            auto src_box  = self->get_children_bounding_box();
+            auto src_tex  = get_texture(1.0);
+            auto gl_tex   = wf::gles_texture_t{src_tex};
             auto progress = self->progression.progress();
             self->animation_geometry =
                 wf::geometry_t{src_box.x - int(blinds_strip_height), src_box.y,
@@ -154,86 +154,93 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                 src_box.y + src_box.height};
 
             int line_height = int(blinds_strip_height);
-            for (int i = 0; i < src_box.height; i += line_height)
+            data.pass->custom_gles_subpass([&]
             {
-                std::vector<float> uv;
-                std::vector<float> vertices;
-                auto y     = src_box.height - i;
-                auto inv_h = 1.0 / src_box.height;
-                uv.push_back(1.0);
-                uv.push_back(std::max(0, y - line_height) * inv_h);
-                uv.push_back(0.0);
-                uv.push_back(std::max(0, y - line_height) * inv_h);
-                uv.push_back(0.0);
-                uv.push_back(y * inv_h);
-                uv.push_back(1.0);
-                uv.push_back(y * inv_h);
-                auto x1 = src_box.width / 2.0;
-                auto x2 = -(src_box.width / 2.0);
-                auto y1 = -(std::min(src_box.height - i, line_height) / 2.0);
-                auto y2 = std::min(src_box.height - i, line_height) / 2.0;
-                glm::vec4 v, r;
-                glm::mat4 m(1.0);
-                m =
-                    glm::rotate(m,
-                        float(std::min(M_PI,
-                            std::max(0.0,
-                                (M_PI * (1.0 - progress)) - M_PI / 2.0 * (float(i) / src_box.height)) +
-                            M_PI / 2.0)), glm::vec3(1.0, 0.0, 0.0));
-                m = glm::scale(m, glm::vec3(2.0f / (src_box.width + line_height * 2), 2.0f / (y2 - y1), 1.0));
-                v = glm::vec4(x1, y2, 0.0, 1.0);
-                r = m * v;
-                vertices.push_back(r.x);
-                vertices.push_back(r.y);
-                vertices.push_back(r.z);
-                v = glm::vec4(x2, y2, 0.0, 1.0);
-                r = m * v;
-                vertices.push_back(r.x);
-                vertices.push_back(r.y);
-                vertices.push_back(r.z);
-                v = glm::vec4(x2, y1, 0.0, 1.0);
-                r = m * v;
-                vertices.push_back(r.x);
-                vertices.push_back(r.y);
-                vertices.push_back(r.z);
-                v = glm::vec4(x1, y1, 0.0, 1.0);
-                r = m * v;
-                vertices.push_back(r.x);
-                vertices.push_back(r.y);
-                vertices.push_back(r.z);
-
-                glm::mat4 p = glm::perspective(float(M_PI / 64.0), 1.0f, 0.1f, 100.0f);
-                glm::mat4 l = glm::lookAt(
-                    glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 64.0) / 2)),
-                    glm::vec3(0., 0., 0.),
-                    glm::vec3(0., 1., 0.));
-
-                auto transform = p * l;
-                wf::render_target_t slice;
-                slice.allocate(src_box.width + line_height * 2, y2 - y1);
-                OpenGL::render_begin(slice);
-                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
-                self->program.use(wf::TEXTURE_TYPE_RGBA);
-                self->program.uniformMatrix4f("matrix", transform);
-                self->program.attrib_pointer("position", 3, 0, vertices.data());
-                self->program.attrib_pointer("uv_in", 2, 0, uv.data());
-                self->program.set_active_texture(src_tex);
-                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 3));
-                OpenGL::render_end();
-                OpenGL::render_begin(target);
-                for (auto box : region)
+                for (int i = 0; i < src_box.height; i += line_height)
                 {
-                    target.logic_scissor(wlr_box_from_pixman_box(box));
-                    OpenGL::render_transformed_texture(slice.tex, gl_geometry{float(src_box.x - line_height),
-                        float(src_box.y + i),
-                        float((src_box.x - line_height) + src_box.width + line_height * 2.0),
-                        float((src_box.y + i) + (y2 - y1))}, {},
-                        target.get_orthographic_projection(), glm::vec4(1.0), 0);
-                }
+                    std::vector<float> uv;
+                    std::vector<float> vertices;
+                    auto y     = src_box.height - i;
+                    auto inv_h = 1.0 / src_box.height;
+                    uv.push_back(1.0);
+                    uv.push_back(std::max(0, y - line_height) * inv_h);
+                    uv.push_back(0.0);
+                    uv.push_back(std::max(0, y - line_height) * inv_h);
+                    uv.push_back(0.0);
+                    uv.push_back(y * inv_h);
+                    uv.push_back(1.0);
+                    uv.push_back(y * inv_h);
+                    auto x1 = src_box.width / 2.0;
+                    auto x2 = -(src_box.width / 2.0);
+                    auto y1 = -(std::min(src_box.height - i, line_height) / 2.0);
+                    auto y2 = std::min(src_box.height - i, line_height) / 2.0;
+                    glm::vec4 v, r;
+                    glm::mat4 m(1.0);
+                    m =
+                        glm::rotate(m,
+                            float(std::min(M_PI,
+                                std::max(0.0,
+                                    (M_PI * (1.0 - progress)) - M_PI / 2.0 * (float(i) / src_box.height)) +
+                                M_PI / 2.0)), glm::vec3(1.0, 0.0, 0.0));
+                    m =
+                        glm::scale(m,
+                            glm::vec3(2.0f / (src_box.width + line_height * 2), 2.0f / (y2 - y1), 1.0));
+                    v = glm::vec4(x1, y2, 0.0, 1.0);
+                    r = m * v;
+                    vertices.push_back(r.x);
+                    vertices.push_back(r.y);
+                    vertices.push_back(r.z);
+                    v = glm::vec4(x2, y2, 0.0, 1.0);
+                    r = m * v;
+                    vertices.push_back(r.x);
+                    vertices.push_back(r.y);
+                    vertices.push_back(r.z);
+                    v = glm::vec4(x2, y1, 0.0, 1.0);
+                    r = m * v;
+                    vertices.push_back(r.x);
+                    vertices.push_back(r.y);
+                    vertices.push_back(r.z);
+                    v = glm::vec4(x1, y1, 0.0, 1.0);
+                    r = m * v;
+                    vertices.push_back(r.x);
+                    vertices.push_back(r.y);
+                    vertices.push_back(r.z);
 
-                slice.release();
-                OpenGL::render_end();
-            }
+                    glm::mat4 p = glm::perspective(float(M_PI / 64.0), 1.0f, 0.1f, 100.0f);
+                    glm::mat4 l = glm::lookAt(
+                        glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 64.0) / 2)),
+                        glm::vec3(0., 0., 0.),
+                        glm::vec3(0., 1., 0.));
+
+                    auto transform = p * l;
+                    wf::auxilliary_buffer_t slice_buffer;
+                    slice_buffer.allocate({src_box.width + line_height * 2, static_cast<int32_t>(y2 - y1)});
+                    wf::gles::bind_render_buffer(slice_buffer.get_renderbuffer());
+                    OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
+                    self->program.use(wf::TEXTURE_TYPE_RGBA);
+                    self->program.uniformMatrix4f("matrix", transform);
+                    self->program.attrib_pointer("position", 3, 0, vertices.data());
+                    self->program.attrib_pointer("uv_in", 2, 0, uv.data());
+                    self->program.set_active_texture(gl_tex);
+                    GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 3));
+
+                    wf::gles_texture_t slice_tex{slice_buffer.get_texture()};
+
+                    wf::gles::bind_render_buffer(data.target);
+                    for (auto box : data.damage)
+                    {
+                        wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                        OpenGL::render_transformed_texture(slice_tex,
+                            gl_geometry{float(src_box.x - line_height),
+                                float(src_box.y + i),
+                                float((src_box.x - line_height) + src_box.width + line_height * 2.0),
+                                float((src_box.y + i) + (y2 - y1))}, {},
+                            wf::gles::render_target_orthographic_projection(data.target), glm::vec4(1.0), 0);
+                    }
+
+                    slice_buffer.free();
+                }
+            });
         }
     };
 
@@ -250,9 +257,10 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
             wf::geometry_t{bbox.x - int(blinds_strip_height), bbox.y,
             (bbox.x - int(blinds_strip_height)) + bbox.width + int(blinds_strip_height) * 2,
             bbox.y + bbox.height};
-        OpenGL::render_begin();
-        program.compile(blinds_vert_source, blinds_frag_source);
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program.compile(blinds_vert_source, blinds_frag_source);
+        });
     }
 
     wf::geometry_t get_bounding_box() override
@@ -290,7 +298,10 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
             output->render->rem_effect(&pre_hook);
         }
 
-        program.free_resources();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program.free_resources();
+        });
     }
 };
 

@@ -36,6 +36,7 @@
 #include <wayfire/util/duration.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <wayfire/plugins/animate/animate.hpp>
+#include <wayfire/util.hpp>
 
 
 static const char *vortex_vert_source =
@@ -159,7 +160,7 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
             instructions.push_back(render_instruction_t{
                         .instance = this,
                         .target   = target,
-                        .damage   = damage & self->get_bounding_box(),
+                        .damage   = damage & self->animation_geometry,
                     });
         }
 
@@ -168,12 +169,11 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
             damage |= wf::region_t{self->animation_geometry};
         }
 
-        void render(const wf::render_target_t& target,
-            const wf::region_t& region) override
+        void render(const wf::scene::render_instruction_t& data) override
         {
-            auto src_box = self->get_children_bounding_box();
-            auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
-                1.0);
+            auto src_box  = self->get_children_bounding_box();
+            auto src_tex  = get_texture(1.0);
+            auto gl_tex   = wf::gles_texture_t{src_tex};
             auto progress = self->progression.progress();
             static const float vertex_data_uv[] = {
                 0.0f, 0.0f,
@@ -192,15 +192,18 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
                 1.0f * src_box.x, 1.0f * src_box.y,
             };
 
-            OpenGL::render_begin(target);
-            self->program.use(wf::TEXTURE_TYPE_RGBA);
-            self->program.uniformMatrix4f("matrix", target.get_orthographic_projection());
-            self->program.attrib_pointer("position", 2, 0, vertex_data_pos);
-            self->program.attrib_pointer("uv_in", 2, 0, vertex_data_uv);
-            self->program.uniform1f("progress", progress);
-            self->program.set_active_texture(src_tex);
-            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            OpenGL::render_end();
+            data.pass->custom_gles_subpass([&]
+            {
+                wf::gles::bind_render_buffer(data.target);
+                self->program.use(wf::TEXTURE_TYPE_RGBA);
+                self->program.uniformMatrix4f("matrix",
+                    wf::gles::render_target_orthographic_projection(data.target));
+                self->program.attrib_pointer("position", 2, 0, vertex_data_pos);
+                self->program.attrib_pointer("uv_in", 2, 0, vertex_data_uv);
+                self->program.uniform1f("progress", progress);
+                self->program.set_active_texture(gl_tex);
+                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            });
         }
     };
 
@@ -214,9 +217,15 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
         }
 
         animation_geometry = bbox;
-        OpenGL::render_begin();
-        program.compile(vortex_vert_source, vortex_frag_source);
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program.compile(vortex_vert_source, vortex_frag_source);
+        });
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        return this->animation_geometry;
     }
 
     wf::effect_hook_t pre_hook = [=] ()
@@ -248,7 +257,10 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
             output->render->rem_effect(&pre_hook);
         }
 
-        program.free_resources();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program.free_resources();
+        });
     }
 };
 

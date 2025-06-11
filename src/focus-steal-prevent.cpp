@@ -21,6 +21,7 @@
  */
 
 #include <wayfire/per-output-plugin.hpp>
+#include <wayfire/util.hpp>
 #include <wayfire/view-helpers.hpp>
 #include <wayfire/matcher.hpp>
 #include <wayfire/option-wrapper.hpp>
