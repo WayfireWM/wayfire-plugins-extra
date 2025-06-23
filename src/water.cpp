@@ -325,7 +325,6 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             glm::vec4 result = transform * point;
             x = (result.x + center.x) * fbg.width;
             y = (result.y + center.y) * fbg.height;
-            y = fbg.height - y;
             points.push_back(x);
             points.push_back(y);
         }
@@ -347,10 +346,10 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         }
 
         wf::gles_texture_t tex[2] = {
-            wf::gles_texture_t{buffer[0].get_texture()},
-            wf::gles_texture_t{buffer[1].get_texture()},
+            wf::gles_texture_t::from_aux(buffer[0]),
+            wf::gles_texture_t::from_aux(buffer[1]),
         };
-        wf::gles_texture_t source_tex{source.get_texture()};
+        wf::gles_texture_t source_tex = wf::gles_texture_t::from_aux(source);
 
         wf::gles::run_in_context([&]
         {
