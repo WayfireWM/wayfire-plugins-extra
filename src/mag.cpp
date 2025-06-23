@@ -24,6 +24,7 @@
 
 #include "wayfire/txn/transaction-manager.hpp"
 #include "wayfire/core.hpp"
+#include "wayfire/nonstd/wlroots-full.hpp"
 #include "wayfire/toplevel-view.hpp"
 #include "wayfire/plugin.hpp"
 #include <wayfire/workspace-set.hpp>
@@ -67,8 +68,11 @@ class mag_view_t : public wf::toplevel_view_interface_t
                 }
 
                 auto geometry = self->get_bounding_box();
-                /* Draw the inside of the rect */
-                data.pass->add_texture({view->mag_tex.get_texture()}, data.target, geometry, data.damage);
+                /* Draw the inside of the rect, if we have already captured the output's contents */
+                if (view->mag_tex.get_buffer() != NULL)
+                {
+                    data.pass->add_texture({view->mag_tex.get_texture()}, data.target, geometry, data.damage);
+                }
             }
         };
 
@@ -311,7 +315,11 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         if (!hook_set)
         {
-            output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
+            on_commit.set_callback([&] (void *ev)
+            {
+                handle_commit(static_cast<wlr_output_event_commit*>(ev));
+            });
+            on_commit.connect(&output->handle->events.commit);
             wlr_output_lock_software_cursors(output->handle, true);
             hook_set = true;
         }
@@ -324,7 +332,8 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
         return true;
     }
 
-    wf::effect_hook_t post_hook = [=] ()
+    wf::wl_listener_wrapper on_commit;
+    void handle_commit(wlr_output_event_commit *ev)
     {
         auto cursor_position = output->get_cursor_position();
         auto ortho =
@@ -409,16 +418,17 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         wf::gles::run_in_context([&]
         {
+            wf::render_buffer_t back_buffer{ev->state->buffer, {ev->output->width, ev->output->height}};
             auto src_fb_id = wf::gles::ensure_render_buffer_fb_id(output->render->get_target_framebuffer());
             wf::gles::bind_render_buffer(mag_view->mag_tex.get_renderbuffer());
             GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, src_fb_id));
-            GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y2, zoom_box.x2, zoom_box.y1,
+            GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y1, zoom_box.x2, zoom_box.y2,
                 0, 0, width, height,
                 GL_COLOR_BUFFER_BIT, GL_LINEAR));
         });
 
         mag_view->damage();
-    };
+    }
 
     void deactivate()
     {
@@ -426,7 +436,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         if (hook_set)
         {
-            output->render->rem_effect(&post_hook);
+            on_commit.disconnect();
             wlr_output_lock_software_cursors(output->handle, false);
             hook_set = false;
         }
