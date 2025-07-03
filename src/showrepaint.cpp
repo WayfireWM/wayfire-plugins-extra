@@ -140,8 +140,7 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
             wf::gles::bind_render_buffer(target_fb);
             for (const auto& b : damage)
             {
-                wlr_box box{b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1};
-                OpenGL::render_rectangle(box, color,
+                OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
                     wf::gles::render_target_orthographic_projection(target_fb));
             }
 
@@ -160,8 +159,7 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
                 inverted_damage = output_region ^ damage;
                 for (const auto& b : inverted_damage)
                 {
-                    wlr_box box{b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1};
-                    OpenGL::render_rectangle(box, color,
+                    OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
                         wf::gles::render_target_orthographic_projection(target_fb));
                 }
             }
@@ -200,10 +198,10 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
                     target_fb.framebuffer_box_from_geometry_box(
                         wlr_box_from_pixman_box(rect)));
                 GL_CALL(glBlitFramebuffer(
-                    b.x1, fbg.height - b.y2,
-                    b.x2, fbg.height - b.y1,
-                    b.x1, fbg.height - b.y2,
-                    b.x2, fbg.height - b.y1,
+                    b.x1, b.y1,
+                    b.x2, b.y2,
+                    b.x1, b.y1,
+                    b.x2, b.y2,
                     GL_COLOR_BUFFER_BIT, GL_LINEAR));
             }
 
