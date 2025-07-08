@@ -24,15 +24,15 @@
 
 #include "wayfire/txn/transaction-manager.hpp"
 #include "wayfire/core.hpp"
+#include "wayfire/nonstd/wlroots-full.hpp"
 #include "wayfire/toplevel-view.hpp"
-#include "wayfire/workspace-set.hpp"
 #include "wayfire/plugin.hpp"
+#include <wayfire/workspace-set.hpp>
 #include <wayfire/geometry.hpp>
 #include <wayfire/scene-operations.hpp>
 #include "wayfire/output.hpp"
 #include "wayfire/signal-definitions.hpp"
 #include "wayfire/output-layout.hpp"
-#include "wayfire/compositor-view.hpp"
 #include "wayfire/render-manager.hpp"
 #include "wayfire/opengl.hpp"
 #include "wayfire/per-output-plugin.hpp"
@@ -59,7 +59,7 @@ class mag_view_t : public wf::toplevel_view_interface_t
         {
           public:
             using simple_render_instance_t::simple_render_instance_t;
-            void render(const wf::render_target_t& target, const wf::region_t& region) override
+            void render(const wf::scene::render_instruction_t& data) override
             {
                 auto view = self->_view.lock();
                 if (!view)
@@ -68,19 +68,11 @@ class mag_view_t : public wf::toplevel_view_interface_t
                 }
 
                 auto geometry = self->get_bounding_box();
-                gl_geometry src_geometry = {(float)geometry.x, (float)geometry.y,
-                    (float)geometry.x + geometry.width, (float)geometry.y + geometry.height};
-
-                OpenGL::render_begin(target);
-                for (const auto& box : region)
+                /* Draw the inside of the rect, if we have already captured the output's contents */
+                if (view->mag_tex.get_buffer() != NULL)
                 {
-                    target.logic_scissor(wlr_box_from_pixman_box(box));
-                    /* Draw the inside of the rect */
-                    OpenGL::render_transformed_texture(wf::texture_t{view->mag_tex.tex}, src_geometry, {},
-                        target.get_orthographic_projection(), glm::vec4(1.0), 0);
+                    data.pass->add_texture({view->mag_tex.get_texture()}, data.target, geometry, data.damage);
                 }
-
-                OpenGL::render_end();
             }
         };
 
@@ -174,18 +166,11 @@ class mag_view_t : public wf::toplevel_view_interface_t
     bool _is_mapped = false;
 
   public:
-    wf::framebuffer_t mag_tex;
+    wf::auxilliary_buffer_t mag_tex;
 
     mag_view_t() : wf::toplevel_view_interface_t()
     {
         this->role = wf::VIEW_ROLE_TOPLEVEL;
-    }
-
-    ~mag_view_t()
-    {
-        OpenGL::render_begin();
-        mag_tex.release();
-        OpenGL::render_end();
     }
 
     static std::shared_ptr<mag_view_t> create(wf::output_t *output)
@@ -281,6 +266,12 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("mag plugin requires GLES2 renderer!");
+            return;
+        }
+
         output->add_activator(toggle_binding, &toggle_cb);
         hook_set = active = false;
     }
@@ -324,7 +315,11 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         if (!hook_set)
         {
-            output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
+            on_commit.set_callback([&] (void *ev)
+            {
+                handle_commit(static_cast<wlr_output_event_commit*>(ev));
+            });
+            on_commit.connect(&output->handle->events.commit);
             wlr_output_lock_software_cursors(output->handle, true);
             hook_set = true;
         }
@@ -337,12 +332,12 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
         return true;
     }
 
-    wf::effect_hook_t post_hook = [=] ()
+    wf::wl_listener_wrapper on_commit;
+    void handle_commit(wlr_output_event_commit *ev)
     {
         auto cursor_position = output->get_cursor_position();
-
-        auto ortho = output->render->get_target_framebuffer()
-            .get_orthographic_projection();
+        auto ortho =
+            wf::gles::render_target_orthographic_projection(output->render->get_target_framebuffer());
 
         // Map from OpenGL coordinates to [0, 1]x[0, 1]
         auto cursor_transform =
@@ -411,19 +406,29 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         /* Copy zoom_box part of the output to our own texture to be
          * read by the mag_view_t. */
+        if (mag_view->mag_tex.allocate(wf::dimensions(og)) == wf::buffer_reallocation_result_t::REALLOCATED)
+        {
+            // Clear the buffer if reallocated
+            wf::gles::run_in_context([&]
+            {
+                wf::gles::bind_render_buffer(mag_view->mag_tex.get_renderbuffer());
+                OpenGL::clear({0, 0, 0, 0});
+            });
+        }
 
-        OpenGL::render_begin();
-        mag_view->mag_tex.allocate(width, height);
-        mag_view->mag_tex.bind();
-        GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER,
-            output->render->get_target_framebuffer().fb));
-        GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y2, zoom_box.x2, zoom_box.y1,
-            0, 0, width, height,
-            GL_COLOR_BUFFER_BIT, GL_LINEAR));
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            wf::render_buffer_t back_buffer{ev->state->buffer, {ev->output->width, ev->output->height}};
+            auto src_fb_id = wf::gles::ensure_render_buffer_fb_id(output->render->get_target_framebuffer());
+            wf::gles::bind_render_buffer(mag_view->mag_tex.get_renderbuffer());
+            GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, src_fb_id));
+            GL_CALL(glBlitFramebuffer(zoom_box.x1, zoom_box.y1, zoom_box.x2, zoom_box.y2,
+                0, 0, width, height,
+                GL_COLOR_BUFFER_BIT, GL_LINEAR));
+        });
 
         mag_view->damage();
-    };
+    }
 
     void deactivate()
     {
@@ -431,7 +436,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
 
         if (hook_set)
         {
-            output->render->rem_effect(&post_hook);
+            on_commit.disconnect();
             wlr_output_lock_software_cursors(output->handle, false);
             hook_set = false;
         }

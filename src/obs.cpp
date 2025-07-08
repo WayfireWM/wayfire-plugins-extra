@@ -23,6 +23,7 @@
  */
 
 #include <wayfire/core.hpp>
+#include <wayfire/opengl.hpp>
 #include <wayfire/view.hpp>
 #include <wayfire/plugin.hpp>
 #include <wayfire/output.hpp>
@@ -136,9 +137,8 @@ class wf_obs : public wf::scene::view_2d_transformer_t
             self->disconnect(&on_node_damaged);
         }
 
-        void schedule_instructions(
-            std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage)
+        void schedule_instructions(std::vector<render_instruction_t>& instructions,
+            const wf::render_target_t& target, wf::region_t& damage) override
         {
             // We want to render ourselves only, the node does not have children
             instructions.push_back(render_instruction_t{
@@ -148,12 +148,10 @@ class wf_obs : public wf::scene::view_2d_transformer_t
                         });
         }
 
-        void render(const wf::render_target_t& target,
-            const wf::region_t& region)
+        void render(const wf::scene::render_instruction_t& data) override
         {
-            wlr_box fb_geom =
-                target.framebuffer_box_from_geometry_box(target.geometry);
-            auto view_box = target.framebuffer_box_from_geometry_box(
+            wlr_box fb_geom = data.target.framebuffer_box_from_geometry_box(data.target.geometry);
+            auto view_box   = data.target.framebuffer_box_from_geometry_box(
                 self->get_children_bounding_box());
             view_box.x -= fb_geom.x;
             view_box.y -= fb_geom.y;
@@ -174,42 +172,42 @@ class wf_obs : public wf::scene::view_2d_transformer_t
                 0.0f, 1.0f
             };
 
-            OpenGL::render_begin(target);
-
-            /* Upload data to shader */
-            auto src_tex = wf::scene::transformer_render_instance_t<wf_obs>::get_texture(
-                1.0);
-            this->self->program->use(src_tex.type);
-            this->self->program->uniform1f("opacity", this->self->get_opacity());
-            this->self->program->uniform1f("brightness", this->self->get_brightness());
-            this->self->program->uniform1f("saturation", this->self->get_saturation());
-            this->self->program->attrib_pointer("position", 2, 0, vertexData);
-            this->self->program->attrib_pointer("texcoord", 2, 0, texCoords);
-            this->self->program->uniformMatrix4f("mvp", target.transform);
-            GL_CALL(glActiveTexture(GL_TEXTURE0));
-            this->self->program->set_active_texture(src_tex);
-
-            /* Render it to target */
-            target.bind();
-            GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
-
-            GL_CALL(glEnable(GL_BLEND));
-            GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
-
-            for (const auto& box : region)
+            auto src_tex = get_texture(1.0);
+            auto gl_tex  = wf::gles_texture_t{src_tex};
+            data.pass->custom_gles_subpass(data.target, [&]
             {
-                target.logic_scissor(wlr_box_from_pixman_box(box));
-                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            }
+                /* Upload data to shader */
+                this->self->program->use(gl_tex.type);
+                this->self->program->uniform1f("opacity", this->self->get_opacity());
+                this->self->program->uniform1f("brightness", this->self->get_brightness());
+                this->self->program->uniform1f("saturation", this->self->get_saturation());
+                this->self->program->attrib_pointer("position", 2, 0, vertexData);
+                this->self->program->attrib_pointer("texcoord", 2, 0, texCoords);
+                this->self->program->uniformMatrix4f("mvp", wf::gles::output_transform(data.target));
+                GL_CALL(glActiveTexture(GL_TEXTURE0));
+                this->self->program->set_active_texture(gl_tex);
 
-            /* Disable stuff */
-            GL_CALL(glDisable(GL_BLEND));
-            GL_CALL(glActiveTexture(GL_TEXTURE0));
-            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-            GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+                /* Render it to target */
+                wf::gles::bind_render_buffer(data.target);
+                GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
 
-            this->self->program->deactivate();
-            OpenGL::render_end();
+                GL_CALL(glEnable(GL_BLEND));
+                GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
+
+                for (const auto& box : data.damage)
+                {
+                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+                }
+
+                /* Disable stuff */
+                GL_CALL(glDisable(GL_BLEND));
+                GL_CALL(glActiveTexture(GL_TEXTURE0));
+                GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+                GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+                this->self->program->deactivate();
+            });
         }
     };
 
@@ -367,13 +365,20 @@ class wayfire_obs : public wf::plugin_interface_t
   public:
     void init() override
     {
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("obs plugin requires GLES2 renderer!");
+            return;
+        }
+
         ipc_repo->register_method("wf/obs/set-view-opacity", ipc_set_view_opacity);
         ipc_repo->register_method("wf/obs/set-view-brightness", ipc_set_view_brightness);
         ipc_repo->register_method("wf/obs/set-view-saturation", ipc_set_view_saturation);
 
-        OpenGL::render_begin();
-        program.compile(vertex_shader, fragment_shader);
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program.compile(vertex_shader, fragment_shader);
+        });
     }
 
     std::shared_ptr<wf_obs> ensure_transformer(wayfire_view view)
@@ -477,9 +482,10 @@ class wayfire_obs : public wf::plugin_interface_t
 
         remove_transformers();
 
-        OpenGL::render_begin();
-        program.free_resources();
-        OpenGL::render_end();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program.free_resources();
+        });
     }
 };
 }

@@ -113,27 +113,9 @@ class wayfire_view_shot : public wf::plugin_interface_t
 
     bool take_snapshot(wayfire_view view, std::string filename)
     {
-        wf::render_target_t offscreen_buffer;
-        view->take_snapshot(offscreen_buffer);
-        auto width  = offscreen_buffer.viewport_width;
-        auto height = offscreen_buffer.viewport_height;
-
-        GLubyte *pixels = (GLubyte*)malloc(width * height * sizeof(GLubyte) * 4);
-        if (!pixels)
-        {
-            return false;
-        }
-
-        OpenGL::render_begin();
-        GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, offscreen_buffer.fb));
-        GL_CALL(glViewport(0, 0, width, height));
-
-        GL_CALL(glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
-        offscreen_buffer.release(); // free gpu memory
-        OpenGL::render_end();
-
-        image_io::write_to_file(filename, pixels, width, height, "png", true);
-        free(pixels);
+        wf::auxilliary_buffer_t aux_buffer;
+        view->take_snapshot(aux_buffer);
+        image_io::write_to_file(filename, aux_buffer.get_renderbuffer());
         return true;
     }
 

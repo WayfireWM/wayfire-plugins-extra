@@ -36,6 +36,7 @@
 #include <wayfire/util/duration.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <wayfire/plugins/animate/animate.hpp>
+#include <wayfire/util.hpp>
 
 
 static const char *helix_vert_source =
@@ -128,7 +129,7 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage)
+            const wf::render_target_t& target, wf::region_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -142,12 +143,11 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
             damage |= wf::region_t{self->animation_geometry};
         }
 
-        void render(const wf::render_target_t& target,
-            const wf::region_t& region)
+        void render(const wf::scene::render_instruction_t& data) override
         {
-            auto src_box = self->get_children_bounding_box();
-            auto src_tex = wf::scene::transformer_render_instance_t<transformer_base_node_t>::get_texture(
-                1.0);
+            auto src_box  = self->get_children_bounding_box();
+            auto src_tex  = get_texture(1.0);
+            auto gl_tex   = wf::gles_texture_t{src_tex};
             auto progress = self->progression.progress();
             auto og = self->output->get_relative_geometry();
             self->animation_geometry = og;
@@ -231,20 +231,21 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
                         float(2.0f / float(og.height)),
                         0.0));
 
-            auto transform = target.transform * t * p * l;
-            OpenGL::render_begin(target);
-            for (auto box : region)
+            auto transform = wf::gles::output_transform(data.target) * t * p * l;
+            data.pass->custom_gles_subpass([&]
             {
-                target.logic_scissor(wlr_box_from_pixman_box(box));
-                self->program.use(wf::TEXTURE_TYPE_RGBA);
-                self->program.uniformMatrix4f("matrix", transform);
-                self->program.attrib_pointer("position", 3, 0, vertices.data());
-                self->program.attrib_pointer("uv_in", 2, 0, uv.data());
-                self->program.set_active_texture(src_tex);
-                GL_CALL(glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3));
-            }
-
-            OpenGL::render_end();
+                wf::gles::bind_render_buffer(data.target);
+                for (auto box : data.damage)
+                {
+                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    self->program.use(wf::TEXTURE_TYPE_RGBA);
+                    self->program.uniformMatrix4f("matrix", transform);
+                    self->program.attrib_pointer("position", 3, 0, vertices.data());
+                    self->program.attrib_pointer("uv_in", 2, 0, uv.data());
+                    self->program.set_active_texture(gl_tex);
+                    GL_CALL(glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3));
+                }
+            });
         }
     };
 
@@ -258,9 +259,10 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
         }
 
         animation_geometry = bbox;
-        OpenGL::render_begin();
-        program.compile(helix_vert_source, helix_frag_source);
-        OpenGL::render_end();
+        wf::gles::run_in_context([&]
+        {
+            program.compile(helix_vert_source, helix_frag_source);
+        });
     }
 
     wf::geometry_t get_bounding_box() override
@@ -298,7 +300,10 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
             output->render->rem_effect(&pre_hook);
         }
 
-        program.free_resources();
+        wf::gles::run_in_context_if_gles([&]
+        {
+            program.free_resources();
+        });
     }
 };
 

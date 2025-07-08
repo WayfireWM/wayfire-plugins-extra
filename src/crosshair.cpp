@@ -87,14 +87,8 @@ class wayfire_crosshair : public wf::per_output_plugin_instance_t
             wf::color_t(line_color).b * alpha,
             alpha};
 
-        OpenGL::render_begin(target_fb);
-        for (auto& b : region)
-        {
-            OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
-                target_fb.get_orthographic_projection());
-        }
-
-        OpenGL::render_end();
+        auto pass = output->render->get_current_pass();
+        pass->add_rect(color, target_fb, target_fb.geometry, region);
     };
 
     void fini() override

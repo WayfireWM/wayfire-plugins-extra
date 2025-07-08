@@ -22,9 +22,10 @@
  * SOFTWARE.
  */
 
-#include <map>
 #include <math.h>
 #include <memory>
+#include <cairo.h>
+#include <wayfire/workspace-set.hpp> // IWYU pragma: keep
 #include "wayfire/geometry.hpp"
 #include "wayfire/opengl.hpp"
 #include "wayfire/region.hpp"
@@ -36,10 +37,8 @@
 #include "wayfire/output.hpp"
 #include "wayfire/output-layout.hpp"
 #include "wayfire/render-manager.hpp"
-#include "wayfire/workspace-set.hpp"
 #include "wayfire/per-output-plugin.hpp"
 #include "wayfire/signal-definitions.hpp"
-#include "wayfire/plugins/common/cairo-util.hpp"
 #include "wayfire/plugins/common/input-grab.hpp"
 
 enum annotate_draw_method
@@ -50,11 +49,18 @@ enum annotate_draw_method
     ANNOTATE_METHOD_CIRCLE,
 };
 
+struct simple_texture_t
+{
+    GLuint tex = -1;
+    int width  = 0;
+    int height = 0;
+};
+
 struct anno_ws_overlay
 {
     cairo_t *cr = nullptr;
     cairo_surface_t *cairo_surface;
-    std::unique_ptr<wf::simple_texture_t> texture;
+    std::unique_ptr<simple_texture_t> texture;
 };
 
 namespace wf
@@ -92,9 +98,8 @@ class simple_node_render_instance_t : public render_instance_t
         self->connect(&on_node_damaged);
     }
 
-    void schedule_instructions(
-        std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage)
+    void schedule_instructions(std::vector<render_instruction_t>& instructions,
+        const wf::render_target_t& target, wf::region_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -104,31 +109,30 @@ class simple_node_render_instance_t : public render_instance_t
                     });
     }
 
-    void render(const wf::render_target_t& target,
-        const wf::region_t& region)
+    void render(const wf::scene::render_instruction_t& data) override
     {
         auto ol    = this->overlay;
         wlr_box og = {*x, *y, *w, *h};
-        OpenGL::render_begin(target);
-        for (auto& box : region)
+
+        data.pass->custom_gles_subpass([&]
         {
-            target.logic_scissor(wlr_box_from_pixman_box(box));
-            if (ol->cr)
+            wf::gles::bind_render_buffer(data.target);
+            for (auto& box : data.damage)
             {
-                OpenGL::render_texture(wf::texture_t{ol->texture->tex},
-                    target, og, glm::vec4(1.0),
-                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-            }
+                wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                if (ol->cr)
+                {
+                    OpenGL::render_texture(wf::gles_texture_t{ol->texture->tex}, data.target, og,
+                        glm::vec4(1.0), OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                }
 
-            if (shape_overlay->cr)
-            {
-                OpenGL::render_texture(wf::texture_t{shape_overlay->texture->tex},
-                    target, og, glm::vec4(1.0),
-                    OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                if (shape_overlay->cr)
+                {
+                    OpenGL::render_texture(wf::gles_texture_t{shape_overlay->texture->tex}, data.target, og,
+                        glm::vec4(1.0), OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                }
             }
-        }
-
-        OpenGL::render_end();
+        });
     }
 };
 
@@ -217,6 +221,12 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
   public:
     void init() override
     {
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("annotate plugin requires GLES2 renderer!");
+            return;
+        }
+
         auto wsize = output->wset()->get_workspace_grid_size();
         overlays.resize(wsize.width);
         for (int x = 0; x < wsize.width; x++)
@@ -370,6 +380,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
             return;
         }
 
+        wf::gles::run_in_context([&]
+        {
+            if (ol->texture && (ol->texture->tex != (GLuint) - 1))
+            {
+                glDeleteTextures(1, &ol->texture->tex);
+            }
+        });
+
         ol->texture.reset();
         cairo_surface_destroy(ol->cairo_surface);
         cairo_destroy(ol->cr);
@@ -424,7 +442,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         get_node_overlay()->set_size(og.width, og.height);
         ol->cr = cairo_create(ol->cairo_surface);
 
-        ol->texture = std::make_unique<wf::simple_texture_t>();
+        ol->texture = std::make_unique<simple_texture_t>();
     }
 
     void cairo_clear(cairo_t *cr)
@@ -435,48 +453,47 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
     }
 
     void cairo_surface_upload_to_texture_with_damage(
-        cairo_surface_t *surface, wf::simple_texture_t& buffer, wlr_box damage_box)
+        cairo_surface_t *surface, simple_texture_t& buffer, wlr_box damage_box)
     {
+        auto src = cairo_image_surface_get_data(surface);
         buffer.width  = cairo_image_surface_get_width(surface);
         buffer.height = cairo_image_surface_get_height(surface);
 
-        auto src = cairo_image_surface_get_data(surface);
-
-        OpenGL::render_begin();
-        if (buffer.tex == (GLuint) - 1)
+        wf::gles::run_in_context([&]
         {
-            GL_CALL(glGenTextures(1, &buffer.tex));
+            if (buffer.tex == (GLuint) - 1)
+            {
+                GL_CALL(glGenTextures(1, &buffer.tex));
+                GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
+                GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                    GL_LINEAR));
+                GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                    GL_LINEAR));
+                GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE));
+                GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
+                GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                    buffer.width, buffer.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, src));
+                return;
+            }
+
+            auto og = output->get_relative_geometry();
             GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
-            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                GL_LINEAR));
-            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                GL_LINEAR));
-            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE));
-            GL_CALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED));
-            GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                buffer.width, buffer.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, src));
-            OpenGL::render_end();
-            return;
-        }
+            GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, buffer.width));
+            GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS,
+                wf::clamp(damage_box.y, 0, og.height - damage_box.height)));
+            GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS,
+                wf::clamp(damage_box.x, 0, og.width - damage_box.width)));
 
-        auto og = output->get_relative_geometry();
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, buffer.tex));
-        GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, buffer.width));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS,
-            wf::clamp(damage_box.y, 0, og.height - damage_box.height)));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS,
-            wf::clamp(damage_box.x, 0, og.width - damage_box.width)));
+            GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0,
+                wf::clamp(damage_box.x, 0, og.width - damage_box.width),
+                wf::clamp(damage_box.y, 0, og.height - damage_box.height),
+                damage_box.width, damage_box.height,
+                GL_RGBA, GL_UNSIGNED_BYTE, src));
 
-        GL_CALL(glTexSubImage2D(GL_TEXTURE_2D, 0,
-            wf::clamp(damage_box.x, 0, og.width - damage_box.width),
-            wf::clamp(damage_box.y, 0, og.height - damage_box.height),
-            damage_box.width, damage_box.height,
-            GL_RGBA, GL_UNSIGNED_BYTE, src));
-
-        GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, 0));
-        GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0));
-        OpenGL::render_end();
+            GL_CALL(glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
+            GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, 0));
+            GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0));
+        });
     }
 
     void cairo_draw(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t from,

@@ -32,6 +32,7 @@
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/cairo-util.hpp>
 #include <wayfire/signal-definitions.hpp>
+#include <wayfire/util.hpp>
 
 extern "C"
 {
@@ -49,12 +50,11 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
     uint32_t last_time = wf::get_current_time();
     double widget_radius;
     wf::wl_timer<false> timer;
-    wf::simple_texture_t bench_tex;
+    wf::owned_texture_t bench_tex;
     wf::geometry_t cairo_geometry;
     cairo_surface_t *cairo_surface;
     cairo_text_extents_t text_extents;
     std::deque<int> last_frame_times;
-    int frames_since_last_update = 0;
     wf::option_wrapper_t<std::string> position{"bench/position"};
     wf::option_wrapper_t<int> average_frames{"bench/average_frames"};
 
@@ -282,10 +282,7 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
             text_y + yc);
         cairo_show_text(cr, fps_buf);
         cairo_stroke(cr);
-
-        OpenGL::render_begin();
-        cairo_surface_upload_to_texture(cairo_surface, bench_tex);
-        OpenGL::render_end();
+        bench_tex = wf::owned_texture_t{cairo_surface};
     }
 
     wf::effect_hook_t damage_hook = [=] ()
@@ -300,12 +297,9 @@ class wayfire_bench_screen : public wf::per_output_plugin_instance_t
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
-        auto fb = output->render->get_target_framebuffer();
-        OpenGL::render_begin(fb);
-        OpenGL::render_transformed_texture(wf::texture_t{bench_tex.tex},
-            cairo_geometry, fb.get_orthographic_projection(), glm::vec4(1.0),
-            OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
-        OpenGL::render_end();
+        auto pass = output->render->get_current_pass();
+        auto fb   = output->render->get_target_framebuffer();
+        pass->add_texture(bench_tex.get_texture(), fb, cairo_geometry, cairo_geometry);
     };
 
     void fini() override

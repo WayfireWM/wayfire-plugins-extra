@@ -126,9 +126,18 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
-        OpenGL::render_begin();
-        program.compile(vertex_shader, fragment_shader);
-        OpenGL::render_end();
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("showtouch plugin requires GLES2 renderer!");
+            return;
+        }
+
+        // FIXME: will crash if on vulkan renderer
+        wf::gles::run_in_context([&]
+        {
+            program.compile(vertex_shader, fragment_shader);
+        });
+
         fade0.set(0.0, 0.0);
         fade1.set(0.0, 0.0);
         fade2.set(0.0, 0.0);
@@ -295,8 +304,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
         output->render->damage_whole();
     };
 
-    wf::post_hook_t post_hook = [=] (const wf::framebuffer_t& source,
-                                     const wf::framebuffer_t& dest)
+    wf::post_hook_t post_hook = [=] (wf::auxilliary_buffer_t& source, const wf::render_buffer_t& dest)
     {
         static const float vertexData[] = {
             -1.0f, -1.0f,
@@ -311,105 +319,107 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
             0.0f, 1.0f
         };
 
-        auto og = output->get_layout_geometry();
+        auto og  = output->get_layout_geometry();
+        auto tex = wf::gles_texture_t::from_aux(source);
 
-        OpenGL::render_begin(dest);
-        program.use(wf::TEXTURE_TYPE_RGBA);
-        program.set_active_texture(wf::texture_t{source.tex});
-
-        for (int i = 0; i < 5; i++)
+        wf::gles::run_in_context([&]
         {
-            program.uniform2f("finger" + std::to_string(i), -100, -100);
-            switch (i)
+            program.use(wf::TEXTURE_TYPE_RGBA);
+            program.set_active_texture(tex);
+
+            for (int i = 0; i < 5; i++)
             {
-              case 0:
-                program.uniform1f("fade0", double(fade0));
-                break;
+                program.uniform2f("finger" + std::to_string(i), -100, -100);
+                switch (i)
+                {
+                  case 0:
+                    program.uniform1f("fade0", double(fade0));
+                    break;
 
-              case 1:
-                program.uniform1f("fade1", double(fade1));
-                break;
+                  case 1:
+                    program.uniform1f("fade1", double(fade1));
+                    break;
 
-              case 2:
-                program.uniform1f("fade2", double(fade2));
-                break;
+                  case 2:
+                    program.uniform1f("fade2", double(fade2));
+                    break;
 
-              case 3:
-                program.uniform1f("fade3", double(fade3));
-                break;
+                  case 3:
+                    program.uniform1f("fade3", double(fade3));
+                    break;
 
-              case 4:
-                program.uniform1f("fade4", double(fade4));
-                break;
+                  case 4:
+                    program.uniform1f("fade4", double(fade4));
+                    break;
 
-              default:
-                break;
-            }
-        }
-
-        program.uniform1f("fade_center", double(fade_center));
-
-        const auto& touch_state = wf::get_core().get_touch_state();
-        for (auto& finger : touch_state.fingers)
-        {
-            auto n = finger.first;
-            auto f = finger.second.current;
-            switch (n)
-            {
-              case 0:
-                points[0] = {f.x - og.x, f.y - og.y};
-                break;
-
-              case 1:
-                points[1] = {f.x - og.x, f.y - og.y};
-                break;
-
-              case 2:
-                points[2] = {f.x - og.x, f.y - og.y};
-                break;
-
-              case 3:
-                points[3] = {f.x - og.x, f.y - og.y};
-                break;
-
-              case 4:
-                points[4] = {f.x - og.x, f.y - og.y};
-                break;
-
-              default:
-                break;
+                  default:
+                    break;
+                }
             }
 
-            const auto c = touch_state.get_center().current;
-            points[5] = {c.x - og.x, c.y - og.y};
-        }
+            program.uniform1f("fade_center", double(fade_center));
 
-        for (int i = 0; i < 5; i++)
-        {
-            program.uniform2f("finger" + std::to_string(i), points[i].x, points[i].y);
-        }
+            const auto& touch_state = wf::get_core().get_touch_state();
+            for (auto& finger : touch_state.fingers)
+            {
+                auto n = finger.first;
+                auto f = finger.second.current;
+                switch (n)
+                {
+                  case 0:
+                    points[0] = {f.x - og.x, f.y - og.y};
+                    break;
 
-        program.uniform2f("center", points[5].x, points[5].y);
-        program.uniform4f("finger_color", glm::vec4(
-            wf::color_t(finger_color).r,
-            wf::color_t(finger_color).g,
-            wf::color_t(finger_color).b,
-            wf::color_t(finger_color).a));
-        program.uniform4f("center_color", glm::vec4(
-            wf::color_t(center_color).r,
-            wf::color_t(center_color).g,
-            wf::color_t(center_color).b,
-            wf::color_t(center_color).a));
-        program.uniform1f("radius", double(touch_radius));
-        program.attrib_pointer("position", 2, 0, vertexData);
-        program.attrib_pointer("texcoord", 2, 0, texCoords);
-        program.uniform2f("resolution", og.width, og.height);
+                  case 1:
+                    points[1] = {f.x - og.x, f.y - og.y};
+                    break;
 
-        GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-        GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+                  case 2:
+                    points[2] = {f.x - og.x, f.y - og.y};
+                    break;
 
-        program.deactivate();
-        OpenGL::render_end();
+                  case 3:
+                    points[3] = {f.x - og.x, f.y - og.y};
+                    break;
+
+                  case 4:
+                    points[4] = {f.x - og.x, f.y - og.y};
+                    break;
+
+                  default:
+                    break;
+                }
+
+                const auto c = touch_state.get_center().current;
+                points[5]    = {c.x - og.x, c.y - og.y};
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                program.uniform2f("finger" + std::to_string(i), points[i].x, points[i].y);
+            }
+
+            program.uniform2f("center", points[5].x, points[5].y);
+            program.uniform4f("finger_color", glm::vec4(
+                wf::color_t(finger_color).r,
+                wf::color_t(finger_color).g,
+                wf::color_t(finger_color).b,
+                wf::color_t(finger_color).a));
+            program.uniform4f("center_color", glm::vec4(
+                wf::color_t(center_color).r,
+                wf::color_t(center_color).g,
+                wf::color_t(center_color).b,
+                wf::color_t(center_color).a));
+            program.uniform1f("radius", double(touch_radius));
+            program.attrib_pointer("position", 2, 0, vertexData);
+            program.attrib_pointer("texcoord", 2, 0, texCoords);
+            program.uniform2f("resolution", og.width, og.height);
+
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+
+            program.deactivate();
+        });
     };
 
     void fini() override

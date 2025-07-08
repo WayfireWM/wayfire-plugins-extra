@@ -39,6 +39,12 @@ class wayfire_extra_animations : public wf::plugin_interface_t
   public:
     void init() override
     {
+        if (!wf::get_core().is_gles2())
+        {
+            LOGE("wayfire-extra-animations: not supported on non-gles2 wayfire");
+            return;
+        }
+
         effects_registry->register_effect("blinds", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::blinds::blinds_animation>(); },
             .default_duration = [=] { return wf::blinds::blinds_duration.value(); },
