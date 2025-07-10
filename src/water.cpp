@@ -362,10 +362,9 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             program[0].uniform1i("button_down", button_down ? 1 : 0);
             GL_CALL(glActiveTexture(GL_TEXTURE0));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[1].tex_id));
-
             GL_CALL(glDisable(GL_BLEND));
+
             GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            GL_CALL(glEnable(GL_BLEND));
 
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
             program[0].deactivate();
@@ -379,9 +378,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             GL_CALL(glActiveTexture(GL_TEXTURE0));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[0].tex_id));
 
-            GL_CALL(glDisable(GL_BLEND));
             GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            GL_CALL(glEnable(GL_BLEND));
 
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
             program[1].deactivate();
@@ -399,10 +396,9 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             GL_CALL(glActiveTexture(GL_TEXTURE0 + 1));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[1].tex_id));
 
-            GL_CALL(glDisable(GL_BLEND));
             GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            GL_CALL(glEnable(GL_BLEND));
 
+            GL_CALL(glEnable(GL_BLEND));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
             GL_CALL(glActiveTexture(GL_TEXTURE0));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
