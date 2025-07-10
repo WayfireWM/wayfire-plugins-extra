@@ -48,8 +48,8 @@ static const char *shatter_vert_source =
     R"(
 #version 100
 
-attribute mediump vec2 position;
-attribute mediump vec2 uv_in;
+attribute highp vec2 position;
+attribute highp vec2 uv_in;
 
 uniform mat4 matrix;
 
@@ -67,10 +67,10 @@ static const char *shatter_frag_source =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
 varying highp vec2 uv;
-uniform mediump float alpha;
+uniform highp float alpha;
 
 void main()
 {

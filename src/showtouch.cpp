@@ -40,10 +40,10 @@ static const char *vertex_shader =
     R"(
 #version 300 es
 
-in mediump vec2 position;
-in mediump vec2 texcoord;
+in highp vec2 position;
+in highp vec2 texcoord;
 
-out mediump vec2 uvpos;
+out highp vec2 uvpos;
 
 void main() {
 
@@ -58,10 +58,10 @@ static const char *fragment_shader =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
 out vec4 out_color;
-in mediump vec2 uvpos;
+in highp vec2 uvpos;
 uniform vec2 resolution;
 uniform vec2 finger0;
 uniform vec2 finger1;
