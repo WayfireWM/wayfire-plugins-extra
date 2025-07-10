@@ -431,6 +431,8 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
         wf::gles::run_in_context([&]
         {
+            buffer[0].free();
+            buffer[1].free();
             program[0].free_resources();
             program[1].free_resources();
             program[2].free_resources();
