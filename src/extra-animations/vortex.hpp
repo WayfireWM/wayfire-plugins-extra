@@ -43,8 +43,8 @@ static const char *vortex_vert_source =
     R"(
 #version 100
 
-attribute mediump vec2 position;
-attribute mediump vec2 uv_in;
+attribute highp vec2 position;
+attribute highp vec2 uv_in;
 
 uniform mat4 matrix;
 
@@ -62,10 +62,10 @@ static const char *vortex_frag_source =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
 varying highp vec2 uv;
-uniform mediump float progress;
+uniform highp float progress;
 
 const float PI = 3.1415926535897932384626433832795;
 

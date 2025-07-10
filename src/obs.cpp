@@ -41,10 +41,10 @@ static const char *vertex_shader =
     R"(
 #version 100
 
-attribute mediump vec2 position;
-attribute mediump vec2 texcoord;
+attribute highp vec2 position;
+attribute highp vec2 texcoord;
 
-varying mediump vec2 uvpos;
+varying highp vec2 uvpos;
 
 uniform mat4 mvp;
 
@@ -61,14 +61,14 @@ static const char *fragment_shader =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
 /* Input uniforms are 0-1 range. */
-uniform mediump float opacity;
-uniform mediump float brightness;
-uniform mediump float saturation;
+uniform highp float opacity;
+uniform highp float brightness;
+uniform highp float saturation;
 
-varying mediump vec2 uvpos;
+varying highp vec2 uvpos;
 
 vec3 saturate(vec3 rgb, float adjustment)
 {

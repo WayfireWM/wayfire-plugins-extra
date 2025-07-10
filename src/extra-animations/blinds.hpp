@@ -43,8 +43,8 @@ static const char *blinds_vert_source =
     R"(
 #version 100
 
-attribute mediump vec3 position;
-attribute mediump vec2 uv_in;
+attribute highp vec3 position;
+attribute highp vec2 uv_in;
 
 uniform mat4 matrix;
 
@@ -62,7 +62,7 @@ static const char *blinds_frag_source =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
 varying highp vec2 uv;
 

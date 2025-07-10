@@ -39,7 +39,7 @@ static const char *vertex_shader =
     R"(
 #version 100
 
-attribute mediump vec2 position;
+attribute highp vec2 position;
 attribute highp vec2 uvPosition;
 
 varying highp vec2 uvpos;
@@ -54,7 +54,7 @@ void main()
 static const char *fragment_shader_a =
     R"(
 #version 100
-precision mediump float;
+precision highp float;
 
 uniform int num_points;
 uniform vec2 points[64];
@@ -65,11 +65,10 @@ uniform sampler2D u_texture;
 void main()
 {
     int i;
-    for (i = 0; i < num_points; i++)
+    for (i = 0; button_down == 1 && i < num_points; i++)
     {
-        vec2 r = gl_FragCoord.xy - points[i];
-        float d = 0.005 * dot(r, r);
-        if (button_down == 1 && d < 0.05)
+        float d = length(gl_FragCoord.xy - points[i]);
+        if (d < 3.)
         {
             gl_FragColor = vec4(0.0, 1.0, 0.0, 0.0);
             return;
@@ -83,7 +82,7 @@ void main()
 static const char *fragment_shader_b =
     R"(
 #version 100
-precision mediump float;
+precision highp float;
 
 uniform vec2 resolution;
 varying highp vec2 uvpos;
@@ -125,7 +124,7 @@ void main()
 static const char *fragment_shader_c =
     R"(
 #version 100
-precision mediump float;
+precision highp float;
 
 #define DEBUG 0
 

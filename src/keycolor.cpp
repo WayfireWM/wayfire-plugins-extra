@@ -36,10 +36,10 @@ static const char *vertex_shader =
     R"(
 #version 100
 
-attribute mediump vec2 position;
-attribute mediump vec2 texcoord;
+attribute highp vec2 position;
+attribute highp vec2 texcoord;
 
-varying mediump vec2 uvpos;
+varying highp vec2 uvpos;
 
 uniform mat4 mvp;
 
@@ -56,12 +56,12 @@ static const char *fragment_shader =
 @builtin_ext@
 @builtin@
 
-precision mediump float;
+precision highp float;
 
-uniform mediump vec4 color;
+uniform highp vec4 color;
 uniform float threshold;
 
-varying mediump vec2 uvpos;
+varying highp vec2 uvpos;
 
 void main()
 {
