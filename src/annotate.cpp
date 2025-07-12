@@ -775,19 +775,13 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         ungrab();
         output->rem_binding(&draw_begin);
         output->rem_binding(&clear_workspace);
-        auto wsize = output->wset()->get_workspace_grid_size();
-        for (int x = 0; x < wsize.width; x++)
+        for (auto& row: overlays)
         {
-            for (int y = 0; y < wsize.height; y++)
+            for (auto& overlay : row)
             {
-                auto& ol = overlays[x][y]->overlay;
-                overlay_destroy(ol);
-                ol.reset();
-                auto& shape_overlay = overlays[x][y]->shape_overlay;
-                overlay_destroy(shape_overlay);
-                shape_overlay.reset();
-                wf::scene::remove_child(overlays[x][y]);
-                overlays[x][y].reset();
+                overlay_destroy(overlay->overlay);
+                overlay_destroy(overlay->shape_overlay);
+                wf::scene::remove_child(overlay);
             }
         }
 
