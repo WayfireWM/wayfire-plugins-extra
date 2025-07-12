@@ -45,12 +45,6 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
   public:
     void init() override
     {
-        if (!wf::get_core().is_gles2())
-        {
-            LOGE("showrepaint plugin requires GLES2 renderer!");
-            return;
-        }
-
         active = false;
         egl_swap_buffers_with_damage =
             egl_extension_supported("EGL_KHR_swap_buffers_with_damage") ||
@@ -64,25 +58,40 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
         output->render->damage_whole();
     };
 
-    wf::activator_callback toggle_cb = [=] (auto)
+    void set_active_status(bool status)
     {
-        active = !active;
+        if (this->active == status)
+        {
+            return;
+        }
 
-        if (active)
+        if (status)
         {
             output->render->add_effect(&overlay_hook, wf::OUTPUT_EFFECT_OVERLAY);
+            output->render->add_effect(&on_main_pass_done, wf::OUTPUT_EFFECT_PASS_DONE);
         } else
         {
             output->render->rem_effect(&overlay_hook);
+            output->render->rem_effect(&on_main_pass_done);
         }
 
-        output->render->damage_whole();
+        this->active = status;
+    }
 
+    wf::activator_callback toggle_cb = [=] (auto)
+    {
+        set_active_status(!active);
+        output->render->damage_whole();
         return true;
     };
 
     bool egl_extension_supported(std::string ext)
     {
+        if (!wf::get_core().is_gles2())
+        {
+            return false;
+        }
+
         std::string extensions;
         wf::gles::run_in_context([&]
         {
@@ -101,22 +110,20 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
 
     void get_random_color(wf::color_t& color)
     {
-        color.r = 0.15 + static_cast<float>(rand()) /
-            (static_cast<float>(RAND_MAX / 0.25));
-        color.g = 0.15 + static_cast<float>(rand()) /
-            (static_cast<float>(RAND_MAX / 0.25));
-        color.b = 0.15 + static_cast<float>(rand()) /
-            (static_cast<float>(RAND_MAX / 0.25));
+        color.r = 0.15 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 0.25));
+        color.g = 0.15 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 0.25));
+        color.b = 0.15 + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 0.25));
         color.a = 0.25;
     }
 
     wf::effect_hook_t overlay_hook = [=] ()
     {
         auto target_fb = output->render->get_target_framebuffer();
-        wf::region_t swap_damage = output->render->get_swap_damage();
+        wf::region_t swap_damage = target_fb.geometry_region_from_framebuffer_region(
+            output->render->get_swap_damage());
+
         wf::region_t scheduled_damage = output->render->get_scheduled_damage();
-        wlr_box fbg = {0, 0, target_fb.get_size().width, target_fb.get_size().height};
-        wf::region_t output_region{fbg};
+        wf::region_t output_region{target_fb.geometry};
         wf::region_t inverted_damage;
         wf::region_t damage;
 
@@ -130,99 +137,66 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
         wf::color_t color;
         get_random_color(color);
         damage = scheduled_damage.empty() ? swap_damage : scheduled_damage;
+        inverted_damage = output_region ^ damage;
 
-        last_buffer.allocate({fbg.width, fbg.height});
-        GLuint last_buffer_fb_id = wf::gles::ensure_render_buffer_fb_id(last_buffer.get_renderbuffer());
-        GLuint target_fb_fb_id   = wf::gles::ensure_render_buffer_fb_id(target_fb);
-
-        output->render->get_current_pass()->custom_gles_subpass([&]
+        auto rpass = output->render->get_current_pass();
+        rpass->add_rect(color, target_fb, target_fb.geometry, damage);
+        if (reduce_flicker)
         {
-            wf::gles::bind_render_buffer(target_fb);
-            for (const auto& b : damage)
-            {
-                OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
-                    wf::gles::render_target_orthographic_projection(target_fb));
-            }
+            /* Show swap damage. It might be possible that we blit right over this but in the case of cube
+             * and expo, it shows client and swap damage in contrast. This makes sense since the idea is to
+             * show damage as colored regions. We don't do this if the reduce_flicker option isn't set because
+             * we don't repaint the inverted damage from the last buffer in this case, so we would keep
+             * painting it with different colors until it is white. */
+            get_random_color(color);
+            rpass->add_rect(color, target_fb, target_fb.geometry, inverted_damage);
+        }
 
-            if (reduce_flicker)
-            {
-                /* Show swap damage. It might be possible that we blit right over this
-                 * but in the case of cube and expo, it shows client and swap damage in
-                 * contrast. This makes sense since the idea is to show damage as colored
-                 * regions. We don't do this if the reduce_flicker option isn't set
-                 * because
-                 * we don't repaint the inverted damage from the last buffer in this
-                 * case,
-                 * so we would keep painting it with different colors until it is white.
-                 * */
-                get_random_color(color);
-                inverted_damage = output_region ^ damage;
-                for (const auto& b : inverted_damage)
-                {
-                    OpenGL::render_rectangle(wlr_box_from_pixman_box(b), color,
-                        wf::gles::render_target_orthographic_projection(target_fb));
-                }
-            }
+        /* If swap_buffers_with_damage is supported, we do not need the following to be executed. */
+        if (egl_swap_buffers_with_damage || !reduce_flicker)
+        {
+            return;
+        }
 
-            /* If swap_buffers_with_damage is supported, we do not need the
-             * following to be executed. */
-            if (egl_swap_buffers_with_damage)
-            {
-                return;
-            }
+        /* Repaint the inverted damage region with the last buffer contents.
+         * We only want to see what actually changed on screen. If we don't do this, things like mouse and
+         * keyboard input cause buffer swaps which only make the screen flicker between buffers, without
+         * showing any actual damage changes. If swap_buffers_with_damage is supported, we do not need to do
+         * this since the damage region that is passed to swap is only repainted. If it isn't supported, the
+         * entire buffer is repainted.
+         */
+        if (last_buffer.get_size().width > 0)
+        {
+            wf::texture_t texture;
+            texture.texture   = last_buffer.get_texture();
+            texture.transform = target_fb.wl_transform;
+            rpass->add_texture(texture, target_fb, target_fb.geometry, inverted_damage);
+        }
+    };
 
-            /* User option. */
-            if (!reduce_flicker)
-            {
-                return;
-            }
+    wf::effect_hook_t on_main_pass_done = [=] ()
+    {
+        if (!reduce_flicker || egl_swap_buffers_with_damage)
+        {
+            return;
+        }
 
-            /* Repaint the inverted damage region with the last buffer contents.
-             * We only want to see what actually changed on screen. If we don't
-             * do this, things like mouse and keyboard input cause buffer swaps
-             * which only make the screen flicker between buffers, without showing
-             * any actual damage changes. If swap_buffers_with_damage is supported,
-             * we do not need to do this since the damage region that is passed to
-             * swap is only repainted. If it isn't supported, the entire buffer is
-             * repainted.
-             */
-            GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, last_buffer_fb_id));
-            GL_CALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, target_fb_fb_id));
-            damage = swap_damage.empty() ? scheduled_damage : swap_damage;
-            output_region   *= target_fb.scale;
-            inverted_damage  = output_region ^ damage;
-            inverted_damage *= 1.0 / target_fb.scale;
-            for (const auto& rect : inverted_damage)
-            {
-                pixman_box32_t b = pixman_box_from_wlr_box(
-                    target_fb.framebuffer_box_from_geometry_box(
-                        wlr_box_from_pixman_box(rect)));
-                GL_CALL(glBlitFramebuffer(
-                    b.x1, b.y1,
-                    b.x2, b.y2,
-                    b.x1, b.y1,
-                    b.x2, b.y2,
-                    GL_COLOR_BUFFER_BIT, GL_LINEAR));
-            }
-
-            /* Save the current buffer to last buffer so we can render the
-             * inverted damage from the last buffer to the current buffer
-             * on next frame. We have to save the entire buffer because we
-             * don't know what the next frame damage will be.
-             */
-            GL_CALL(glBindFramebuffer(GL_READ_FRAMEBUFFER, target_fb_fb_id));
-            GL_CALL(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, last_buffer_fb_id));
-            GL_CALL(glBlitFramebuffer(
-                0, 0, fbg.width, fbg.height,
-                0, 0, fbg.width, fbg.height,
-                GL_COLOR_BUFFER_BIT, GL_LINEAR));
-        });
+        /*
+         * Save the current buffer to last buffer so we can render the
+         * inverted damage from the last buffer to the current buffer
+         * on next frame. We have to save the entire buffer because we
+         * don't know what the next frame damage will be.
+         */
+        auto target_fb = output->render->get_target_framebuffer();
+        last_buffer.allocate(target_fb.get_size());
+        wlr_box full = wf::construct_box({0, 0}, target_fb.get_size());
+        last_buffer.get_renderbuffer().blit(target_fb, wf::geometry_to_fbox(full), full);
     };
 
     void fini() override
     {
         output->rem_binding(&toggle_cb);
-        output->render->rem_effect(&overlay_hook);
+        set_active_status(false);
     }
 };
 
