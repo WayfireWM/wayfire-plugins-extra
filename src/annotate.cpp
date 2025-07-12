@@ -775,7 +775,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         ungrab();
         output->rem_binding(&draw_begin);
         output->rem_binding(&clear_workspace);
-        for (auto& row: overlays)
+        for (auto& row : overlays)
         {
             for (auto& overlay : row)
             {
