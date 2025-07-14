@@ -108,7 +108,16 @@ class simple_node_render_instance_t : public render_instance_t
             workspace->rect.width, workspace->rect.height};
         if (workspace->texture)
         {
-            data.pass->add_texture(workspace->texture->get_texture(), data.target, g, data.damage);
+            data.pass->custom_gles_subpass(data.target, [&]
+            {
+                wf::gles::bind_render_buffer(data.target);
+                for (auto& box : data.damage)
+                {
+                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    OpenGL::render_texture(wf::gles_texture_t{workspace->texture->get_texture()},
+                        data.target, g, glm::vec4(1, 1, 1, *alpha_fade), 0);
+                }
+            });
         }
     }
 };
