@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2024 Scott Moreau <oreaus@gmail.com>
+ * Copyright (c) 2025 Scott Moreau <oreaus@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@
 #include "helix.hpp"
 #include "shatter.hpp"
 #include "vortex.hpp"
+#include "melt.hpp"
 
 class wayfire_extra_animations : public wf::plugin_interface_t
 {
@@ -61,6 +62,10 @@ class wayfire_extra_animations : public wf::plugin_interface_t
             .generator = [] { return std::make_unique<wf::vortex::vortex_animation>(); },
             .default_duration = [=] { return wf::vortex::vortex_duration.value(); },
         });
+        effects_registry->register_effect("melt", wf::animate::effect_description_t{
+            .generator = [] { return std::make_unique<wf::melt::melt_animation>(); },
+            .default_duration = [=] { return wf::melt::melt_duration.value(); },
+        });
     }
 
     void fini() override
@@ -69,6 +74,7 @@ class wayfire_extra_animations : public wf::plugin_interface_t
         effects_registry->unregister_effect("helix");
         effects_registry->unregister_effect("shatter");
         effects_registry->unregister_effect("vortex");
+        effects_registry->unregister_effect("melt");
     }
 };
 

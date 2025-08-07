@@ -54,5 +54,19 @@
 				<default>1000ms linear</default>
 			</option>
 		</group>
+		<group>
+			<_short>Melt Settings</_short>
+			<option name="melt_duration" type="animation">
+				<_short>Melt duration</_short>
+				<_long>Sets the duration for the melt animation in milliseconds.</_long>
+				<default>1000ms linear</default>
+			</option>
+			<option name="melt_distortion_factor" type="int">
+				<_short>Melt distortion factor</_short>
+				<_long>Distortion factor for melt animation.</_long>
+				<default>20</default>
+				<min>1</min>
+			</option>
+		</group>
 	</plugin>
 </wayfire>
