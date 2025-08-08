@@ -146,19 +146,19 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
             instructions.push_back(render_instruction_t{
                         .instance = this,
                         .target   = target,
-                        .damage   = damage,
+                        .damage   = damage & self->get_padded_bounding_box(),
                     });
         }
 
         void transform_damage_region(wf::region_t& damage) override
         {
-            damage |= self->output->get_relative_geometry();
+            damage |= self->get_padded_bounding_box();
         }
 
         void render(const wf::scene::render_instruction_t& data) override
         {
             auto bb  = self->get_bounding_box();
-            auto og  = self->output->get_relative_geometry();
+            auto pbb = self->get_padded_bounding_box();
             auto tex = wf::gles_texture_t{get_texture(1.0)};
 
             const float vertices[] = {
@@ -167,9 +167,10 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                 1.0f, 1.0f,
                 -1.0, 1.0f
             };
-            wf::pointf_t offset1{-float(bb.x) / bb.width, -float(og.height - (bb.y + bb.height)) / bb.height};
-            wf::pointf_t offset2{float(og.width) / bb.width + offset1.x,
-                float(og.height) / bb.height + offset1.y};
+            wf::pointf_t offset1{-float(bb.x - pbb.x) / bb.width,
+                -float(pbb.height - ((bb.y - pbb.y) + bb.height)) / bb.height};
+            wf::pointf_t offset2{float(pbb.width) / bb.width + offset1.x,
+                float(pbb.height) / bb.height + offset1.y};
             const float uv[] = {
                 float(offset1.x), float(offset2.y),
                 float(offset2.x), float(offset2.y),
@@ -180,7 +181,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
 
             data.pass->custom_gles_subpass([&]
             {
-                self->buffer.allocate({og.width, og.height});
+                self->buffer.allocate({pbb.width, pbb.height});
                 wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
                 wf::gles_texture_t final_tex{self->buffer.get_texture()};
                 OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
@@ -196,9 +197,9 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                 for (auto box : data.damage)
                 {
                     wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
-                    OpenGL::render_transformed_texture(final_tex, og,
+                    OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
-                        glm::vec4(1.0, 1.0, 1.0, std::clamp(progress * 3.0, 0.0, 1.0)), 0);
+                        glm::vec4(1.0, 1.0, 1.0, std::clamp(progress * 2.0, 0.0, 1.0)), 0);
                 }
 
                 GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -223,9 +224,20 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
         });
     }
 
+    wf::geometry_t get_padded_bounding_box()
+    {
+        auto box     = this->get_children_bounding_box();
+        auto padding = 100;
+        box.x     -= padding;
+        box.y     -= padding;
+        box.width += padding * 2;
+        box.height += padding * 2;
+        return box;
+    }
+
     wf::effect_hook_t pre_hook = [=] ()
     {
-        output->render->damage_whole();
+        output->render->damage(this->get_padded_bounding_box());
     };
 
     void gen_render_instances(std::vector<render_instance_uptr>& instances,
