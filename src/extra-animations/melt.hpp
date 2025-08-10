@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#include <wayfire/opengl.hpp>
 #include <wayfire/core.hpp>
+#include <wayfire/opengl.hpp>
 #include <wayfire/view-transform.hpp>
 
 
@@ -199,7 +199,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                     wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
                     OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
-                        glm::vec4(1.0, 1.0, 1.0, std::clamp(progress * 2.0, 0.0, 1.0)), 0);
+                        glm::vec4(1.0, 1.0, 1.0, 1.0 / (1.0 + pow(2.718, -(progress * 15.0 - 3.0)))), 0);
                 }
 
                 GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
