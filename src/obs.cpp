@@ -46,11 +46,9 @@ attribute highp vec2 texcoord;
 
 varying highp vec2 uvpos;
 
-uniform mat4 mvp;
-
 void main() {
 
-   gl_Position = mvp * vec4(position.xy, 0.0, 1.0);
+   gl_Position = vec4(position.xy, 0.0, 1.0);
    uvpos = texcoord;
 }
 )";
@@ -106,6 +104,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
     std::unique_ptr<wf::animation::simple_animation_t> opacity;
     std::unique_ptr<wf::animation::simple_animation_t> brightness;
     std::unique_ptr<wf::animation::simple_animation_t> saturation;
+    bool hook_set = false;
 
   public:
     class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<wf_obs>
@@ -119,6 +118,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
         wf_obs *self;
         wayfire_view view;
         damage_callback push_to_parent;
+        wf::auxilliary_buffer_t buffer;
 
       public:
         simple_node_render_instance_t(wf_obs *self, damage_callback push_damage,
@@ -144,26 +144,19 @@ class wf_obs : public wf::scene::view_2d_transformer_t
             instructions.push_back(render_instruction_t{
                             .instance = this,
                             .target   = target,
-                            .damage   = damage & self->get_bounding_box(),
+                            .damage   = damage,
                         });
         }
 
         void render(const wf::scene::render_instruction_t& data) override
         {
-            wlr_box fb_geom = data.target.framebuffer_box_from_geometry_box(data.target.geometry);
-            auto view_box   = data.target.framebuffer_box_from_geometry_box(
-                self->get_children_bounding_box());
-            view_box.x -= fb_geom.x;
-            view_box.y -= fb_geom.y;
-
-            float x = view_box.x, y = view_box.y, w = view_box.width,
-                h = view_box.height;
+            auto view_box = self->get_bounding_box();
 
             static const float vertexData[] = {
-                -1.0f, -1.0f,
-                1.0f, -1.0f,
+                -1.0f, 1.0f,
                 1.0f, 1.0f,
-                -1.0f, 1.0f
+                1.0f, -1.0f,
+                -1.0f, -1.0f
             };
             static const float texCoords[] = {
                 0.0f, 0.0f,
@@ -176,6 +169,10 @@ class wf_obs : public wf::scene::view_2d_transformer_t
             auto gl_tex  = wf::gles_texture_t{src_tex};
             data.pass->custom_gles_subpass(data.target, [&]
             {
+                buffer.allocate({int(view_box.width), int(view_box.height)});
+                wf::gles::bind_render_buffer(buffer.get_renderbuffer());
+                wf::gles_texture_t final_tex{buffer.get_texture()};
+                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0});
                 /* Upload data to shader */
                 this->self->program->use(gl_tex.type);
                 this->self->program->uniform1f("opacity", this->self->get_opacity());
@@ -183,30 +180,26 @@ class wf_obs : public wf::scene::view_2d_transformer_t
                 this->self->program->uniform1f("saturation", this->self->get_saturation());
                 this->self->program->attrib_pointer("position", 2, 0, vertexData);
                 this->self->program->attrib_pointer("texcoord", 2, 0, texCoords);
-                this->self->program->uniformMatrix4f("mvp", wf::gles::output_transform(data.target));
                 GL_CALL(glActiveTexture(GL_TEXTURE0));
                 this->self->program->set_active_texture(gl_tex);
+                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+                this->self->program->deactivate();
 
                 /* Render it to target */
                 wf::gles::bind_render_buffer(data.target);
-                GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
-
-                GL_CALL(glEnable(GL_BLEND));
-                GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
 
                 for (const auto& box : data.damage)
                 {
                     wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
-                    GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+                    OpenGL::render_transformed_texture(final_tex, view_box,
+                        wf::gles::render_target_orthographic_projection(data.target),
+                        glm::vec4(1.0), 0);
                 }
 
                 /* Disable stuff */
-                GL_CALL(glDisable(GL_BLEND));
-                GL_CALL(glActiveTexture(GL_TEXTURE0));
                 GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
                 GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-
-                this->self->program->deactivate();
+                buffer.free();
             });
         }
     };
@@ -247,9 +240,15 @@ class wf_obs : public wf::scene::view_2d_transformer_t
 
     void set_hook()
     {
+        if (this->hook_set)
+        {
+            return;
+        }
+
         if (auto output = view->get_output())
         {
             output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
+            this->hook_set = true;
         }
     }
 
