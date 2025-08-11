@@ -285,13 +285,33 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         } else
         {
             bool option_found = false;
-            for (const auto& [wsid, wsname] : workspace_names.value())
+            for (auto option : section->get_registered_options())
             {
-                if (wsid == key)
+                int ws;
+                if (sscanf(option->get_name().c_str(), (output->to_string() + "_workspace_%d").c_str(),
+                    &ws) != 1)
                 {
-                    wsn->name    = wsname;
+                    continue;
+                }
+
+                if (ws == ws_num)
+                {
+                    wsn->name    = option->get_value_str();
                     option_found = true;
                     break;
+                }
+            }
+
+            if (!option_found)
+            {
+                for (const auto& [wsid, wsname] : workspace_names.value())
+                {
+                    if (wsid == key)
+                    {
+                        wsn->name    = wsname;
+                        option_found = true;
+                        break;
+                    }
                 }
             }
 
