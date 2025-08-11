@@ -18,7 +18,6 @@ giomm = dependency('giomm-2.4', required: false)
 wayland_protos = dependency('wayland-protocols', version: '>=1.12')
 wayland_server = dependency('wayland-server')
 evdev = dependency('libevdev')
-json = dependency('yyjson', required: false)
 
 if get_option('enable_wayfire_shadows') == true
     wayfire_shadows = subproject('wayfire-shadows')

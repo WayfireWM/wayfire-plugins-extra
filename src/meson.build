@@ -58,14 +58,13 @@ magnifier = shared_module('mag', 'mag.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
-if json.found()
 obs = shared_module('obs', 'obs.cpp',
-    dependencies: [wayfire, json],
+    dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 pin_view = shared_module('pin-view', 'pin-view.cpp',
-    dependencies: [wayfire, json],
+    dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
-endif
 
 showrepaint = shared_module('showrepaint', 'showrepaint.cpp',
     dependencies: [wayfire],
