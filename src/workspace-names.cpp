@@ -117,6 +117,8 @@ class simple_node_render_instance_t : public render_instance_t
                     OpenGL::render_texture(wf::gles_texture_t{workspace->texture->get_texture()},
                         data.target, g, glm::vec4(1, 1, 1, *alpha_fade), 0);
                 }
+
+                wf::scene::damage_node(self, g);
             });
         }
     }
