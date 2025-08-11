@@ -198,6 +198,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     wf::option_wrapper_t<wf::color_t> background_color{
         "workspace-names/background_color"};
     wf::option_wrapper_t<bool> show_option_names{"workspace-names/show_option_names"};
+    wf::option_wrapper_t<bool> show_option_values{"workspace-names/show_option_values"};
     wf::animation::simple_animation_t alpha_fade{display_duration};
     wf::option_wrapper_t<wf::config::compound_list_t<std::string>> workspace_names{"workspace-names/names"};
 
@@ -279,7 +280,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         // Get the option name (key) of the target workspace
         std::string key = output->to_string() + "_workspace_" + std::to_string(ws_num);
 
-        if (show_option_names)
+        if (show_option_names && !show_option_values)
         {
             wsn->name = key;
         } else

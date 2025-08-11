@@ -77,6 +77,11 @@
 			<_long>Display option names on screen for convenience.</_long>
 			<default>false</default>
 		</option>
+		<option name="show_option_values" type="bool">
+			<_short>Show Option Values</_short>
+			<_long>Display option values instead of names, when show_option_names is enabled.</_long>
+			<default>false</default>
+		</option>
 		<option name="background_radius" type="double">
 			<_short>Background Corner Radius</_short>
 			<_long>Radius for the corners of the background.</_long>
