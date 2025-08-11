@@ -117,6 +117,8 @@ class simple_node_render_instance_t : public render_instance_t
                     OpenGL::render_texture(wf::gles_texture_t{workspace->texture->get_texture()},
                         data.target, g, glm::vec4(1, 1, 1, *alpha_fade), 0);
                 }
+
+                wf::scene::damage_node(self, g);
             });
         }
     }
@@ -198,6 +200,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     wf::option_wrapper_t<wf::color_t> background_color{
         "workspace-names/background_color"};
     wf::option_wrapper_t<bool> show_option_names{"workspace-names/show_option_names"};
+    wf::option_wrapper_t<bool> show_option_values{"workspace-names/show_option_values"};
     wf::animation::simple_animation_t alpha_fade{display_duration};
     wf::option_wrapper_t<wf::config::compound_list_t<std::string>> workspace_names{"workspace-names/names"};
 
@@ -279,7 +282,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         // Get the option name (key) of the target workspace
         std::string key = output->to_string() + "_workspace_" + std::to_string(ws_num);
 
-        if (show_option_names)
+        if (show_option_names && !show_option_values)
         {
             wsn->name = key;
         } else
