@@ -62,6 +62,8 @@ while True:
         msg = socket.read_next_event()
     except KeyboardInterrupt:
         for v in socket.list_views():
+            if v["role"] == "desktop-environment":
+                continue
             wpe.set_view_opacity(v["id"], 1.0, 500)
             wpe.set_view_brightness(v["id"], 1.0, 500)
             wpe.set_view_saturation(v["id"], 1.0, 500)
