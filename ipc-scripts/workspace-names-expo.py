@@ -26,18 +26,31 @@
 
 from wayfire import WayfireSocket
 import json
-import sys
 
-# Simple script to set workspace names
-
-if len(sys.argv) != 2:
-    print("Invalid usage, exactly one argument required: a workspace name for the current output and workspace.")
-    exit(-1)
+# Simple script to show workspace names when expo is active
 
 sock = WayfireSocket()
 
-output = sock.get_focused_output()
-output_name = output["name"]
-current_workspace = str(int(output["workspace"]["x"]) + int(output["workspace"]["y"]) * int(output["workspace"]["grid_width"]) + 1)
-json_string = "{\"workspace-names/" + output_name + "_workspace_" + current_workspace + "\": \"" + sys.argv[1] + "\"}"
-sock.set_option_values(json.loads(json_string))
+sock.watch(["plugin-activation-state-changed"])
+
+def show_option_values(enabled):
+    json_string = "{\"workspace-names/show_option_values\": \"true\"}"
+    sock.set_option_values(json.loads(json_string))
+    if enabled:
+        json_string = "{\"workspace-names/show_option_names\": \"true\"}"
+    else:
+        json_string = "{\"workspace-names/show_option_names\": \"false\"}"
+    sock.set_option_values(json.loads(json_string))
+
+while True:
+    try:
+        msg = sock.read_next_event()
+        if "event" in msg:
+            plugin_changed_info = msg
+            if plugin_changed_info["plugin"] == "expo":
+                if plugin_changed_info["state"] == True:
+                    show_option_values(True)
+                elif plugin_changed_info["state"] == False:
+                    show_option_values(False)
+    except KeyboardInterrupt:
+        exit(0)
