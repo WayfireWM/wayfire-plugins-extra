@@ -157,7 +157,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
 
         void render(const wf::scene::render_instruction_t& data) override
         {
-            auto bb  = self->get_bounding_box();
+            auto bb  = self->get_children_bounding_box();
             auto pbb = self->get_padded_bounding_box();
             auto tex = wf::gles_texture_t{get_texture(1.0)};
 
@@ -227,12 +227,17 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
     wf::geometry_t get_padded_bounding_box()
     {
         auto box     = this->get_children_bounding_box();
-        auto padding = 100;
+        auto padding = 50;
         box.x     -= padding;
         box.y     -= padding;
         box.width += padding * 2;
         box.height += padding * 2;
         return box;
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        return get_padded_bounding_box();
     }
 
     wf::effect_hook_t pre_hook = [=] ()
