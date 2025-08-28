@@ -2,7 +2,7 @@ project(
 	'wayfire-plugins-extra',
 	'c',
 	'cpp',
-	version: '0.10.0',
+	version: '0.11.0',
 	license: 'MIT',
 	meson_version: '>=0.51.0',
 	default_options: [
@@ -13,7 +13,7 @@ project(
 	],
 )
 
-wayfire = dependency('wayfire', version: '>=0.9.0')
+wayfire = dependency('wayfire', version: '>=0.11.0')
 giomm = dependency('giomm-2.4', required: false)
 wayland_protos = dependency('wayland-protocols', version: '>=1.12')
 wayland_server = dependency('wayland-server')
