@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+#include <cstdlib>
 #include <wayfire/core.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/view-transform.hpp>
@@ -53,10 +54,11 @@ precision highp float;
 
 varying highp vec2 uvpos;
 uniform float time;
+uniform float random;
 uniform float distortion;
 
 float rand(vec2 n) {
-    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453 * random);
 }
 
 // Noise function from: https://gist.github.com/patriciogonzalezvivo/670c22f3966e662d2f83
@@ -107,6 +109,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
 {
   public:
     wayfire_view view;
+    float random_number;
     wf::output_t *output;
     OpenGL::program_t program;
     wf::auxilliary_buffer_t buffer;
@@ -189,6 +192,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                 self->program.attrib_pointer("position", 2, 0, vertices);
                 self->program.attrib_pointer("uv_in", 2, 0, uv);
                 self->program.uniform1f("time", progress);
+                self->program.uniform1f("random", self->random_number);
                 self->program.uniform1f("distortion", float(melt_distortion_factor));
                 self->program.set_active_texture(tex);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
@@ -222,6 +226,9 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
         {
             program.compile(melt_vert_source, melt_frag_source);
         });
+
+        srand(wf::get_current_time());
+        this->random_number = (rand() % 1000000) / 1000000.0;
     }
 
     wf::geometry_t get_padded_bounding_box()
