@@ -49,17 +49,17 @@ static std::string dodge_transformer_name = "dodge";
 struct dodge_view_data
 {
     wayfire_view view;
-    wf::geometry_t bb;
+    wf::geometry_t from_bb, to_bb;
     std::shared_ptr<wf::scene::view_2d_transformer_t> transformer;
     wf::pointf_t direction;
 };
 
 bool boxes_intersect(const wlr_box & a, const wlr_box & b)
 {
-    return !(a.x >= b.x + b.width ||
-        b.x >= a.x + a.width ||
-        a.y >= b.y + b.height ||
-        b.y >= a.y + a.height);
+    return !(b.x > a.x + a.width ||
+        a.x > b.x + b.width ||
+        b.y > a.y + a.height ||
+        a.y > b.y + b.height);
 }
 
 class wayfire_dodge
@@ -103,8 +103,12 @@ class wayfire_dodge
             return;
         }
 
-        auto toplevel = wf::toplevel_cast(view_to);
-        auto to_bb    = toplevel->get_geometry();
+        auto to_bb = view_to->get_transformed_node()->get_bounding_box();
+
+        if (!wf::toplevel_cast(view_to))
+        {
+            return;
+        }
 
         /* Find overlapping views */
         std::vector<wayfire_view> overlapping_views;
@@ -115,16 +119,16 @@ class wayfire_dodge
                 continue;
             }
 
-            toplevel = wf::toplevel_cast(view);
+            auto toplevel = wf::toplevel_cast(view);
             if (!toplevel)
             {
                 continue;
             }
 
-            auto from_bb = toplevel->get_geometry();
+            auto from_bb = view->get_transformed_node()->get_bounding_box();
 
             if ((wf::get_focus_timestamp(view_to) < wf::get_focus_timestamp(view)) &&
-                boxes_intersect(to_bb, from_bb))
+                boxes_intersect(from_bb, to_bb))
             {
                 overlapping_views.push_back(view);
             }
@@ -135,8 +139,6 @@ class wayfire_dodge
             return;
         }
 
-        view_bring_to_front(last_focused_view);
-
         if (!hook_set)
         {
             view_to_output = view_to->get_output();
@@ -144,42 +146,53 @@ class wayfire_dodge
             hook_set = true;
         }
 
-        for (size_t i = 0; i < overlapping_views.size(); ++i)
+        view_to_focused = false;
+        bool view_found = false;
+        dodge_view_data vd;
+        for (auto& view_data : views_from)
+        {
+            if (view_data.view == view_to)
+            {
+                vd = view_data;
+                view_found = true;
+            }
+        }
+
+        if (view_found)
+        {
+            views_from.push_back(vd);
+            return;
+        } else if (!this->progression.running())
+        {
+            views_from.clear();
+            this->progression.animate(0, 1);
+            view_bring_to_front(last_focused_view);
+        }
+
+        for (size_t i = 0; i < overlapping_views.size(); i++)
         {
             dodge_view_data view_data;
             view_data.view = overlapping_views[i];
-            if (auto tr = view_data.view->get_transformed_node()->get_transformer(dodge_transformer_name))
+
+            view_data.from_bb = view_data.view->get_bounding_box();
+            view_data.to_bb   = view_to->get_bounding_box();
+
+            if (view_data.view->get_transformed_node()->get_transformer(dodge_transformer_name))
             {
-                for (auto& vd : views_from)
-                {
-                    if (vd.transformer == tr)
-                    {
-                        auto direction = compute_direction(vd.view, view_to, vd.bb);
-
-                        vd.direction.x = direction.x;
-                        vd.direction.y = direction.y;
-                        break;
-                    }
-                }
-
-                continue;
+                view_data.view->get_transformed_node()->rem_transformer(dodge_transformer_name);
             }
-
-            view_data.bb = view_data.view->get_bounding_box();
-            auto direction = compute_direction(overlapping_views[i], view_to, view_data.bb);
-
-            view_data.direction.x = direction.x;
-            view_data.direction.y = direction.y;
 
             view_data.transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_data.view);
             view_data.view->get_transformed_node()->add_transformer(view_data.transformer, wf::TRANSFORMER_2D,
                 dodge_transformer_name);
 
+            auto direction = compute_direction(view_data.from_bb, to_bb);
+
+            view_data.direction.x = direction.x;
+            view_data.direction.y = direction.y;
+
             views_from.push_back(view_data);
         }
-
-        view_to_focused = false;
-        this->progression.animate(0, 1);
     };
 
     wf::signal::connection_t<wf::view_mapped_signal> view_mapped =
@@ -209,9 +222,8 @@ class wayfire_dodge
         return std::sqrt(x * x + y * y);
     }
 
-    wf::pointf_t compute_direction(wayfire_view from, wayfire_view to, wf::geometry_t from_bb)
+    wf::pointf_t compute_direction(wf::geometry_t from_bb, wf::geometry_t to_bb)
     {
-        auto to_bb = to->get_bounding_box();
         auto from_center = wf::point_t{from_bb.x + from_bb.width / 2, from_bb.y + from_bb.height / 2};
         auto to_center   = wf::point_t{to_bb.x + to_bb.width / 2, to_bb.y + to_bb.height / 2};
         auto x = double(from_center.x - to_center.x);
@@ -229,6 +241,7 @@ class wayfire_dodge
             x = x * std::abs(1.0 / x);
             y = y * std::abs(1.0 / y);
         }
+
         return wf::pointf_t{x, y};
     }
 
@@ -252,6 +265,11 @@ class wayfire_dodge
             view_data.view->get_transformed_node()->rem_transformer(dodge_transformer_name);
         }
 
+        if (view_to)
+        {
+            view_to->get_transformed_node()->rem_transformer(dodge_transformer_name);
+        }
+
         if (hook_set)
         {
             view_to_output->render->rem_effect(&dodge_animation_hook);
@@ -264,12 +282,10 @@ class wayfire_dodge
 
     bool step_animation()
     {
-        if (!view_to || !last_focused_view)
+        if (!view_to)
         {
             return false;
         }
-
-        auto to_bb = view_to->get_bounding_box();
 
         double progress = progression.progress();
         progress = (1.0 - progress) * (1.0 - progress);
@@ -277,7 +293,8 @@ class wayfire_dodge
 
         for (auto& view_data : views_from)
         {
-            auto from_bb = view_data.bb;
+            auto to_bb   = view_data.to_bb;
+            auto from_bb = view_data.from_bb;
             double move_dist_x = std::min(from_bb.x + from_bb.width - to_bb.x,
                 to_bb.x + to_bb.width - from_bb.x);
             double move_dist_y = std::min(from_bb.y + from_bb.height - to_bb.y,
