@@ -91,6 +91,10 @@
 					<value>diagonal</value>
 					<_name>Diagonal</_name>
 				</desc>
+				<desc>
+					<value>circular</value>
+					<_name>Circular</_name>
+				</desc>
 				<default>cardinal</default>
 			</option>
 		</group>
