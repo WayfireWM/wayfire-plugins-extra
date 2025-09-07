@@ -45,7 +45,6 @@ namespace dodge
 {
 static std::string dodge_transformer_name = "dodge";
 
-// Simple structure for each dodging view
 struct dodge_view_data
 {
     wayfire_view view;
@@ -54,7 +53,6 @@ struct dodge_view_data
     wf::pointf_t direction;
 };
 
-// Helper function to check if two boxes intersect
 bool boxes_intersect(const wlr_box & a, const wlr_box & b)
 {
     return !(a.x >= b.x + b.width ||
@@ -77,7 +75,6 @@ class wayfire_dodge
   public:
     void init()
     {
-        LOGI("init");
         wf::get_core().connect(&view_mapped);
         wf::get_core().connect(&view_unmapped);
         this->progression.set(0, 0);
@@ -93,7 +90,6 @@ class wayfire_dodge
     wf::signal::connection_t<wf::view_activated_state_signal> view_activated =
         [=] (wf::view_activated_state_signal *ev)
     {
-        LOGI("view_activated");
         if (ev->view == wf::get_core().seat->get_active_view())
         {
             last_focused_view = wf::get_core().seat->get_active_view();
@@ -109,7 +105,7 @@ class wayfire_dodge
         auto toplevel = wf::toplevel_cast(view_to);
         auto to_bb    = toplevel->get_geometry();
 
-        // Find overlapping views
+        /* Find overlapping views */
         std::vector<wayfire_view> overlapping_views;
         for (auto& view : wf::get_core().get_all_views())
         {
@@ -138,7 +134,6 @@ class wayfire_dodge
             return;
         }
 
-        // Keep the current focused view in front initially (this prevents jumping)
         view_bring_to_front(last_focused_view);
 
         if (!hook_set)
@@ -148,7 +143,6 @@ class wayfire_dodge
             hook_set = true;
         }
 
-        // Setup overlapping views with fan directions
         for (size_t i = 0; i < overlapping_views.size(); ++i)
         {
             dodge_view_data view_data;
@@ -277,7 +271,6 @@ class wayfire_dodge
         progress = (1.0 - progress) * (1.0 - progress);
         progress = 1.0 - progress;
 
-        // Animate overlapping views with speed-adjusted timing
         for (auto& view_data : views_from)
         {
             auto from_bb = view_data.bb;
