@@ -68,5 +68,31 @@
 				<min>1</min>
 			</option>
 		</group>
+		<group>
+			<_short>Dodge Settings</_short>
+			<option name="dodge_toggle" type="bool">
+				<_short>Enable Dodge</_short>
+				<_long>Enables the Dodge focus animation.</_long>
+				<default>false</default>
+			</option>
+			<option name="dodge_duration" type="animation">
+				<_short>Duration</_short>
+				<_long>Sets the animation duration in milliseconds.</_long>
+				<default>350ms linear</default>
+			</option>
+			<option name="dodge_direction" type="string">
+				<_short>Animation Direction</_short>
+				<_long>Sets the animation direction.</_long>
+				<desc>
+					<value>cardinal</value>
+					<_name>Cardinal</_name>
+				</desc>
+				<desc>
+					<value>diagonal</value>
+					<_name>Diagonal</_name>
+				</desc>
+				<default>cardinal</default>
+			</option>
+		</group>
 	</plugin>
 </wayfire>

@@ -32,10 +32,13 @@
 #include "shatter.hpp"
 #include "vortex.hpp"
 #include "melt.hpp"
+#include "dodge.hpp"
 
 class wayfire_extra_animations : public wf::plugin_interface_t
 {
     wf::shared_data::ref_ptr_t<wf::animate::animate_effects_registry_t> effects_registry;
+    wf::option_wrapper_t<bool> dodge_toggle{"extra-animations/dodge_toggle"};
+    std::unique_ptr<wf::dodge::wayfire_dodge> dodge_plugin;
 
   public:
     void init() override
@@ -66,6 +69,21 @@ class wayfire_extra_animations : public wf::plugin_interface_t
             .generator = [] { return std::make_unique<wf::melt::melt_animation>(); },
             .default_duration = [=] { return wf::melt::melt_duration.value(); },
         });
+        dodge_toggle.set_callback([=] {dodge_option_changed();});
+        dodge_option_changed();
+    }
+
+    void dodge_option_changed()
+    {
+        if (dodge_toggle && !dodge_plugin)
+        {
+            dodge_plugin = std::make_unique<wf::dodge::wayfire_dodge>();
+            dodge_plugin->init();
+        } else if (!dodge_toggle && dodge_plugin)
+        {
+            dodge_plugin->fini();
+            dodge_plugin.reset();
+        }
     }
 
     void fini() override
@@ -75,6 +93,12 @@ class wayfire_extra_animations : public wf::plugin_interface_t
         effects_registry->unregister_effect("shatter");
         effects_registry->unregister_effect("vortex");
         effects_registry->unregister_effect("melt");
+
+        if (dodge_plugin)
+        {
+            dodge_plugin->fini();
+            dodge_plugin.reset();
+        }
     }
 };
 
