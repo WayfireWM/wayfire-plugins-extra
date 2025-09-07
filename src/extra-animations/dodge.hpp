@@ -66,6 +66,7 @@ class wayfire_dodge
 {
     std::vector<dodge_view_data> views_from;
     wayfire_view view_to, last_focused_view;
+    wf::option_wrapper_t<bool> dodge_rotate{"extra-animations/dodge_rotate"};
     wf::option_wrapper_t<std::string> direction{"extra-animations/dodge_direction"};
     wf::option_wrapper_t<wf::animation_description_t> animation_duration{"extra-animations/dodge_duration"};
     wf::animation::simple_animation_t progression{animation_duration};
@@ -331,6 +332,10 @@ class wayfire_dodge
 
             view_data.transformer->translation_x = std::sin(progress * M_PI) * move_x;
             view_data.transformer->translation_y = std::sin(progress * M_PI) * move_y;
+            if (dodge_rotate)
+            {
+                view_data.transformer->angle = progress * M_PI * 2 * (view_data.direction.x > 0 ? 1 : -1);
+            }
         }
 
         if ((progress > 0.5) && !view_to_focused)
