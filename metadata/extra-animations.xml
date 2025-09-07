@@ -80,6 +80,11 @@
 				<_long>Sets the animation duration in milliseconds.</_long>
 				<default>350ms linear</default>
 			</option>
+			<option name="dodge_rotate" type="bool">
+				<_short>Rotate</_short>
+				<_long>Rotate windows during animation.</_long>
+				<default>false</default>
+			</option>
 			<option name="dodge_direction" type="string">
 				<_short>Animation Direction</_short>
 				<_long>Sets the animation direction.</_long>
