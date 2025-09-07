@@ -221,10 +221,13 @@ class wayfire_dodge
             return wf::pointf_t{0, 0};
         }
 
-        auto nx = x / m;
-        auto ny = y / m;
-        x = nx * std::abs(1.0 / nx);
-        y = ny * std::abs(1.0 / ny);
+        x /= m;
+        y /= m;
+        if (std::string(direction) != "circular")
+        {
+            x = x * std::abs(1.0 / x);
+            y = y * std::abs(1.0 / y);
+        }
         return wf::pointf_t{x, y};
     }
 
@@ -287,6 +290,21 @@ class wayfire_dodge
                 } else
                 {
                     move_dist_x = 0;
+                }
+            } else if (std::string(direction) == "circular")
+            {
+                auto direction_x = std::abs(view_data.direction.x);
+                auto direction_y = std::abs(view_data.direction.y);
+                if (direction_x < direction_y)
+                {
+                    move_dist_x *= direction_x;
+                    auto& y = view_data.direction.y;
+                    y = y * std::abs(1.0 / y);
+                } else
+                {
+                    move_dist_y *= direction_y;
+                    auto& x = view_data.direction.x;
+                    x = x * std::abs(1.0 / x);
                 }
             }
 
