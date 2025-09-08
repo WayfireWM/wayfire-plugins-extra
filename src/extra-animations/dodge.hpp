@@ -203,10 +203,6 @@ class wayfire_dodge
                 continue;
             }
 
-            auto direction = compute_direction(view_data.from_bb, to_bb);
-            view_data.direction.x = direction.x;
-            view_data.direction.y = direction.y;
-
             if (auto tr =
                     view_data.view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
                         dodge_transformer_name))
@@ -222,6 +218,9 @@ class wayfire_dodge
                 view_data.view->get_transformed_node()->add_transformer(view_data.transformer,
                     wf::TRANSFORMER_2D,
                     dodge_transformer_name);
+                auto direction = compute_direction(view_data.from_bb, to_bb);
+                view_data.direction.x = direction.x;
+                view_data.direction.y = direction.y;
                 if (dodge_rotate)
                 {
                     view_data.transformer->angle = 0.01;
@@ -326,21 +325,21 @@ class wayfire_dodge
         progress = (1.0 - progress) * (1.0 - progress);
         progress = 1.0 - progress;
 
+        std::shared_ptr<wf::scene::view_2d_transformer_t> view_to_transformer;
+        if (auto tr =
+                view_to->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
+                    dodge_transformer_name))
+        {
+            view_to_transformer = tr;
+        } else
+        {
+            view_to_transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_to);
+            view_to->get_transformed_node()->add_transformer(view_to_transformer, wf::TRANSFORMER_2D,
+                dodge_transformer_name);
+        }
+
         if (dodge_zoom)
         {
-            std::shared_ptr<wf::scene::view_2d_transformer_t> view_to_transformer;
-            if (auto tr =
-                    view_to->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
-                        dodge_transformer_name))
-            {
-                view_to_transformer = tr;
-            } else
-            {
-                view_to_transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_to);
-                view_to->get_transformed_node()->add_transformer(view_to_transformer, wf::TRANSFORMER_2D,
-                    dodge_transformer_name);
-            }
-
             view_to_transformer->scale_x = view_to_transformer->scale_y = 1.0 + std::sin(
                 progression.progress() * M_PI) * 0.02;
         }
