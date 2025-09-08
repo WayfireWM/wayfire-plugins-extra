@@ -65,6 +65,7 @@ bool boxes_intersect(const wlr_box & a, const wlr_box & b)
 class wayfire_dodge
 {
     std::vector<dodge_view_data> views_from;
+    std::list<wayfire_view> minimized_views;
     wayfire_view view_to, last_focused_view;
     wf::option_wrapper_t<bool> dodge_zoom{"extra-animations/dodge_zoom"};
     wf::option_wrapper_t<bool> dodge_rotate{"extra-animations/dodge_rotate"};
@@ -75,6 +76,8 @@ class wayfire_dodge
     wf::output_t *view_to_output;
     bool hook_set = false;
     bool from_mapped_event = false;
+    bool view_unminimized  = false;
+    std::vector<wf::output_t*> outputs;
 
   public:
     void init()
@@ -87,9 +90,38 @@ class wayfire_dodge
             if (wf::toplevel_cast(view))
             {
                 view->connect(&view_activated);
+                view->get_output()->connect(&view_minimize_request);
+                if (std::find_if(outputs.begin(), outputs.end(), [=] (wf::output_t*& o)
+                {
+                    return view->get_output() == o;
+                }) == outputs.end())
+                {
+                    outputs.push_back(view->get_output());
+                }
             }
         }
+
+        for (auto output : outputs)
+        {
+            output->connect(&view_minimize_request);
+        }
     }
+
+    wf::signal::connection_t<wf::view_minimize_request_signal> view_minimize_request =
+        [=] (wf::view_minimize_request_signal *ev)
+    {
+        if (ev->state)
+        {
+            minimized_views.push_back(ev->view);
+        } else
+        {
+            minimized_views.remove(ev->view);
+            view_unminimized = true;
+            wf::view_activated_state_signal data;
+            data.view = ev->view;
+            view_activated.emit(&data);
+        }
+    };
 
     wf::signal::connection_t<wf::view_activated_state_signal> view_activated =
         [=] (wf::view_activated_state_signal *ev)
@@ -106,12 +138,13 @@ class wayfire_dodge
             return;
         }
 
-        if (!wf::toplevel_cast(view_to))
+        auto toplevel = wf::toplevel_cast(view_to);
+        if (!toplevel)
         {
             return;
         }
 
-        auto to_bb = view_to->get_transformed_node()->get_bounding_box();
+        auto to_bb = toplevel->get_geometry();
 
         if (from_mapped_event)
         {
@@ -132,19 +165,22 @@ class wayfire_dodge
                 continue;
             }
 
-            auto toplevel = wf::toplevel_cast(view);
+            toplevel = wf::toplevel_cast(view);
             if (!toplevel)
             {
                 continue;
             }
 
-            auto from_bb = view->get_transformed_node()->get_bounding_box();
+            auto from_bb = toplevel->get_geometry();
 
-            if (wf::get_focus_timestamp(view_to) < wf::get_focus_timestamp(view))
+            if ((wf::get_focus_timestamp(view_to) < wf::get_focus_timestamp(view)) ||
+                (view_unminimized && (wf::get_focus_timestamp(view_to) > wf::get_focus_timestamp(view))))
             {
-                if (boxes_intersect(from_bb, to_bb) ||
-                    view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
-                        dodge_transformer_name))
+                if ((boxes_intersect(from_bb, to_bb) ||
+                     view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
+                         dodge_transformer_name)) &&
+                    (std::find_if(minimized_views.begin(), minimized_views.end(),
+                        [view] (const wayfire_view& v) { return v == view; }) == minimized_views.end()))
                 {
                     overlapping_views.push_back(view);
                 }
@@ -152,6 +188,8 @@ class wayfire_dodge
                 view_bring_to_front(view);
             }
         }
+
+        view_unminimized = false;
 
         if (overlapping_views.empty())
         {
@@ -191,7 +229,7 @@ class wayfire_dodge
                         auto direction = compute_direction(view_data.from_bb, to_bb);
                         vd.direction.x = direction.x;
                         vd.direction.y = direction.y;
-                        vd.transformer->angle = 0.01;
+                        vd.transformer->angle = 0.1;
                     }
 
                     break;
@@ -210,7 +248,7 @@ class wayfire_dodge
                 view_data.transformer = tr;
                 if (dodge_rotate && from_mapped_event)
                 {
-                    view_data.transformer->angle = 0.01;
+                    view_data.transformer->angle = 0.1;
                 }
             } else
             {
@@ -223,11 +261,11 @@ class wayfire_dodge
                 view_data.direction.y = direction.y;
                 if (dodge_rotate)
                 {
-                    view_data.transformer->angle = 0.01;
+                    view_data.transformer->angle = 0.1;
                 }
-            }
 
-            views_from.push_back(view_data);
+                views_from.push_back(view_data);
+            }
         }
 
         from_mapped_event = false;
@@ -238,6 +276,14 @@ class wayfire_dodge
     {
         from_mapped_event = true;
         ev->view->connect(&view_activated);
+        if (std::find_if(outputs.begin(), outputs.end(), [=] (wf::output_t*& o)
+        {
+            return ev->view->get_output() == o;
+        }) == outputs.end())
+        {
+            ev->view->get_output()->connect(&view_minimize_request);
+            outputs.push_back(ev->view->get_output());
+        }
     };
 
     wf::signal::connection_t<wf::view_unmapped_signal> view_unmapped =
@@ -326,19 +372,28 @@ class wayfire_dodge
         progress = 1.0 - progress;
 
         std::shared_ptr<wf::scene::view_2d_transformer_t> view_to_transformer;
-        if (auto tr =
-                view_to->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
-                    dodge_transformer_name))
+        if (std::find_if(minimized_views.begin(), minimized_views.end(), [&] (const wayfire_view& v)
         {
-            view_to_transformer = tr;
+            return v == last_focused_view;
+        }) == minimized_views.end())
+        {
+            if (auto tr =
+                    view_to->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
+                        dodge_transformer_name))
+            {
+                view_to_transformer = tr;
+            } else
+            {
+                view_to_transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_to);
+                view_to->get_transformed_node()->add_transformer(view_to_transformer, wf::TRANSFORMER_2D,
+                    dodge_transformer_name);
+            }
         } else
         {
-            view_to_transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_to);
-            view_to->get_transformed_node()->add_transformer(view_to_transformer, wf::TRANSFORMER_2D,
-                dodge_transformer_name);
+            view_to_focused = true;
         }
 
-        if (dodge_zoom)
+        if (dodge_zoom && view_to_transformer)
         {
             view_to_transformer->scale_x = view_to_transformer->scale_y = 1.0 + std::sin(
                 progression.progress() * M_PI) * 0.02;
