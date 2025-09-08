@@ -85,6 +85,11 @@
 				<_long>Rotate windows during animation.</_long>
 				<default>false</default>
 			</option>
+			<option name="dodge_zoom" type="bool">
+				<_short>Zoom</_short>
+				<_long>Slightly increase zoom for the focusing window during animation.</_long>
+				<default>true</default>
+			</option>
 			<option name="dodge_direction" type="string">
 				<_short>Animation Direction</_short>
 				<_long>Sets the animation direction.</_long>
