@@ -178,14 +178,15 @@ class wayfire_dodge
             view_data.from_bb = view_data.view->get_bounding_box();
             view_data.to_bb   = view_to->get_bounding_box();
 
-            if (view_data.view->get_transformed_node()->get_transformer(dodge_transformer_name))
+            if (auto tr = view_data.view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(dodge_transformer_name))
             {
-                view_data.view->get_transformed_node()->rem_transformer(dodge_transformer_name);
+                view_data.transformer = tr;
+            } else
+            {
+                view_data.transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_data.view);
+                view_data.view->get_transformed_node()->add_transformer(view_data.transformer, wf::TRANSFORMER_2D,
+                    dodge_transformer_name);
             }
-
-            view_data.transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_data.view);
-            view_data.view->get_transformed_node()->add_transformer(view_data.transformer, wf::TRANSFORMER_2D,
-                dodge_transformer_name);
 
             auto direction = compute_direction(view_data.from_bb, to_bb);
 
