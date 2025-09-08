@@ -66,6 +66,7 @@ class wayfire_dodge
 {
     std::vector<dodge_view_data> views_from;
     wayfire_view view_to, last_focused_view;
+    wf::option_wrapper_t<bool> dodge_zoom{"extra-animations/dodge_zoom"};
     wf::option_wrapper_t<bool> dodge_rotate{"extra-animations/dodge_rotate"};
     wf::option_wrapper_t<std::string> direction{"extra-animations/dodge_direction"};
     wf::option_wrapper_t<wf::animation_description_t> animation_duration{"extra-animations/dodge_duration"};
@@ -155,14 +156,16 @@ class wayfire_dodge
             if (view_data.view == view_to)
             {
                 vd = view_data;
-                view_found = true;
+                vd.direction.x = 0.0;
+                vd.direction.y = 0.0;
+                view_found     = true;
+                continue;
             }
         }
 
         if (view_found)
         {
             views_from.push_back(vd);
-            return;
         } else if (!this->progression.running())
         {
             views_from.clear();
@@ -178,13 +181,16 @@ class wayfire_dodge
             view_data.from_bb = view_data.view->get_bounding_box();
             view_data.to_bb   = view_to->get_bounding_box();
 
-            if (auto tr = view_data.view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(dodge_transformer_name))
+            if (auto tr =
+                    view_data.view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
+                        dodge_transformer_name))
             {
                 view_data.transformer = tr;
             } else
             {
                 view_data.transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_data.view);
-                view_data.view->get_transformed_node()->add_transformer(view_data.transformer, wf::TRANSFORMER_2D,
+                view_data.view->get_transformed_node()->add_transformer(view_data.transformer,
+                    wf::TRANSFORMER_2D,
                     dodge_transformer_name);
             }
 
@@ -262,14 +268,9 @@ class wayfire_dodge
 
     void finish_animation()
     {
-        for (auto& view_data : views_from)
+        for (auto& view : wf::get_core().get_all_views())
         {
-            view_data.view->get_transformed_node()->rem_transformer(dodge_transformer_name);
-        }
-
-        if (view_to)
-        {
-            view_to->get_transformed_node()->rem_transformer(dodge_transformer_name);
+            view->get_transformed_node()->rem_transformer(dodge_transformer_name);
         }
 
         if (hook_set)
@@ -293,6 +294,25 @@ class wayfire_dodge
         progress = (1.0 - progress) * (1.0 - progress);
         progress = 1.0 - progress;
 
+        if (dodge_zoom)
+        {
+            std::shared_ptr<wf::scene::view_2d_transformer_t> view_to_transformer;
+            if (auto tr =
+                    view_to->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
+                        dodge_transformer_name))
+            {
+                view_to_transformer = tr;
+            } else
+            {
+                view_to_transformer = std::make_shared<wf::scene::view_2d_transformer_t>(view_to);
+                view_to->get_transformed_node()->add_transformer(view_to_transformer, wf::TRANSFORMER_2D,
+                    dodge_transformer_name);
+            }
+
+            view_to_transformer->scale_x = view_to_transformer->scale_y = 1.0 + std::sin(
+                progression.progress() * M_PI) * 0.05;
+        }
+
         for (auto& view_data : views_from)
         {
             auto to_bb   = view_data.to_bb;
@@ -301,6 +321,22 @@ class wayfire_dodge
                 to_bb.x + to_bb.width - from_bb.x);
             double move_dist_y = std::min(from_bb.y + from_bb.height - to_bb.y,
                 to_bb.y + to_bb.height - from_bb.y);
+
+            if ((view_data.direction.x == 0) || (view_data.direction.y == 0))
+            {
+                continue;
+            }
+
+            if (dodge_zoom && (view_data.transformer->scale_x != 1.0))
+            {
+                view_data.transformer->scale_x = view_data.transformer->scale_y = 1.0 + std::sin(
+                    progression.progress() * M_PI) * 0.05;
+            }
+
+            if (dodge_rotate && ((progression.progress() < 0.05) || (view_data.transformer->angle != 0.0)))
+            {
+                view_data.transformer->angle = progress * M_PI * 2 * (view_data.direction.x > 0 ? 1 : -1);
+            }
 
             if (std::string(direction) == "cardinal")
             {
@@ -333,10 +369,6 @@ class wayfire_dodge
 
             view_data.transformer->translation_x = std::sin(progress * M_PI) * move_x;
             view_data.transformer->translation_y = std::sin(progress * M_PI) * move_y;
-            if (dodge_rotate)
-            {
-                view_data.transformer->angle = progress * M_PI * 2 * (view_data.direction.x > 0 ? 1 : -1);
-            }
         }
 
         if ((progress > 0.5) && !view_to_focused)
