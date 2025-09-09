@@ -27,6 +27,7 @@
 
 #include <set>
 #include <cmath>
+#include <cstdlib>
 #include <wayfire/core.hpp>
 #include <wayfire/seat.hpp>
 #include <wayfire/plugin.hpp>
@@ -54,12 +55,23 @@ struct dodge_view_data
     wf::pointf_t direction;
 };
 
-bool boxes_intersect(const wlr_box & a, const wlr_box & b)
+bool boxes_intersect(const wayfire_view & a, const wayfire_view & b)
 {
-    return !(b.x > a.x + a.width ||
-        a.x > b.x + b.width ||
-        b.y > a.y + a.height ||
-        a.y > b.y + b.height);
+    auto ao = a->get_output();
+    auto bo = b->get_output();
+    if (!ao || !bo)
+    {
+        return false;
+    }
+
+    auto aog  = ao->get_layout_geometry();
+    auto bog  = bo->get_layout_geometry();
+    auto a_bb = wf::toplevel_cast(a)->get_geometry();
+    auto b_bb = wf::toplevel_cast(b)->get_geometry();
+    return !(bog.x + b_bb.x > aog.x + a_bb.x + a_bb.width ||
+        aog.x + a_bb.x > bog.x + b_bb.x + b_bb.width ||
+        bog.y + b_bb.y > aog.y + a_bb.y + a_bb.height ||
+        aog.y + a_bb.y > bog.y + b_bb.y + b_bb.height);
 }
 
 class wayfire_dodge
@@ -133,13 +145,15 @@ class wayfire_dodge
         }
 
         view_to = ev->view;
-        if (!last_focused_view || !view_to || (last_focused_view == view_to) || !view_to->is_mapped())
+
+        auto toplevel = wf::toplevel_cast(view_to);
+        if (!toplevel)
         {
             return;
         }
 
-        auto toplevel = wf::toplevel_cast(view_to);
-        if (!toplevel)
+        if (!last_focused_view || !view_to || (last_focused_view == view_to) || !view_to->is_mapped() ||
+            toplevel->parent)
         {
             return;
         }
@@ -171,12 +185,10 @@ class wayfire_dodge
                 continue;
             }
 
-            auto from_bb = toplevel->get_geometry();
-
             if ((wf::get_focus_timestamp(view_to) < wf::get_focus_timestamp(view)) ||
                 (view_unminimized && (wf::get_focus_timestamp(view_to) > wf::get_focus_timestamp(view))))
             {
-                if ((boxes_intersect(from_bb, to_bb) ||
+                if ((boxes_intersect(view, view_to) ||
                      view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
                          dodge_transformer_name)) &&
                     (std::find_if(minimized_views.begin(), minimized_views.end(),
@@ -256,9 +268,30 @@ class wayfire_dodge
                 view_data.view->get_transformed_node()->add_transformer(view_data.transformer,
                     wf::TRANSFORMER_2D,
                     dodge_transformer_name);
-                auto direction = compute_direction(view_data.from_bb, to_bb);
-                view_data.direction.x = direction.x;
-                view_data.direction.y = direction.y;
+                auto d = compute_direction(view_data.from_bb, to_bb);
+                view_data.direction.x = d.x;
+                view_data.direction.y = d.y;
+
+                auto & x = view_data.direction.x;
+                auto & y = view_data.direction.y;
+                if ((((x < 0.001) && (x > -0.001)) && ((y < 0.001) && (y > -0.001))) || std::isnan(x) ||
+                    std::isnan(y))
+                {
+                    if ((std::string(direction) == "cardinal") || (std::string(direction) == "diagonal"))
+                    {
+                        srand(wf::get_current_time() + rand());
+                        x = (rand() % 2) * 2 - 1;
+                        srand(wf::get_current_time() + rand());
+                        y = (rand() % 2) * 2 - 1;
+                    } else if (std::string(direction) == "circular")
+                    {
+                        srand(wf::get_current_time() + rand());
+                        x = (double(rand()) / RAND_MAX) * 2.0 - 1.0;
+                        srand(wf::get_current_time() + rand());
+                        y = (double(rand()) / RAND_MAX) * 2.0 - 1.0;
+                    }
+                }
+
                 if (dodge_rotate)
                 {
                     view_data.transformer->angle = 0.1;
@@ -424,11 +457,6 @@ class wayfire_dodge
             if (dodge_rotate && (view_data.transformer->angle != 0.0))
             {
                 view_data.transformer->angle = progress * M_PI * 2 * (view_data.direction.x > 0 ? 1 : -1);
-            }
-
-            if ((view_data.direction.x == 0.0) || (view_data.direction.y == 0.0))
-            {
-                continue;
             }
 
             if (std::string(direction) == "cardinal")
