@@ -195,9 +195,8 @@ class wayfire_dodge
                         [view] (const wayfire_view& v) { return v == view; }) == minimized_views.end()))
                 {
                     overlapping_views.push_back(view);
+                    view_bring_to_front(view);
                 }
-
-                view_bring_to_front(view);
             }
         }
 
@@ -296,9 +295,9 @@ class wayfire_dodge
                 {
                     view_data.transformer->angle = 0.1;
                 }
-
-                views_from.push_back(view_data);
             }
+
+            views_from.push_back(view_data);
         }
 
         from_mapped_event = false;
@@ -325,6 +324,7 @@ class wayfire_dodge
         last_focused_view = wf::get_core().seat->get_active_view();
         if (ev->view == view_to)
         {
+            view_bring_to_front(view_to);
             view_to = nullptr;
         }
 
@@ -457,6 +457,10 @@ class wayfire_dodge
             if (dodge_rotate && (view_data.transformer->angle != 0.0))
             {
                 view_data.transformer->angle = progress * M_PI * 2 * (view_data.direction.x > 0 ? 1 : -1);
+                if (view_data.transformer->angle == 0.0)
+                {
+                    view_data.transformer->angle = 0.1;
+                }
             }
 
             if (std::string(direction) == "cardinal")
