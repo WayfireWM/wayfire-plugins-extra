@@ -152,7 +152,7 @@ class wayfire_dodge
             return;
         }
 
-        if (!last_focused_view || !view_to || (last_focused_view == view_to) || !view_to->is_mapped() ||
+        if (!last_focused_view || !view_to || !view_to->is_mapped() ||
             toplevel->parent)
         {
             return;
@@ -197,6 +197,11 @@ class wayfire_dodge
                     overlapping_views.push_back(view);
                     view_bring_to_front(view);
                 }
+            }
+
+            if (view == last_focused_view)
+            {
+                view_bring_to_front(view);
             }
         }
 
