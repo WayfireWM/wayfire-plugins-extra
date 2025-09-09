@@ -59,19 +59,17 @@ bool boxes_intersect(const wayfire_view & a, const wayfire_view & b)
 {
     auto ao = a->get_output();
     auto bo = b->get_output();
-    if (!ao || !bo)
+    if (!ao || !bo || (ao != bo))
     {
         return false;
     }
 
-    auto aog  = ao->get_layout_geometry();
-    auto bog  = bo->get_layout_geometry();
     auto a_bb = wf::toplevel_cast(a)->get_geometry();
     auto b_bb = wf::toplevel_cast(b)->get_geometry();
-    return !(bog.x + b_bb.x > aog.x + a_bb.x + a_bb.width ||
-        aog.x + a_bb.x > bog.x + b_bb.x + b_bb.width ||
-        bog.y + b_bb.y > aog.y + a_bb.y + a_bb.height ||
-        aog.y + a_bb.y > bog.y + b_bb.y + b_bb.height);
+    return !(b_bb.x > a_bb.x + a_bb.width ||
+        a_bb.x > b_bb.x + b_bb.width ||
+        b_bb.y > a_bb.y + a_bb.height ||
+        a_bb.y > b_bb.y + b_bb.height);
 }
 
 class wayfire_dodge
@@ -152,7 +150,7 @@ class wayfire_dodge
             return;
         }
 
-        if (!last_focused_view || !view_to || (last_focused_view == view_to) || !view_to->is_mapped() ||
+        if (!last_focused_view || !view_to || !view_to->is_mapped() ||
             toplevel->parent)
         {
             return;
@@ -197,6 +195,11 @@ class wayfire_dodge
                     overlapping_views.push_back(view);
                     view_bring_to_front(view);
                 }
+            }
+
+            if (view == last_focused_view)
+            {
+                view_bring_to_front(view);
             }
         }
 
