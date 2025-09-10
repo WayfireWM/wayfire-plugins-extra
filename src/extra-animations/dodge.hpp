@@ -85,8 +85,9 @@ class wayfire_dodge
     bool view_to_focused;
     wf::output_t *view_to_output;
     bool hook_set = false;
-    bool from_mapped_event = false;
-    bool view_unminimized  = false;
+    bool view_unminimized    = false;
+    bool from_mapped_event   = false;
+    bool from_unmapped_event = false;
     std::vector<wf::output_t*> outputs;
 
   public:
@@ -139,6 +140,15 @@ class wayfire_dodge
         if (ev->view == wf::get_core().seat->get_active_view())
         {
             last_focused_view = wf::get_core().seat->get_active_view();
+            if (!from_mapped_event)
+            {
+                return;
+            }
+        }
+
+        if (from_unmapped_event)
+        {
+            from_unmapped_event = false;
             return;
         }
 
@@ -184,9 +194,10 @@ class wayfire_dodge
             }
 
             if ((wf::get_focus_timestamp(view_to) < wf::get_focus_timestamp(view)) ||
-                (view_unminimized && (wf::get_focus_timestamp(view_to) > wf::get_focus_timestamp(view))))
+                ((from_mapped_event || view_unminimized) &&
+                 (wf::get_focus_timestamp(view_to) > wf::get_focus_timestamp(view))))
             {
-                if ((boxes_intersect(view, view_to) ||
+                if ((boxes_intersect(view, view_to) || from_mapped_event ||
                      view->get_transformed_node()->get_transformer<wf::scene::view_2d_transformer_t>(
                          dodge_transformer_name)) &&
                     (std::find_if(minimized_views.begin(), minimized_views.end(),
@@ -197,7 +208,7 @@ class wayfire_dodge
                 }
             }
 
-            if (view == last_focused_view)
+            if (!from_mapped_event)
             {
                 view_bring_to_front(view);
             }
@@ -324,11 +335,17 @@ class wayfire_dodge
     wf::signal::connection_t<wf::view_unmapped_signal> view_unmapped =
         [=] (wf::view_unmapped_signal *ev)
     {
-        last_focused_view = wf::get_core().seat->get_active_view();
+        from_unmapped_event = true;
+        last_focused_view   = wf::get_core().seat->get_active_view();
         if (ev->view == view_to)
         {
             view_bring_to_front(view_to);
             view_to = nullptr;
+        }
+
+        if (ev->view == last_focused_view)
+        {
+            last_focused_view = nullptr;
         }
 
         views_from.erase(std::remove_if(views_from.begin(), views_from.end(),
