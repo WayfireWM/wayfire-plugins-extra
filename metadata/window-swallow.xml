@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="window-swallow">
+		<_short>Window Swallow</_short>
+		<category>Window Management</category>
+		<option name="swallower_views" type="string">
+			<_short>Swallower Views</_short>
+			<_long>Views matching this criteria will swallow other mapped views when focused.</_long>
+			<default>app_id is "foot"</default>
+		</option>
+	</plugin>
+</wayfire>
