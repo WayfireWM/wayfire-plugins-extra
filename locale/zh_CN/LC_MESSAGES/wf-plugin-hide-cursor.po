@@ -1,0 +1,37 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Hide Cursor"
+msgstr "隐藏光标"
+
+#. (itstool) path: plugin/_long
+msgid "A plugin that allows to toggle hide mouse cursor."
+msgstr "一个允许切换隐藏鼠标光标的插件。"
+
+#. (itstool) path: option/_short
+msgid "Toggle"
+msgstr "切换"
+
+#. (itstool) path: option/_long
+msgid "Toggles hide mouse cursor."
+msgstr "切换隐藏鼠标光标。"
+
+#. (itstool) path: option/_short
+msgid "Delay (in ms) before cursor will be hidden"
+msgstr "光标隐藏前的延迟（毫秒）"
+
+#. (itstool) path: option/_long
+msgid ""
+"The delay in ms before the plugin will hide the cursor. The cursor is shown "
+"again when cursor motion happens."
+msgstr "插件隐藏光标前的延迟（毫秒）。当光标移动时，光标会再次显示。"

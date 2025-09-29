@@ -1,0 +1,167 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Extra Animations"
+msgstr "额外动画"
+
+#. (itstool) path: plugin/_long
+msgid "Extra animations to extend animate plugin"
+msgstr "扩展 animate 插件的额外动画"
+
+#. (itstool) path: group/_short
+msgid "Blinds Settings"
+msgstr "百叶窗设置"
+
+#. (itstool) path: option/_short
+msgid "Blinds duration"
+msgstr "百叶窗持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the duration for the blinds animation in milliseconds."
+msgstr "以毫秒为单位设置百叶窗动画的持续时间。"
+
+#. (itstool) path: option/_short
+msgid "Blinds strip height"
+msgstr "百叶窗条高"
+
+#. (itstool) path: option/_long
+msgid "Height of each blinds strip in pixels."
+msgstr "每个百叶窗条的像素高度。"
+
+#. (itstool) path: group/_short
+msgid "Helix Settings"
+msgstr "螺旋设置"
+
+#. (itstool) path: option/_short
+msgid "Helix duration"
+msgstr "螺旋持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the duration for the helix animation in milliseconds."
+msgstr "以毫秒为单位设置螺旋动画的持续时间。"
+
+#. (itstool) path: option/_short
+msgid "Helix rotations"
+msgstr "螺旋旋转次数"
+
+#. (itstool) path: option/_long
+msgid "Number of rotations for the helix animation."
+msgstr "螺旋动画的旋转次数。"
+
+#. (itstool) path: option/_short
+msgid "Helix strip height"
+msgstr "螺旋条高"
+
+#. (itstool) path: option/_long
+msgid "Height of each helix strip in pixels."
+msgstr "每个螺旋条的像素高度。"
+
+#. (itstool) path: group/_short
+msgid "Shatter Settings"
+msgstr "破碎设置"
+
+#. (itstool) path: option/_short
+msgid "Shatter duration"
+msgstr "破碎持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the duration for the shatter animation in milliseconds."
+msgstr "以毫秒为单位设置破碎动画的持续时间。"
+
+#. (itstool) path: group/_short
+msgid "Vortex Settings"
+msgstr "旋涡设置"
+
+#. (itstool) path: option/_short
+msgid "Vortex duration"
+msgstr "旋涡持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the duration for the vortex animation in milliseconds."
+msgstr "以毫秒为单位设置旋涡动画的持续时间。"
+
+#. (itstool) path: group/_short
+msgid "Melt Settings"
+msgstr "融化设置"
+
+#. (itstool) path: option/_short
+msgid "Melt duration"
+msgstr "融化持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the duration for the melt animation in milliseconds."
+msgstr "以毫秒为单位设置融化动画的持续时间。"
+
+#. (itstool) path: option/_short
+msgid "Melt distortion factor"
+msgstr "融化变形系数"
+
+#. (itstool) path: option/_long
+msgid "Distortion factor for melt animation."
+msgstr "融化动画的变形系数。"
+
+#. (itstool) path: group/_short
+msgid "Dodge Settings"
+msgstr "闪避设置"
+
+#. (itstool) path: option/_short
+msgid "Enable Dodge"
+msgstr "启用闪避"
+
+#. (itstool) path: option/_long
+msgid "Enables the Dodge focus animation."
+msgstr "启用闪避焦点动画。"
+
+#. (itstool) path: option/_short
+msgid "Duration"
+msgstr "持续时间"
+
+#. (itstool) path: option/_long
+msgid "Sets the animation duration in milliseconds."
+msgstr "以毫秒为单位设置动画持续时间。"
+
+#. (itstool) path: option/_short
+msgid "Rotate"
+msgstr "旋转"
+
+#. (itstool) path: option/_long
+msgid "Rotate windows during animation."
+msgstr "动画期间旋转窗口。"
+
+#. (itstool) path: option/_short
+msgid "Zoom"
+msgstr "缩放"
+
+#. (itstool) path: option/_long
+msgid "Slightly increase zoom for the focusing window during animation."
+msgstr "在动画期间，将焦点窗口略微放大。"
+
+#. (itstool) path: option/_short
+msgid "Animation Direction"
+msgstr "动画方向"
+
+#. (itstool) path: option/_long
+msgid "Sets the animation direction."
+msgstr "设置动画方向。"
+
+#. (itstool) path: desc/_name
+msgid "Cardinal"
+msgstr "基数"
+
+#. (itstool) path: desc/_name
+msgid "Diagonal"
+msgstr "对角"
+
+#. (itstool) path: desc/_name
+msgid "Circular"
+msgstr "圆形"

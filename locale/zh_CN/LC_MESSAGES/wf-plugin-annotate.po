@@ -1,0 +1,83 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Annotate"
+msgstr "标注"
+
+#. (itstool) path: plugin/_long
+msgid "Draw on the output."
+msgstr "在输出上绘制。"
+
+#. (itstool) path: option/_short
+msgid "Draw"
+msgstr "绘图"
+
+#. (itstool) path: option/_long
+msgid "Begin drawing on workspace."
+msgstr "开始在工作区上绘图。"
+
+#. (itstool) path: option/_short
+msgid "Clear Workspace"
+msgstr "清除工作区"
+
+#. (itstool) path: option/_long
+msgid "Clear workspace."
+msgstr "清除工作区。"
+
+#. (itstool) path: option/_short
+msgid "Stroke Color"
+msgstr "描边颜色"
+
+#. (itstool) path: option/_long
+msgid "Color used for drawing."
+msgstr "用于绘图的颜色。"
+
+#. (itstool) path: option/_short
+msgid "Drawing Method"
+msgstr "绘图方法"
+
+#. (itstool) path: option/_long
+msgid "Method used for drawing."
+msgstr "用于绘图的方法。"
+
+#. (itstool) path: desc/_name
+msgid "Free Draw"
+msgstr "自由绘图"
+
+#. (itstool) path: desc/_name
+msgid "Line"
+msgstr "直线"
+
+#. (itstool) path: desc/_name
+msgid "Rectangle"
+msgstr "矩形"
+
+#. (itstool) path: desc/_name
+msgid "Circle"
+msgstr "圆形"
+
+#. (itstool) path: option/_short
+msgid "Line Width"
+msgstr "线宽"
+
+#. (itstool) path: option/_long
+msgid "Line width used for drawing."
+msgstr "用于绘图的线宽。"
+
+#. (itstool) path: option/_short
+msgid "Draw Shapes From Center"
+msgstr "从中心绘制形状"
+
+#. (itstool) path: option/_long
+msgid "Draw shapes from center of drag point."
+msgstr "从拖动点的中心绘制形状。"

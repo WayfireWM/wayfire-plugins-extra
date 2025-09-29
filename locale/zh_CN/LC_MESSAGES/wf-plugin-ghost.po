@@ -1,0 +1,31 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Ghost Windows"
+msgstr "幽灵窗口"
+
+#. (itstool) path: option/_short
+msgid "Ghosted Windows"
+msgstr "幽灵化窗口"
+
+#. (itstool) path: option/_long
+msgid "Automatically sets the matched windows to be click-through."
+msgstr "自动将匹配的窗口设置为可穿透点击。"
+
+#. (itstool) path: option/_short
+msgid "Toggle Ghost Window"
+msgstr "切换幽灵窗口"
+
+#. (itstool) path: option/_long
+msgid "Toggles the active window being click-through to whatever is below."
+msgstr "将活动窗口切换为可穿透点击，点击会作用于下方的内容。"

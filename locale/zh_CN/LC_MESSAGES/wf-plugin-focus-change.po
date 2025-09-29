@@ -1,0 +1,137 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Focus Change"
+msgstr "焦点切换"
+
+#. (itstool) path: option/_short
+msgid "focus up"
+msgstr "上移焦点"
+
+#. (itstool) path: option/_long
+msgid "move focus to the closest window above"
+msgstr "将焦点移动到最靠近上方的窗口"
+
+#. (itstool) path: option/_short
+msgid "focus down"
+msgstr "下移焦点"
+
+#. (itstool) path: option/_long
+msgid "move focus to the closest window below"
+msgstr "将焦点移动到最靠近下方的窗口"
+
+#. (itstool) path: option/_short
+msgid "focus right"
+msgstr "右移焦点"
+
+#. (itstool) path: option/_long
+msgid "move focus to the closest window to the right"
+msgstr "将焦点移动到最靠近右侧的窗口"
+
+#. (itstool) path: option/_short
+msgid "focus left"
+msgstr "左移焦点"
+
+#. (itstool) path: option/_long
+msgid "move focus to the closest window to the left"
+msgstr "将焦点移动到最靠近左侧的窗口"
+
+#. (itstool) path: option/_short
+msgid "upwards grace in pixels"
+msgstr "向上容忍像素"
+
+#. (itstool) path: option/_long
+msgid ""
+"add an amount of pixel upwards in which windows will be ignored. Can be "
+"negative"
+msgstr "向上增加一定数量的像素，在此范围内将忽略窗口。可以是负值"
+
+#. (itstool) path: option/_short
+msgid "downwards grace in pixels"
+msgstr "向下容忍像素"
+
+#. (itstool) path: option/_long
+msgid ""
+"add an amount of pixel downwards in which windows will be ignored. Can be "
+"negative"
+msgstr "向下增加一定数量的像素，在此范围内将忽略窗口。可以是负值"
+
+#. (itstool) path: option/_short
+msgid "rightwards grace in pixels"
+msgstr "向右容忍像素"
+
+#. (itstool) path: option/_long
+msgid ""
+"add an amount of pixel to the right in which windows will be ignored. Can be "
+"negative"
+msgstr "向右增加一定数量的像素，在此范围内将忽略窗口。可以是负值"
+
+#. (itstool) path: option/_short
+msgid "leftwards grace in pixels"
+msgstr "向左容忍像素"
+
+#. (itstool) path: option/_long
+msgid ""
+"add an amount of pixel to the left in which windows will be ignored. Can be "
+"negative"
+msgstr "向左增加一定数量的像素，在此范围内将忽略窗口。可以是负值"
+
+#. (itstool) path: option/_short
+msgid "ignores output boundraries"
+msgstr "忽略输出边界"
+
+#. (itstool) path: option/_long
+msgid "enables moving focus between different outputs"
+msgstr "允许在不同输出之间移动焦点"
+
+#. (itstool) path: option/_short
+msgid "ignores workspace boundraries"
+msgstr "忽略工作区边界"
+
+#. (itstool) path: option/_long
+msgid "enables moving focus between workspaces on the same output"
+msgstr "允许在同一输出上的工作区之间移动焦点"
+
+#. (itstool) path: option/_short
+msgid "raise window on change"
+msgstr "切换时提升窗口"
+
+#. (itstool) path: option/_long
+msgid "raise the newly focused window to the top"
+msgstr "将新获得焦点的窗口提升到最顶层"
+
+#. (itstool) path: option/_short
+msgid "scan height"
+msgstr "扫描高度"
+
+#. (itstool) path: option/_long
+msgid ""
+"the height of the bounding box used to scan for windows to the left or "
+"right. If zero it will be the height of the view. If negative it will be the "
+"height of the view subtracted by the value"
+msgstr ""
+"用于扫描左侧或右侧窗口的边界框高度。如果为零，则为视图的高度。如果为负数，则"
+"为视图高度减去该值"
+
+#. (itstool) path: option/_short
+msgid "scan width"
+msgstr "扫描宽度"
+
+#. (itstool) path: option/_long
+msgid ""
+"the width of the bounding box used to scan for window above or below. If "
+"zero it will be the width of the view. If negative it will be the width of "
+"the view subtracted by the value"
+msgstr ""
+"用于扫描上方或下方窗口的边界框宽度。如果为零，则为视图的宽度。如果为负数，则"
+"为视图宽度减去该值"

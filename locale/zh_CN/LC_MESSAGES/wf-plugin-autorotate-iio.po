@@ -1,0 +1,35 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Auto Rotate"
+msgstr "自动旋转"
+
+#. (itstool) path: option/_short
+msgid "Lock Rotation"
+msgstr "锁定旋转"
+
+#. (itstool) path: option/_short
+msgid "Rotate Up"
+msgstr "向上旋转"
+
+#. (itstool) path: option/_short
+msgid "Rotate Left"
+msgstr "向左旋转"
+
+#. (itstool) path: option/_short
+msgid "Rotate Down"
+msgstr "向下旋转"
+
+#. (itstool) path: option/_short
+msgid "Rotate Right"
+msgstr "向右旋转"

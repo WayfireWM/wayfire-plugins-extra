@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Water"
+msgstr "水"
+
+#. (itstool) path: plugin/_long
+msgid "Water effect."
+msgstr "水面效果。"
+
+#. (itstool) path: option/_short
+msgid "Activate"
+msgstr "激活"
+
+#. (itstool) path: option/_long
+msgid "Activates water effect."
+msgstr "激活水面效果。"

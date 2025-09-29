@@ -1,0 +1,49 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Focus Stealing Prevention"
+msgstr "焦点防盗"
+
+#. (itstool) path: option/_short
+msgid "The timeout (in ms) to prevent focus stealing"
+msgstr "防止焦点被盗的超时（毫秒）"
+
+#. (itstool) path: option/_long
+msgid ""
+"A timer will be reset to the timeout (in ms) on every keystroke. If the "
+"timer is active when another window would normally gain focus, the focus is "
+"reset to the window that is accepting input."
+msgstr ""
+"每次按键时，计时器将重置为设定的超时（毫秒）。如果在另一个窗口通常会获得焦点"
+"时计时器处于活动状态，则焦点将重置为正在接受输入的窗口。"
+
+#. (itstool) path: option/_short
+msgid "Deny focus to views matching this criteria"
+msgstr "拒绝焦点到符合此条件的视图"
+
+#. (itstool) path: option/_long
+msgid ""
+"If a view matches when mapped, focus is reset to the last view with focus."
+msgstr "如果某个视图在映射时匹配，焦点将重置为上一个具有焦点的视图。"
+
+#. (itstool) path: option/_short
+msgid "Cancel focus stealing prevention on these keys"
+msgstr "在这些键上取消焦点防盗"
+
+#. (itstool) path: option/_long
+msgid ""
+"Cancel focus stealing prevention when any of these keys are pressed. The "
+"string consists of keycode names delimited by | character."
+msgstr ""
+"按下这些键中的任何一个时，取消焦点防盗。该字符串由用 | 字符分隔的按键码名称组"
+"成。"
