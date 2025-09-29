@@ -1,0 +1,65 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Follow Focus"
+msgstr "跟随焦点"
+
+#. (itstool) path: option/_short
+msgid "View focus follows mouse"
+msgstr "视图焦点跟随鼠标"
+
+#. (itstool) path: option/_long
+msgid ""
+"When the mouse pointer is moved, the view focus changes to the view under "
+"the pointer."
+msgstr "当鼠标指针移动时，视图焦点会切换到指针下方的视图。"
+
+#. (itstool) path: option/_short
+msgid "Output focus follows mouse"
+msgstr "输出焦点跟随鼠标"
+
+#. (itstool) path: option/_long
+msgid ""
+"When the mouse pointer is moved, the output focus changes to the output that "
+"the pointer is currently on."
+msgstr "当鼠标指针移动时，输出焦点会切换到指针当前所在的输出。"
+
+#. (itstool) path: option/_short
+msgid "Delay (in ms) before focus change will be triggered"
+msgstr "焦点改变前的延迟（毫秒）"
+
+#. (itstool) path: option/_long
+msgid ""
+"The delay in ms before the plugin will trigger a focus change after the "
+"movement finished."
+msgstr "在移动结束后，插件触发焦点改变前的延迟（毫秒）。"
+
+#. (itstool) path: option/_short
+msgid "Minimum cursor movement"
+msgstr "最小光标移动"
+
+#. (itstool) path: option/_long
+msgid ""
+"The distance (x+y) the cursor should be moved at least before the plugin "
+"gets activated"
+msgstr "光标需要移动的最小距离 (x+y)，在此之后插件才会激活。"
+
+#. (itstool) path: option/_short
+msgid "Raise the focused view to the top"
+msgstr "将焦点视图提升到顶部"
+
+#. (itstool) path: option/_long
+msgid ""
+"If disabled the focused view will only get keyboard focus, but will not be "
+"raised to the top."
+msgstr "如果禁用，焦点视图将只获得键盘焦点，但不会被提升到顶部。"

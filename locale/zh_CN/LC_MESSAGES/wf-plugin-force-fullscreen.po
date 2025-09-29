@@ -1,0 +1,51 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Fullscreen Window"
+msgstr "全屏窗口"
+
+#. (itstool) path: option/_short
+msgid "Key Toggle Fullscreen"
+msgstr "按键切换全屏"
+
+#. (itstool) path: option/_short
+msgid "Preserve Aspect Ratio"
+msgstr "保持长宽比"
+
+#. (itstool) path: option/_short
+msgid "Transparent Behind Views"
+msgstr "视图后方透明"
+
+#. (itstool) path: option/_short
+msgid "Skew view width by multiplying by this factor"
+msgstr "通过乘以该因子来扭曲视图宽度"
+
+#. (itstool) path: option/_short
+msgid "Skew view height by multiplying by this factor"
+msgstr "通过乘以该因子来扭曲视图高度"
+
+#. (itstool) path: option/_short
+msgid "Constrain Mouse Pointer"
+msgstr "限制鼠标指针"
+
+#. (itstool) path: option/_long
+msgid "If constrain pointer is enabled, constrain to this area."
+msgstr "如果启用了限制指针，则限制在此区域。"
+
+#. (itstool) path: desc/_name
+msgid "View"
+msgstr "视图"
+
+#. (itstool) path: desc/_name
+msgid "Output"
+msgstr "输出"

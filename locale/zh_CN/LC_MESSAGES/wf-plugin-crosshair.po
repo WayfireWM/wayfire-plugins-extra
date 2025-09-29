@@ -1,0 +1,35 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Crosshair"
+msgstr "十字线"
+
+#. (itstool) path: plugin/_long
+msgid "Render fullscreen mouse crosshair"
+msgstr "渲染全屏鼠标十字线"
+
+#. (itstool) path: option/_short
+msgid "Line Width"
+msgstr "线宽"
+
+#. (itstool) path: option/_long
+msgid "Line width of crosshair"
+msgstr "十字线的线宽"
+
+#. (itstool) path: option/_short
+msgid "Line Color"
+msgstr "线条颜色"
+
+#. (itstool) path: option/_long
+msgid "Color used for rendering crosshair"
+msgstr "用于渲染十字线的颜色"

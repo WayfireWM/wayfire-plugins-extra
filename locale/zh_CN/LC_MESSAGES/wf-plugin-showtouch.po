@@ -1,0 +1,59 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Showtouch"
+msgstr "显示触控"
+
+#. (itstool) path: plugin/_long
+msgid "Render touchscreen fingers"
+msgstr "渲染触控笔划"
+
+#. (itstool) path: option/_short
+msgid "Finger Color"
+msgstr "手指颜色"
+
+#. (itstool) path: option/_long
+msgid "Color used for rendering finger touches"
+msgstr "用于渲染手指触控的颜色"
+
+#. (itstool) path: option/_short
+msgid "Center Color"
+msgstr "中心颜色"
+
+#. (itstool) path: option/_long
+msgid "Color used for rendering computed center of fingers"
+msgstr "用于渲染计算出的手指中心的颜色"
+
+#. (itstool) path: option/_short
+msgid "Touch Radius"
+msgstr "触控半径"
+
+#. (itstool) path: option/_long
+msgid "Radius used to size the finger touch point renderings"
+msgstr "用于调整手指触控点渲染大小的半径"
+
+#. (itstool) path: option/_short
+msgid "Touch Duration"
+msgstr "触控持续时间"
+
+#. (itstool) path: option/_long
+msgid "Milliseconds the visual finger indicator will stay on screen"
+msgstr "可视手指指示器在屏幕上停留的毫秒数"
+
+#. (itstool) path: option/_short
+msgid "Toggle"
+msgstr "切换"
+
+#. (itstool) path: option/_long
+msgid "Toggles the finger indicators off and on"
+msgstr "切换手指指示器的开启和关闭"

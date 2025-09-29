@@ -1,0 +1,27 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+msgid "Magnifier"
+msgstr "放大镜"
+
+#. (itstool) path: option/_short
+msgid "Toggle"
+msgstr "切换"
+
+#. (itstool) path: option/_short
+msgid "Zoom Level"
+msgstr "缩放级别"
+
+#. (itstool) path: option/_short
+msgid "Default View Height"
+msgstr "默认视图高度"

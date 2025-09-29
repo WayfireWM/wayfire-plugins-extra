@@ -43,6 +43,7 @@ add_project_arguments(['-Wno-unused-parameter'], language: 'cpp')
 subdir('proto')
 subdir('src')
 subdir('metadata')
+subdir('locale')
 
 summary = [
 	'',

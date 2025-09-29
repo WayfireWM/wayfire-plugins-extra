@@ -1,0 +1,144 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2025-09-28 22:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: zh_CN \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. (itstool) path: plugin/_short
+#. (itstool) path: option/_short
+msgid "Workspace Names"
+msgstr "工作区名称"
+
+#. (itstool) path: plugin/_long
+msgid "Name workspaces."
+msgstr "为工作区命名。"
+
+#. (itstool) path: option/_short
+msgid "Display Duration"
+msgstr "显示持续时间"
+
+#. (itstool) path: option/_long
+msgid "How long the name is displayed."
+msgstr "名称的显示时长。"
+
+#. (itstool) path: option/_short
+msgid "Margin"
+msgstr "边距"
+
+#. (itstool) path: option/_long
+msgid "Distance from edge of screen to indicator."
+msgstr "指示器到屏幕边缘的距离。"
+
+#. (itstool) path: option/_short
+msgid "Position"
+msgstr "位置"
+
+#. (itstool) path: option/_long
+msgid "Position of rendering."
+msgstr "渲染位置。"
+
+#. (itstool) path: desc/_name
+msgid "Top Left"
+msgstr "左上"
+
+#. (itstool) path: desc/_name
+msgid "Top Center"
+msgstr "中上"
+
+#. (itstool) path: desc/_name
+msgid "Top Right"
+msgstr "右上"
+
+#. (itstool) path: desc/_name
+msgid "Center Left"
+msgstr "左中"
+
+#. (itstool) path: desc/_name
+msgid "Center"
+msgstr "居中"
+
+#. (itstool) path: desc/_name
+msgid "Center Right"
+msgstr "右中"
+
+#. (itstool) path: desc/_name
+msgid "Bottom Left"
+msgstr "左下"
+
+#. (itstool) path: desc/_name
+msgid "Bottom Center"
+msgstr "中下"
+
+#. (itstool) path: desc/_name
+msgid "Bottom Right"
+msgstr "右下"
+
+#. (itstool) path: option/_short
+msgid "Background Color"
+msgstr "背景颜色"
+
+#. (itstool) path: option/_long
+msgid "Background color for text."
+msgstr "文本的背景颜色。"
+
+#. (itstool) path: option/_short
+msgid "Text Color"
+msgstr "文本颜色"
+
+#. (itstool) path: option/_long
+msgid "Text color."
+msgstr "文本颜色。"
+
+#. (itstool) path: option/_short
+msgid "Text Font"
+msgstr "文本字体"
+
+#. (itstool) path: option/_long
+msgid "Font used for text rendering."
+msgstr "用于文本渲染的字体。"
+
+#. (itstool) path: option/_short
+msgid "Show Option Names"
+msgstr "显示选项名称"
+
+#. (itstool) path: option/_long
+msgid "Display option names on screen for convenience."
+msgstr "在屏幕上显示选项名称以方便使用。"
+
+#. (itstool) path: option/_short
+msgid "Show Option Values"
+msgstr "显示选项值"
+
+#. (itstool) path: option/_long
+msgid ""
+"Display option values instead of names, when show_option_names is enabled."
+msgstr "当启用显示选项名称时，显示选项值而不是名称。"
+
+#. (itstool) path: option/_short
+msgid "Background Corner Radius"
+msgstr "背景圆角半径"
+
+#. (itstool) path: option/_long
+msgid "Radius for the corners of the background."
+msgstr "背景圆角的半径。"
+
+#. (itstool) path: option/_long
+msgid ""
+"Names of the workspaces. By default, they will have the name Workspace #N, "
+"where #N is the workspace number."
+msgstr ""
+"工作区的名称。默认情况下，它们的名称为“工作区 #N”，其中 #N 是工作区编号。"
+
+#. (itstool) path: entry/_short
+msgid "Workspace Name"
+msgstr "工作区名称"
+
+#. (itstool) path: entry/_long
+msgid "Sets the name of the workspace"
+msgstr "设置工作区的名称"
