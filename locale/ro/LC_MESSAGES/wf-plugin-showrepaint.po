@@ -1,0 +1,50 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 22:31+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:4
+msgid "Show Repaint"
+msgstr "Arată redesenările"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:5
+msgid "Show repainted areas on the screen."
+msgstr "Arată zonele redesenate pe ecran."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:8
+msgid "Toggle"
+msgstr "Inițiere"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:9
+msgid "Toggles the plugin state."
+msgstr "Comută starea modulului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:13
+msgid "Reduce Flicker"
+msgstr "Redu pâlpâirea"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/showrepaint.xml:14
+msgid ""
+"Reduce flicker by copying the client damage region from the last frame to "
+"the current frame. This means that only the the damage region for all "
+"surfaces of the frame are painted and the rest of the output is painted with "
+"the contents of the last frame."
+msgstr ""
+"Redu pâlpâirea copiind regiunea de pătare a clientului de la cadrul anterior "
+"la cadrul actual. Aceasta înseamnă că doar regiunea de pătare pentru fiecare "
+"suprafață a cadrului este desenată și că restul ecranului este desenat cu "
+"conținutul cadrului anterior."

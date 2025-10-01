@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 08:56+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:4
+msgid "Bench"
+msgstr "Probă de performanță"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:5
+msgid "Display fps on each output."
+msgstr "Afișează numărul de cadre pe secundă pe fiecare ecran."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:8
+msgid "Average frames"
+msgstr "Cadre pentru medie"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:9
+msgid "How many frames to average to get the FPS value."
+msgstr "Pe câte cadre să se facă media pentru a obține valoarea frecvenței cadrelor."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:14
+msgid "Position"
+msgstr "Poziție"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:15
+msgid "Position of rendering."
+msgstr "Poziția desenării."
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:19
+msgid "Top Left"
+msgstr "Stânga-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:23
+msgid "Top Center"
+msgstr "Centru-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:27
+msgid "Top Right"
+msgstr "Dreapta-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:31
+msgid "Center Left"
+msgstr "Stânga-centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:35
+msgid "Center"
+msgstr "Centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:39
+msgid "Center Right"
+msgstr "Dreapta-centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:43
+msgid "Bottom Left"
+msgstr "Stânga-jos"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:47
+msgid "Bottom Center"
+msgstr "Centru-jos"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/bench.xml:51
+msgid "Bottom Right"
+msgstr "Dreapta-jos"
