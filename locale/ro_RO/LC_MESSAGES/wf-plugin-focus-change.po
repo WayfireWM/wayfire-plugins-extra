@@ -1,0 +1,172 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 13:10+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:4
+msgid "Focus Change"
+msgstr "Schimbare focalizare"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:7
+msgid "focus up"
+msgstr "Focalizare în sus"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:8
+msgid "move focus to the closest window above"
+msgstr "Mută focalizarea la cea mai apropiată fereastră de deasupra."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:12
+msgid "focus down"
+msgstr "Focalizare în jos"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:13
+msgid "move focus to the closest window below"
+msgstr "Mută focalizarea la cea mai apropiată fereastră de dedesubt."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:17
+msgid "focus right"
+msgstr "Focalizare la dreapta"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:18
+msgid "move focus to the closest window to the right"
+msgstr "Mută focalizarea la cea mai apropiată fereastră de la dreapta."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:22
+msgid "focus left"
+msgstr "Focalizare la stânga"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:23
+msgid "move focus to the closest window to the left"
+msgstr "Mută focalizarea la cea mai apropiată fereastră de la stânga."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:27
+msgid "upwards grace in pixels"
+msgstr "Grație în sus în pixeli"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:28
+msgid ""
+"add an amount of pixel upwards in which windows will be ignored. Can be "
+"negative"
+msgstr ""
+"Adaugă pixeli în sus în care ferestrele vor fi ignorate. Poate fi negativ."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:32
+msgid "downwards grace in pixels"
+msgstr "Grație în jos în pixeli"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:33
+msgid ""
+"add an amount of pixel downwards in which windows will be ignored. Can be "
+"negative"
+msgstr ""
+"Adaugă pixeli în jos în care ferestrele vor fi ignorate. Poate fi negativ."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:37
+msgid "rightwards grace in pixels"
+msgstr "Grație în dreapta în pixeli"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:38
+msgid ""
+"add an amount of pixel to the right in which windows will be ignored. Can be "
+"negative"
+msgstr ""
+"Adaugă pixeli în dreapta în care ferestrele vor fi ignorate. Poate fi "
+"negativ."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:42
+msgid "leftwards grace in pixels"
+msgstr "Grație în stânga în pixeli"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:43
+msgid ""
+"add an amount of pixel to the left in which windows will be ignored. Can be "
+"negative"
+msgstr ""
+"Adaugă pixeli în stânga în care ferestrele vor fi ignorate. Poate fi negativ."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:47
+msgid "ignores output boundraries"
+msgstr "Ignoră granițele ecranelor"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:48
+msgid "enables moving focus between different outputs"
+msgstr "Permite mutarea focalizării între ecrane diferite."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:52
+msgid "ignores workspace boundraries"
+msgstr "Ignoră granițele birourilor"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:53
+msgid "enables moving focus between workspaces on the same output"
+msgstr "Permite mutarea focalizării între birouri de pe același ecran."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:57
+msgid "raise window on change"
+msgstr "Ridică fereastra la schimbare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:58
+msgid "raise the newly focused window to the top"
+msgstr "Mută fereastra nou focalizată deasupra."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:62
+msgid "scan height"
+msgstr "Înălțime scanare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:63
+msgid ""
+"the height of the bounding box used to scan for windows to the left or "
+"right. If zero it will be the height of the view. If negative it will be the "
+"height of the view subtracted by the value"
+msgstr ""
+"Înălțimea casetei care scanează ferestre în stânga sau în dreapta. Dacă este "
+"0, va fi înălțimea ferestrei. Dacă este negativă, va fi înălțimea ferestrei "
+"minus valoarea dată."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:67
+msgid "scan width"
+msgstr "Lățime scanare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-change.xml:68
+msgid ""
+"the width of the bounding box used to scan for window above or below. If "
+"zero it will be the width of the view. If negative it will be the width of "
+"the view subtracted by the value"
+msgstr ""
+"Lățimea casetei care scanează ferestre în sus sau în jos. Dacă este 0, va fi "
+"lățimea ferestrei. Dacă este negativă, va fi lățimea ferestrei minus "
+"valoarea dată."

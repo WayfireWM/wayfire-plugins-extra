@@ -1,0 +1,207 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 12:09+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:4
+msgid "Extra Animations"
+msgstr "Animații suplimentare"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:5
+msgid "Extra animations to extend animate plugin"
+msgstr "Animații care suplimentează modulul de animații"
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:8
+msgid "Blinds Settings"
+msgstr "Opțiuni jaluzele"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:10
+msgid "Blinds duration"
+msgstr "Durata jaluzelelor"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:11
+msgid "Sets the duration for the blinds animation in milliseconds."
+msgstr "Stabilește durata pentru animația de jaluzele, în milisecunde."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:15
+msgid "Blinds strip height"
+msgstr "Înălțimea fâșiei de jaluzele"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:16
+msgid "Height of each blinds strip in pixels."
+msgstr "Înălțimea fiecărei fâșii a jaluzelelor, în pixeli."
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:22
+msgid "Helix Settings"
+msgstr "Opțiuni helix"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:24
+msgid "Helix duration"
+msgstr "Durata helixului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:25
+msgid "Sets the duration for the helix animation in milliseconds."
+msgstr "Stabilește durata pentru animația helix, în milisecunde."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:29
+msgid "Helix rotations"
+msgstr "Rotații helix"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:30
+msgid "Number of rotations for the helix animation."
+msgstr "Numărul de rotații pentru animația helix."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:35
+msgid "Helix strip height"
+msgstr "Înălțimea fâșiei de helix"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:36
+msgid "Height of each helix strip in pixels."
+msgstr "Înălțimea fiecărei fâșii a helixului, în pixeli."
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:42
+msgid "Shatter Settings"
+msgstr "Opțiuni spargere"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:44
+msgid "Shatter duration"
+msgstr "Durata spargerii"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:45
+msgid "Sets the duration for the shatter animation in milliseconds."
+msgstr "Stabilește durata pentru animația de spargere, în milisecunde."
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:50
+msgid "Vortex Settings"
+msgstr "Opțiuni vârtej"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:52
+msgid "Vortex duration"
+msgstr "Durata vârtejului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:53
+msgid "Sets the duration for the vortex animation in milliseconds."
+msgstr "Stabilește durata animației de vârtej, în milisecunde."
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:58
+msgid "Melt Settings"
+msgstr "Opțiuni topire"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:60
+msgid "Melt duration"
+msgstr "Durata topirii"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:61
+msgid "Sets the duration for the melt animation in milliseconds."
+msgstr "Stabilește durata animației de topire, în milisecunde."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:65
+msgid "Melt distortion factor"
+msgstr "Factor de deformare pentru topire"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:66
+msgid "Distortion factor for melt animation."
+msgstr "Stabilește factorul de deformare folosit la animația de topire."
+
+#. (itstool) path: group/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:72
+msgid "Dodge Settings"
+msgstr "Opțiuni suprapunere"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:74
+msgid "Enable Dodge"
+msgstr "Activează suprapunerea"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:75
+msgid "Enables the Dodge focus animation."
+msgstr "Activează animația de suprapunere la focalizare."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:79
+msgid "Duration"
+msgstr "Durata"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:80
+msgid "Sets the animation duration in milliseconds."
+msgstr "Stabilește durata animației, în milisecunde."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:84
+msgid "Rotate"
+msgstr "Rotire"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:85
+msgid "Rotate windows during animation."
+msgstr "Rotește ferestrele în timpul animației."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:89
+msgid "Zoom"
+msgstr "Mărire"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:90
+msgid "Slightly increase zoom for the focusing window during animation."
+msgstr "Mărește puțin fereastra ce se focalizează în animație."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:94
+msgid "Animation Direction"
+msgstr "Direcția animației"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:95
+msgid "Sets the animation direction."
+msgstr "Stabilește direcția animației."
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:98
+msgid "Cardinal"
+msgstr "Cardinală"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:102
+msgid "Diagonal"
+msgstr "Diagonală"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/extra-animations.xml:106
+msgid "Circular"
+msgstr "Circulară"

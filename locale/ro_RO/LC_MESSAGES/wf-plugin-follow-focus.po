@@ -1,0 +1,87 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 21:49+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:4
+msgid "Follow Focus"
+msgstr "Urmărirea focalizării"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:7
+msgid "View focus follows mouse"
+msgstr "Focalizarea ferestrelor urmărește mausul."
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:8
+msgid ""
+"When the mouse pointer is moved, the view focus changes to the view under "
+"the pointer."
+msgstr ""
+"Când se mișcă cursorul mausului, focalizarea se acordă ferestrei de sub "
+"acesta."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:12
+msgid "Output focus follows mouse"
+msgstr "Focalizarea ecranelor urmărește mausul."
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:13
+msgid ""
+"When the mouse pointer is moved, the output focus changes to the output that "
+"the pointer is currently on."
+msgstr ""
+"Când se mișcă cursorul mausului, focalizarea se acordă ecranului de sub "
+"acesta."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:17
+msgid "Delay (in ms) before focus change will be triggered"
+msgstr "Timp de așteptare (în ms) până se declanșează schimbarea focalizării"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:18
+msgid ""
+"The delay in ms before the plugin will trigger a focus change after the "
+"movement finished."
+msgstr ""
+"Timpul de așteptare, în milisecunde, înainte ca modulul să inițieze o "
+"schimbare a focalizării după ce s-a terminat mișcarea."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:23
+msgid "Minimum cursor movement"
+msgstr "Mișcarea minimă a cursorului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:24
+msgid ""
+"The distance (x+y) the cursor should be moved at least before the plugin "
+"gets activated"
+msgstr ""
+"Distanța minimă (x+y) pentru care să se miște cursorul înainte să se "
+"activeze modului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:29
+msgid "Raise the focused view to the top"
+msgstr "Ridică fereastra focalizată"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/follow-focus.xml:30
+msgid ""
+"If disabled the focused view will only get keyboard focus, but will not be "
+"raised to the top."
+msgstr ""
+"Dacă este dezactivată, fereastra focalizată va prelua doar focalizarea "
+"tastaturii, dar nu va fi pusă deasupra."

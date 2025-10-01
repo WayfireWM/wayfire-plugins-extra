@@ -1,0 +1,61 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 21:43+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:4
+msgid "Focus Stealing Prevention"
+msgstr "Prevenirea furtului de focalizare"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:7
+msgid "The timeout (in ms) to prevent focus stealing"
+msgstr "Timpul, în milisecunde, pentru care să se prevină furtul focalizării"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:8
+msgid ""
+"A timer will be reset to the timeout (in ms) on every keystroke. If the "
+"timer is active when another window would normally gain focus, the focus is "
+"reset to the window that is accepting input."
+msgstr ""
+"Un cronometru va fi reînceput până la timpul stabilit (în milisecunde) la "
+"fiecare batere a tastelor. Dacă cronometrul este activ când altă fereastră "
+"ar deveni focalizată, focalizarea este restabilită la fereastra care "
+"acceptă intrare."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:13
+msgid "Deny focus to views matching this criteria"
+msgstr "Refuză focalizarea ferestrelor ce satisfac criteriile"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:14
+msgid ""
+"If a view matches when mapped, focus is reset to the last view with focus."
+msgstr ""
+"Dacă o fereastră corespunde când i se alocă ecran, focalizarea este "
+"restabilită la ultima fereastră focalizată."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:18
+msgid "Cancel focus stealing prevention on these keys"
+msgstr "Anulează prevenirea furtului de focalizare la aceste taste"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/focus-steal-prevent.xml:19
+msgid ""
+"Cancel focus stealing prevention when any of these keys are pressed. The "
+"string consists of keycode names delimited by | character."
+msgstr ""
+"Anulează prevenirea furtului de focalizare când oricare dintre aceste taste "
+"este apăsată. Șirul constă din coduri de taste delimitate de caracterul |."

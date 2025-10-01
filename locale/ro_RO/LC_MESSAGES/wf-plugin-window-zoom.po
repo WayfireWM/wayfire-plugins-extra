@@ -1,0 +1,86 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 23:36+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:4
+msgid "Window Zoom"
+msgstr "Mărire fereastră"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:5
+msgid "A plugin to zoom windows."
+msgstr "Un modul pentru a mări ferestre."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:8
+msgid "Modifier"
+msgstr "Modificatoare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:9
+msgid ""
+"When the modifier key is held down, you can scroll down and up to adjust the "
+"zoom of the window."
+msgstr ""
+"Când tasta modificatoare este ținută apăsată, puteți derula în sus și în jos "
+"pentru a regla gradul de mărire a ferestrei."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:13
+msgid "Zoom Step"
+msgstr "Treaptă de mărire"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:14
+msgid "Sets the zoom increment per binding action."
+msgstr "Stabilește treapta gradului de mărire pentru o acțiune de asociere."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:19
+msgid "Preserve Aspect"
+msgstr "Păstrează raportul de aspect"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:20
+msgid "Preserve the aspect ratio of the view."
+msgstr "Păstrează raportul de aspect al ferestrei."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:24
+msgid "Nearest Filtering"
+msgstr "Filtru „cel mai apropiat”"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:25
+msgid "Use GL_NEAREST instead of GL_LINEAR."
+msgstr "Folosește GL_NEAREST în locul lui GL_LINEAR."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:29
+msgid "Increment X"
+msgstr "Incrementare X"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:33
+msgid "Decrement X"
+msgstr "Decrementare X"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:37
+msgid "Increment Y"
+msgstr "Incrementare Y"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/window-zoom.xml:41
+msgid "Decrement Y"
+msgstr "Decrementare Y"

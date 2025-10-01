@@ -1,0 +1,67 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 22:16+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:4
+msgid "Fullscreen Window"
+msgstr "Fereastră pe ecran complet"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:7
+msgid "Key Toggle Fullscreen"
+msgstr "Tastă pentru comutarea ecranului complet"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:11
+msgid "Preserve Aspect Ratio"
+msgstr "Păstrează raportul de aspect"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:15
+msgid "Transparent Behind Views"
+msgstr "Transparent în spatele ferestrelor"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:19
+msgid "Skew view width by multiplying by this factor"
+msgstr "Întinde lățimea ferestrei înmulțind cu acest factor"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:25
+msgid "Skew view height by multiplying by this factor"
+msgstr "Întinde înălțimea ferestrei înmulțind cu acest factor"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:31
+msgid "Constrain Mouse Pointer"
+msgstr "Constrânge cursorul mausului"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:35
+msgid "Constraint Area"
+msgstr "Zonă de constrângere"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:36
+msgid "If constrain pointer is enabled, constrain to this area."
+msgstr "Dacă constrângerea cursorului este activată, constrânge la această zonă."
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:40
+msgid "View"
+msgstr "Fereastră"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/force-fullscreen.xml:44
+msgid "Output"
+msgstr "Ecran"

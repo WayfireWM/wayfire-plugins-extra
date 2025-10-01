@@ -1,0 +1,46 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 22:24+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:4
+msgid "Hide Cursor"
+msgstr "Ascundere cursor"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:5
+msgid "A plugin that allows to toggle hide mouse cursor."
+msgstr "Un modul care permite comutarea vizibilității cursorului mausului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:8
+msgid "Toggle"
+msgstr "Comutare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:9
+msgid "Toggles hide mouse cursor."
+msgstr "Comută vizibilitatea cursorului mausului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:13
+msgid "Delay (in ms) before cursor will be hidden"
+msgstr "Timp de așteptare (în ms) până se ascunde cursorul"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/hide-cursor.xml:14
+msgid ""
+"The delay in ms before the plugin will hide the cursor. The cursor is shown "
+"again when cursor motion happens."
+msgstr ""
+"Timpul, în milisecunde, care să se aștepte înainte ca modulul să ascundă "
+"cursorul. Cursorul este afișat din nou când se mișcă."

@@ -1,0 +1,37 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-09-30 22:22+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro_RO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/ghost.xml:4
+msgid "Ghost Windows"
+msgstr "Ferestre fantomă"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/ghost.xml:7
+msgid "Ghosted Windows"
+msgstr "Ferestre fantomă"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/ghost.xml:8
+msgid "Automatically sets the matched windows to be click-through."
+msgstr "Face automat ca clicul să treacă prin ferestrele corespunzătoare."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/ghost.xml:12
+msgid "Toggle Ghost Window"
+msgstr "Comută fereastră fantomă"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/ghost.xml:13
+msgid "Toggles the active window being click-through to whatever is below."
+msgstr "Comută dacă clicul în fereastra activă este transmis la fereastra de dedesubt."
