@@ -38,6 +38,11 @@ class wayfire_extra_animations : public wf::plugin_interface_t
 {
     wf::shared_data::ref_ptr_t<wf::animate::animate_effects_registry_t> effects_registry;
     wf::option_wrapper_t<bool> dodge_toggle{"extra-animations/dodge_toggle"};
+    wf::option_wrapper_t<wf::animation_description_t> blinds_duration{"extra-animations/blinds_duration"};
+    wf::option_wrapper_t<wf::animation_description_t> helix_duration{"extra-animations/helix_duration"};
+    wf::option_wrapper_t<wf::animation_description_t> shatter_duration{"extra-animations/shatter_duration"};
+    wf::option_wrapper_t<wf::animation_description_t> vortex_duration{"extra-animations/vortex_duration"};
+    wf::option_wrapper_t<wf::animation_description_t> melt_duration{"extra-animations/melt_duration"};
     std::unique_ptr<wf::dodge::wayfire_dodge> dodge_plugin;
 
   public:
@@ -51,23 +56,23 @@ class wayfire_extra_animations : public wf::plugin_interface_t
 
         effects_registry->register_effect("blinds", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::blinds::blinds_animation>(); },
-            .default_duration = [=] { return wf::blinds::blinds_duration.value(); },
+            .default_duration = [=] { return blinds_duration.value(); },
         });
         effects_registry->register_effect("helix", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::helix::helix_animation>(); },
-            .default_duration = [=] { return wf::helix::helix_duration.value(); },
+            .default_duration = [=] { return helix_duration.value(); },
         });
         effects_registry->register_effect("shatter", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::shatter::shatter_animation>(); },
-            .default_duration = [=] { return wf::shatter::shatter_duration.value(); },
+            .default_duration = [=] { return shatter_duration.value(); },
         });
         effects_registry->register_effect("vortex", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::vortex::vortex_animation>(); },
-            .default_duration = [=] { return wf::vortex::vortex_duration.value(); },
+            .default_duration = [=] { return vortex_duration.value(); },
         });
         effects_registry->register_effect("melt", wf::animate::effect_description_t{
             .generator = [] { return std::make_unique<wf::melt::melt_animation>(); },
-            .default_duration = [=] { return wf::melt::melt_duration.value(); },
+            .default_duration = [=] { return melt_duration.value(); },
         });
         dodge_toggle.set_callback([=] {dodge_option_changed();});
         dodge_option_changed();

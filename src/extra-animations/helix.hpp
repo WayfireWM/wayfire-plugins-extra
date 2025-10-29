@@ -82,15 +82,9 @@ using namespace wf::animation;
 
 static std::string transformer_name = "animation-helix";
 
-wf::option_wrapper_t<wf::animation_description_t> helix_duration{"extra-animations/helix_duration"};
 wf::option_wrapper_t<int> helix_strip_height{"extra-animations/helix_strip_height"};
 wf::option_wrapper_t<int> helix_rotations{"extra-animations/helix_rotations"};
 
-class helix_animation_t : public duration_t
-{
-  public:
-    using duration_t::duration_t;
-};
 class helix_transformer : public wf::scene::view_2d_transformer_t
 {
   public:
@@ -98,7 +92,7 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
     OpenGL::program_t program;
     wf::output_t *output;
     wf::geometry_t animation_geometry;
-    helix_animation_t progression{helix_duration};
+    duration_t progression;
 
     class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<transformer_base_node_t>
     {
@@ -249,9 +243,11 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
         }
     };
 
-    helix_transformer(wayfire_view view, wf::geometry_t bbox) : wf::scene::view_2d_transformer_t(view)
+    helix_transformer(wayfire_view view, wf::geometry_t bbox,
+        wf::animation_description_t duration) : wf::scene::view_2d_transformer_t(view)
     {
         this->view = view;
+        this->progression = duration_t{wf::create_option(duration)};
         if (view->get_output())
         {
             output = view->get_output();
@@ -318,7 +314,7 @@ class helix_animation : public animation_base_t
         pop_transformer(view);
         auto bbox = view->get_transformed_node()->get_bounding_box();
         auto tmgr = view->get_transformed_node();
-        auto node = std::make_shared<wf::helix::helix_transformer>(view, bbox);
+        auto node = std::make_shared<wf::helix::helix_transformer>(view, bbox, dur);
         tmgr->add_transformer(node, wf::TRANSFORMER_HIGHLEVEL + 1, transformer_name);
         node->init_animation(type & WF_ANIMATE_HIDING_ANIMATION);
     }
