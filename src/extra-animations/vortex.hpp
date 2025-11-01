@@ -110,13 +110,6 @@ using namespace wf::animation;
 
 static std::string vortex_transformer_name = "animation-vortex";
 
-wf::option_wrapper_t<wf::animation_description_t> vortex_duration{"extra-animations/vortex_duration"};
-
-class vortex_animation_t : public duration_t
-{
-  public:
-    using duration_t::duration_t;
-};
 class vortex_transformer : public wf::scene::view_2d_transformer_t
 {
   public:
@@ -124,7 +117,7 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
     OpenGL::program_t program;
     wf::output_t *output;
     wf::geometry_t animation_geometry;
-    vortex_animation_t progression{vortex_duration};
+    duration_t progression;
 
     class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<transformer_base_node_t>
     {
@@ -207,9 +200,11 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
         }
     };
 
-    vortex_transformer(wayfire_view view, wf::geometry_t bbox) : wf::scene::view_2d_transformer_t(view)
+    vortex_transformer(wayfire_view view, wf::geometry_t bbox,
+        wf::animation_description_t duration) : wf::scene::view_2d_transformer_t(view)
     {
         this->view = view;
+        this->progression = duration_t{wf::create_option(duration)};
         if (view->get_output())
         {
             output = view->get_output();
@@ -275,7 +270,7 @@ class vortex_animation : public animation_base_t
         pop_transformer(view);
         auto bbox = view->get_transformed_node()->get_bounding_box();
         auto tmgr = view->get_transformed_node();
-        auto node = std::make_shared<vortex_transformer>(view, bbox);
+        auto node = std::make_shared<vortex_transformer>(view, bbox, dur);
         tmgr->add_transformer(node, wf::TRANSFORMER_HIGHLEVEL + 1, vortex_transformer_name);
         node->init_animation(type & WF_ANIMATE_HIDING_ANIMATION);
     }

@@ -26,6 +26,8 @@
 #include <wayfire/core.hpp>
 #include <wayfire/opengl.hpp>
 #include <wayfire/view-transform.hpp>
+#include <wayfire/util/duration.hpp>
+#include <wayfire/plugins/animate/animate.hpp>
 
 
 static const char *melt_vert_source =
@@ -97,14 +99,8 @@ using namespace wf::animation;
 
 static std::string melt_transformer_name = "animation-melt";
 
-wf::option_wrapper_t<wf::animation_description_t> melt_duration{"extra-animations/melt_duration"};
 wf::option_wrapper_t<int> melt_distortion_factor{"extra-animations/melt_distortion_factor"};
 
-class melt_animation_t : public duration_t
-{
-  public:
-    using duration_t::duration_t;
-};
 class melt_transformer : public wf::scene::view_2d_transformer_t
 {
   public:
@@ -113,7 +109,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
     wf::output_t *output;
     OpenGL::program_t program;
     wf::auxilliary_buffer_t buffer;
-    melt_animation_t progression{melt_duration};
+    duration_t progression;
 
     class simple_node_render_instance_t : public wf::scene::transformer_render_instance_t<transformer_base_node_t>
     {
@@ -213,9 +209,11 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
         }
     };
 
-    melt_transformer(wayfire_view view, wf::geometry_t bbox) : wf::scene::view_2d_transformer_t(view)
+    melt_transformer(wayfire_view view, wf::geometry_t bbox,
+        wf::animation_description_t duration) : wf::scene::view_2d_transformer_t(view)
     {
         this->view = view;
+        this->progression = duration_t{wf::create_option(duration)};
         if (view->get_output())
         {
             output = view->get_output();
@@ -294,7 +292,7 @@ class melt_animation : public animation_base_t
         pop_transformer(view);
         auto bbox = view->get_transformed_node()->get_bounding_box();
         auto tmgr = view->get_transformed_node();
-        auto node = std::make_shared<melt_transformer>(view, bbox);
+        auto node = std::make_shared<melt_transformer>(view, bbox, dur);
         tmgr->add_transformer(node, wf::TRANSFORMER_HIGHLEVEL + 1, melt_transformer_name);
         node->init_animation(type & WF_ANIMATE_HIDING_ANIMATION);
     }

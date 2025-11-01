@@ -89,14 +89,6 @@ using namespace wf::animation;
 
 static std::string shatter_transformer_name = "animation-shatter";
 
-wf::option_wrapper_t<wf::animation_description_t> shatter_duration{"extra-animations/shatter_duration"};
-
-class shatter_animation_t : public duration_t
-{
-  public:
-    using duration_t::duration_t;
-    timed_transition_t shatter{*this};
-};
 class shatter_transformer : public wf::scene::view_2d_transformer_t
 {
   public:
@@ -104,7 +96,7 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
     OpenGL::program_t program;
     wf::output_t *output;
     wf::geometry_t animation_geometry;
-    shatter_animation_t progression{shatter_duration};
+    duration_t progression;
     voronoi_diagram<double> vd;
     std::vector<glm::vec3> rotations;
     std::vector<boost::polygon::point_data<int>> points;
@@ -289,9 +281,11 @@ class shatter_transformer : public wf::scene::view_2d_transformer_t
         }
     };
 
-    shatter_transformer(wayfire_view view, wf::geometry_t bbox) : wf::scene::view_2d_transformer_t(view)
+    shatter_transformer(wayfire_view view, wf::geometry_t bbox,
+        wf::animation_description_t duration) : wf::scene::view_2d_transformer_t(view)
     {
         this->view = view;
+        this->progression = duration_t{wf::create_option(duration)};
         if (view->get_output())
         {
             output = view->get_output();
@@ -378,7 +372,7 @@ class shatter_animation : public animation_base_t
         pop_transformer(view);
         auto bbox = view->get_transformed_node()->get_bounding_box();
         auto tmgr = view->get_transformed_node();
-        auto node = std::make_shared<shatter_transformer>(view, bbox);
+        auto node = std::make_shared<shatter_transformer>(view, bbox, dur);
         tmgr->add_transformer(node, wf::TRANSFORMER_HIGHLEVEL + 1, shatter_transformer_name);
         node->init_animation(type & WF_ANIMATE_HIDING_ANIMATION);
     }
