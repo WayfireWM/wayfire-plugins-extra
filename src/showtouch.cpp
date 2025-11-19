@@ -324,6 +324,7 @@ class wayfire_showtouch : public wf::per_output_plugin_instance_t
 
         wf::gles::run_in_context([&]
         {
+            wf::gles::bind_render_buffer(dest);
             program.use(wf::TEXTURE_TYPE_RGBA);
             program.set_active_texture(tex);
 
