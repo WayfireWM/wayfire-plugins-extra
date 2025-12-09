@@ -192,7 +192,7 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
             GL_CALL(glBindTexture(GL_TEXTURE_2D, wf::gles_texture_t::from_aux(source).tex_id));
             GL_CALL(glActiveTexture(GL_TEXTURE0));
 
-            program.uniform2f("u_mouse", oc.x, oc.y);
+            program.uniform2f("u_mouse", oc.x, dest.get_size().height - oc.y);
             program.uniform2f("u_resolution", dest.get_size().width, dest.get_size().height);
             program.uniform1f("u_radius", radius);
             program.uniform1f("u_zoom", progression);
