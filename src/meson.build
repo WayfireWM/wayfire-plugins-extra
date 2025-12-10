@@ -16,6 +16,10 @@ crosshair = shared_module('crosshair', 'crosshair.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+fisheye = shared_module('fisheye', 'fisheye.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 focus_change = shared_module('focus-change', 'focus-change.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
