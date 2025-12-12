@@ -60,6 +60,10 @@ uniform int direction;
 uniform float flame_speed;
 uniform float flame_width;
 uniform float flame_height;
+uniform int flame_smooth_1;
+uniform int flame_smooth_2;
+uniform int flame_smooth_3;
+uniform int flame_smooth_4;
 
 // procedural noise from IQ
 vec2 hash( vec2 p )
@@ -93,19 +97,33 @@ float fbm(vec2 uv)
     float f;
     mat2 m = mat2(1.7,  1.2, -1.2,  1.7);
     f  = 0.5000 * noise( uv ); uv = m * uv;
-    f += 0.0125 * noise( uv ); uv = m * uv;
-    f = 0.5 + 0.37 * f;
-    return f;
+    if (flame_smooth_1 == 1)
+    {
+        f += 0.2500 * noise( uv ); uv = m * uv;
+    }
+    if (flame_smooth_2 == 1)
+    {
+        f += 0.1250 * noise( uv ); uv = m * uv;
+    }
+    if (flame_smooth_3 == 1)
+    {
+        f += 0.0625 * noise( uv ); uv = m * uv;
+    }
+    if (flame_smooth_4 == 1)
+    {
+        f += 0.0125 * noise( uv ); uv = m * uv;
+    }
+    return 0.5 + 0.3 * f;
 }
 
 void main()
 {
     float width = size.x;
     float height = size.y;
-    vec2 uv = vec2(uvpos.x * width * 0.02, (uvpos.y - progress) * (height * 0.002));
+    vec2 uv = vec2(uvpos.x * width * 0.02, (uvpos.y - progress) * height * 0.002);
     vec2 q = vec2(uv.x, uv.y);
-    q.x *= (1.05 - flame_width) * 10.0;
-    q.y *= 2.0 / flame_height;
+    q.x *= (1.05 - flame_width) * 3.0;
+    q.y *= pow(0.4 / ((flame_height * 0.3) + 0.1), clamp(uvpos.y + 0.2 - progress, 0.1, 0.7) * 20.0);
     float burn_progress = progress;
     if (direction == 1)
     {
@@ -115,23 +133,19 @@ void main()
     q.x -= 0.2;
     q.y -= 0.1;
     float n = fbm(q - vec2(0, T3));
-    float c = 1.0 - 8.0 * pow(max(0., length(vec2(q.x * 0.0001, q.y) * vec2(1.8 + q.y * 1.5, 0.75) ) - n * max(0.0, q.y + 0.25)), 1.2);
+    float c = 1.0 - 12.0 * pow(max(0., length(vec2(q.x * 0.0001, q.y) * vec2(1.8 + q.y * 1.5, 0.75) ) - n * max(0.0, q.y + 0.25)), 1.2);
     float c1 = n * c * (1.5 - pow(1.25 * uv.y, 4.0));
-    c=clamp(c, 0.0, 1.0);
-    c1=clamp(c1, 0.0, 1.0);
+    c = clamp(c, 0.0, 1.0);
+    c1 = clamp(c1, 0.0, 1.0);
 
     vec3 col = vec3(1.5 * c1, 1.5 * c1 * c1 * c1, c1 * c1 * c1 * c1 * c1 * c1);
 
-    float a = clamp(c * (1.0 - pow(uv.y - 0.2, 3.0)), 0.0, 1.0);
+    float a = clamp(c * (1.0 - pow(uvpos.y, 3.0)), 0.0, 1.0);
     vec4 wfrag = get_pixel(uvpos);
     float wa = wfrag.a;
     if (uvpos.y < progress)
     {
         wfrag = vec4(0.0);
-    }
-    if (uvpos.y < progress - height * 0.00001)
-    {
-        a = 0.0;
     }
     a *= clamp(progress * 10.0, 0.0, 1.0);
     vec4 color = vec4(col * wa, wa) * a;
@@ -152,6 +166,7 @@ static std::string burn_transformer_name = "animation-burn";
 wf::option_wrapper_t<double> burn_flame_speed{"extra-animations/burn_flame_speed"};
 wf::option_wrapper_t<double> burn_flame_width{"extra-animations/burn_flame_width"};
 wf::option_wrapper_t<double> burn_flame_height{"extra-animations/burn_flame_height"};
+wf::option_wrapper_t<std::string> burn_flame_smoothness{"extra-animations/burn_flame_smoothness"};
 
 class burn_transformer : public wf::scene::view_2d_transformer_t
 {
@@ -244,6 +259,32 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                 self->program.uniform1f("flame_speed", burn_flame_speed);
                 self->program.uniform1f("flame_width", burn_flame_width);
                 self->program.uniform1f("flame_height", burn_flame_height);
+                if (std::string(burn_flame_smoothness) == "softest")
+                {
+                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_3", 0);
+                    self->program.uniform1i("flame_smooth_4", 0);
+                } else if (std::string(burn_flame_smoothness) == "soft")
+                {
+                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_3", 1);
+                    self->program.uniform1i("flame_smooth_4", 0);
+                } else if (std::string(burn_flame_smoothness) == "hard")
+                {
+                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_2", 1);
+                    self->program.uniform1i("flame_smooth_3", 1);
+                    self->program.uniform1i("flame_smooth_4", 1);
+                } else // "normal"
+                {
+                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_2", 1);
+                    self->program.uniform1i("flame_smooth_3", 0);
+                    self->program.uniform1i("flame_smooth_4", 1);
+                }
+
                 self->program.set_active_texture(tex);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
 
