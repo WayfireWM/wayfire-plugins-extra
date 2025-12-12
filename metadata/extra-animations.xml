@@ -69,6 +69,38 @@
 			</option>
 		</group>
 		<group>
+			<_short>Burn Settings</_short>
+			<option name="burn_duration" type="animation">
+				<_short>Burn duration</_short>
+				<_long>Sets the duration for the burn animation in milliseconds.</_long>
+				<default>1000ms linear</default>
+			</option>
+			<option name="burn_flame_speed" type="double">
+				<_short>Burn flame speed</_short>
+				<_long>The speed at which the flames flicker.</_long>
+				<default>10</default>
+				<min>1</min>
+				<max>100</max>
+				<precision>1</precision>
+			</option>
+			<option name="burn_flame_width" type="double">
+				<_short>Burn flame width</_short>
+				<_long>The width of the flames.</_long>
+				<default>0.05</default>
+				<min>0.01</min>
+				<max>1.0</max>
+				<precision>0.01</precision>
+			</option>
+			<option name="burn_flame_height" type="double">
+				<_short>Burn flame height</_short>
+				<_long>The height of the flames.</_long>
+				<default>0.3</default>
+				<min>0.01</min>
+				<max>1.0</max>
+				<precision>0.01</precision>
+			</option>
+		</group>
+		<group>
 			<_short>Dodge Settings</_short>
 			<option name="dodge_toggle" type="bool">
 				<_short>Enable Dodge</_short>
