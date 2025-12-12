@@ -104,7 +104,7 @@ void main()
     float height = size.y;
     vec2 uv = vec2(uvpos.x * width * 0.02, (uvpos.y - progress) * (height * 0.002));
     vec2 q = vec2(uv.x, uv.y);
-    q.x *= flame_width * (50.0 * (1.0 - flame_width * 0.2));
+    q.x *= (1.05 - flame_width) * 10.0;
     q.y *= 2.0 / flame_height;
     float burn_progress = progress;
     if (direction == 1)
