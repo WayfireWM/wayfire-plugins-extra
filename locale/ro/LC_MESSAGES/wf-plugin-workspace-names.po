@@ -1,0 +1,181 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2025-09-29 13:01+0300\n"
+"PO-Revision-Date: 2025-10-01 10:56+0300\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ro\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.4.2\n"
+
+#. (itstool) path: plugin/_short
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:4
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:92
+msgid "Workspace Names"
+msgstr "Nume de birou"
+
+#. (itstool) path: plugin/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:5
+msgid "Name workspaces."
+msgstr "Denumiți birourile."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:8
+msgid "Display Duration"
+msgstr "Durata de afișare"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:9
+msgid "How long the name is displayed."
+msgstr "Pentru cât timp se afișează numele."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:14
+msgid "Margin"
+msgstr "Margine"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:15
+msgid "Distance from edge of screen to indicator."
+msgstr "Distanța de la marginea ecranului la indicator."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:20
+msgid "Position"
+msgstr "Poziție"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:21
+msgid "Position of rendering."
+msgstr "Poziția desenării."
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:25
+msgid "Top Left"
+msgstr "Stânga-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:29
+msgid "Top Center"
+msgstr "Centru-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:33
+msgid "Top Right"
+msgstr "Dreapta-sus"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:37
+msgid "Center Left"
+msgstr "Stânga-centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:41
+msgid "Center"
+msgstr "Centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:45
+msgid "Center Right"
+msgstr "Dreapta-centru"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:49
+msgid "Bottom Left"
+msgstr "Stânga-jos"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:53
+msgid "Bottom Center"
+msgstr "Centru-jos"
+
+#. (itstool) path: desc/_name
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:57
+msgid "Bottom Right"
+msgstr "Dreapta-jos"
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:61
+msgid "Background Color"
+msgstr "Culoarea de fundal"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:62
+msgid "Background color for text."
+msgstr "Culoarea de fundal a textului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:66
+msgid "Text Color"
+msgstr "Culoarea textului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:67
+msgid "Text color."
+msgstr "Culoarea textului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:71
+msgid "Text Font"
+msgstr "Fontul textului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:72
+msgid "Font used for text rendering."
+msgstr "Fontul folosit pentru desenarea textului."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:76
+msgid "Show Option Names"
+msgstr "Arată numele opțiunilor"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:77
+msgid "Display option names on screen for convenience."
+msgstr "Afișează numele opțiunilor pe ecran pentru comoditate."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:81
+msgid "Show Option Values"
+msgstr "Arată valorile opțiunilor"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:82
+msgid ""
+"Display option values instead of names, when show_option_names is enabled."
+msgstr ""
+"Afișează valorile opțiunilor în locul numelor când show_option_names este "
+"activat."
+
+#. (itstool) path: option/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:86
+msgid "Background Corner Radius"
+msgstr "Raza colțurilor fundalului"
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:87
+msgid "Radius for the corners of the background."
+msgstr "Raza de folosit pentru colțurile fundalului."
+
+#. (itstool) path: option/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:93
+msgid ""
+"Names of the workspaces. By default, they will have the name Workspace #N, "
+"where #N is the workspace number."
+msgstr ""
+"Numele birourilor. În mod implicit, vor avea numele Workspace #N, unde #N "
+"este numărul biroului."
+
+#. (itstool) path: entry/_short
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:95
+msgid "Workspace Name"
+msgstr "Numele biroului"
+
+#. (itstool) path: entry/_long
+#: /home/vlad/wayfire-plugins-extra/metadata/workspace-names.xml:96
+msgid "Sets the name of the workspace"
+msgstr "Stabilește numele biroului."
