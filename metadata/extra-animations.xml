@@ -78,7 +78,7 @@
 			<option name="burn_flame_speed" type="double">
 				<_short>Burn flame speed</_short>
 				<_long>The speed at which the flames flicker.</_long>
-				<default>10</default>
+				<default>5</default>
 				<min>1</min>
 				<max>100</max>
 				<precision>1</precision>
@@ -86,7 +86,7 @@
 			<option name="burn_flame_width" type="double">
 				<_short>Burn flame width</_short>
 				<_long>The width of the flames.</_long>
-				<default>0.85</default>
+				<default>0.7</default>
 				<min>0.01</min>
 				<max>1.0</max>
 				<precision>0.01</precision>
@@ -94,10 +94,31 @@
 			<option name="burn_flame_height" type="double">
 				<_short>Burn flame height</_short>
 				<_long>The height of the flames.</_long>
-				<default>0.3</default>
+				<default>0.7</default>
 				<min>0.01</min>
 				<max>1.0</max>
 				<precision>0.01</precision>
+			</option>
+			<option name="burn_flame_smoothness" type="string">
+				<_short>Smoothness</_short>
+				<_long>How much dithering to use for the flames. Softest uses the least resources while Hard uses the most.</_long>
+				<default>normal</default>
+				<desc>
+					<value>softest</value>
+					<_name>Softest</_name>
+				</desc>
+				<desc>
+					<value>soft</value>
+					<_name>Soft</_name>
+				</desc>
+				<desc>
+					<value>normal</value>
+					<_name>Normal</_name>
+				</desc>
+				<desc>
+					<value>hard</value>
+					<_name>Hard</_name>
+				</desc>
 			</option>
 		</group>
 		<group>
