@@ -86,7 +86,7 @@
 			<option name="burn_flame_width" type="double">
 				<_short>Burn flame width</_short>
 				<_long>The width of the flames.</_long>
-				<default>0.05</default>
+				<default>0.85</default>
 				<min>0.01</min>
 				<max>1.0</max>
 				<precision>0.01</precision>
