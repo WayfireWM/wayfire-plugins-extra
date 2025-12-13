@@ -64,6 +64,7 @@ uniform int flame_smooth_1;
 uniform int flame_smooth_2;
 uniform int flame_smooth_3;
 uniform int flame_smooth_4;
+uniform vec4 flame_color;
 
 // procedural noise from IQ
 vec2 hash( vec2 p )
@@ -138,7 +139,11 @@ void main()
     c = clamp(c, 0.0, 1.0);
     c1 = clamp(c1, 0.0, 1.0);
 
-    vec3 col = vec3(1.5 * c1, 1.5 * c1 * c1 * c1, c1 * c1 * c1 * c1 * c1 * c1);
+    float r = 1.0 / flame_color.r;
+    float g = 1.0 / flame_color.g;
+    float b = 1.0 / flame_color.b;
+
+    vec3 col = vec3(1.5 * pow(c1, r), 1.5 * pow(c1, g), 1.5 * pow(c1, b));
 
     float a = clamp(c * (1.0 - pow(uvpos.y, 10.0)), 0.0, 1.0);
     vec4 wfrag = get_pixel(uvpos);
@@ -167,6 +172,7 @@ static std::string burn_transformer_name = "animation-burn";
 wf::option_wrapper_t<double> burn_flame_speed{"extra-animations/burn_flame_speed"};
 wf::option_wrapper_t<double> burn_flame_width{"extra-animations/burn_flame_width"};
 wf::option_wrapper_t<double> burn_flame_height{"extra-animations/burn_flame_height"};
+wf::option_wrapper_t<wf::color_t> burn_flame_color{"extra-animations/burn_flame_color"};
 wf::option_wrapper_t<std::string> burn_flame_smoothness{"extra-animations/burn_flame_smoothness"};
 
 class burn_transformer : public wf::scene::view_2d_transformer_t
@@ -285,6 +291,13 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                     self->program.uniform1i("flame_smooth_3", 1);
                     self->program.uniform1i("flame_smooth_4", 0);
                 }
+
+                glm::vec4 flame_color{
+                    wf::color_t(burn_flame_color).r,
+                    wf::color_t(burn_flame_color).g,
+                    wf::color_t(burn_flame_color).b,
+                    wf::color_t(burn_flame_color).a};
+                self->program.uniform4f("flame_color", flame_color);
 
                 self->program.set_active_texture(tex);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));

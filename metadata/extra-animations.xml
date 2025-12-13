@@ -120,6 +120,11 @@
 					<_name>Hard</_name>
 				</desc>
 			</option>
+			<option name="burn_flame_color" type="color">
+				<_short>Flame Color</_short>
+				<_long>Color used for rendering the flames.</_long>
+				<default>1.00 0.33 0.16 1.00</default>
+			</option>
 		</group>
 		<group>
 			<_short>Dodge Settings</_short>
