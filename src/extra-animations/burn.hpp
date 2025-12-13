@@ -261,16 +261,16 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                 self->program.uniform1f("flame_height", burn_flame_height);
                 if (std::string(burn_flame_smoothness) == "softest")
                 {
-                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_1", 0);
                     self->program.uniform1i("flame_smooth_2", 0);
                     self->program.uniform1i("flame_smooth_3", 0);
                     self->program.uniform1i("flame_smooth_4", 0);
                 } else if (std::string(burn_flame_smoothness) == "soft")
                 {
-                    self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_1", 0);
+                    self->program.uniform1i("flame_smooth_2", 1);
                     self->program.uniform1i("flame_smooth_3", 1);
-                    self->program.uniform1i("flame_smooth_4", 0);
+                    self->program.uniform1i("flame_smooth_4", 1);
                 } else if (std::string(burn_flame_smoothness) == "hard")
                 {
                     self->program.uniform1i("flame_smooth_1", 1);
@@ -280,9 +280,9 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                 } else // "normal"
                 {
                     self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 1);
-                    self->program.uniform1i("flame_smooth_3", 0);
-                    self->program.uniform1i("flame_smooth_4", 1);
+                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_3", 1);
+                    self->program.uniform1i("flame_smooth_4", 0);
                 }
 
                 self->program.set_active_texture(tex);
