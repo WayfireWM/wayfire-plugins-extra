@@ -140,15 +140,16 @@ void main()
 
     vec3 col = vec3(1.5 * c1, 1.5 * c1 * c1 * c1, c1 * c1 * c1 * c1 * c1 * c1);
 
-    float a = clamp(c * (1.0 - pow(uvpos.y, 3.0)), 0.0, 1.0);
+    float a = clamp(c * (1.0 - pow(uvpos.y, 10.0)), 0.0, 1.0);
     vec4 wfrag = get_pixel(uvpos);
-    float wa = wfrag.a;
     if (uvpos.y < progress)
     {
         wfrag = vec4(0.0);
     }
     a *= clamp(progress * 10.0, 0.0, 1.0);
-    vec4 color = vec4(col * wa, wa) * a;
+    a *= clamp(uvpos.x * (width / 30.0), 0.0, 1.0);
+    a *= clamp((1.0 - uvpos.x) * (width / 30.0), 0.0, 1.0);
+    vec4 color = vec4(col * a, a);
     gl_FragColor = color + wfrag * (1.0 - a);
 }
 )";
@@ -223,7 +224,7 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
         void render(const wf::scene::render_instruction_t& data) override
         {
             auto bb  = self->get_children_bounding_box();
-            auto pbb = self->get_bounding_box();
+            auto pbb = self->get_padded_bounding_box();
             auto tex = wf::gles_texture_t{get_texture(1.0)};
 
             const float vertices[] = {
@@ -261,16 +262,16 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                 self->program.uniform1f("flame_height", burn_flame_height);
                 if (std::string(burn_flame_smoothness) == "softest")
                 {
-                    self->program.uniform1i("flame_smooth_1", 1);
+                    self->program.uniform1i("flame_smooth_1", 0);
                     self->program.uniform1i("flame_smooth_2", 0);
                     self->program.uniform1i("flame_smooth_3", 0);
                     self->program.uniform1i("flame_smooth_4", 0);
                 } else if (std::string(burn_flame_smoothness) == "soft")
                 {
-                    self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_1", 0);
+                    self->program.uniform1i("flame_smooth_2", 1);
                     self->program.uniform1i("flame_smooth_3", 1);
-                    self->program.uniform1i("flame_smooth_4", 0);
+                    self->program.uniform1i("flame_smooth_4", 1);
                 } else if (std::string(burn_flame_smoothness) == "hard")
                 {
                     self->program.uniform1i("flame_smooth_1", 1);
@@ -280,9 +281,9 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                 } else // "normal"
                 {
                     self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 1);
-                    self->program.uniform1i("flame_smooth_3", 0);
-                    self->program.uniform1i("flame_smooth_4", 1);
+                    self->program.uniform1i("flame_smooth_2", 0);
+                    self->program.uniform1i("flame_smooth_3", 1);
+                    self->program.uniform1i("flame_smooth_4", 0);
                 }
 
                 self->program.set_active_texture(tex);
@@ -294,7 +295,7 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
                     wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
                     OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
-                        glm::vec4(1.0, 1.0, 1.0, 1.0 / (1.0 + pow(2.718, -(progress * 15.0 - 3.0)))), 0);
+                        glm::vec4(1.0, 1.0, 1.0, std::clamp((progress - 0.07) * 10.0, 0.0, 1.0)), 0);
                 }
 
                 GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
@@ -319,6 +320,22 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
         {
             program.compile(burn_vert_source, burn_frag_source);
         });
+    }
+
+    wf::geometry_t get_padded_bounding_box()
+    {
+        auto box     = this->get_children_bounding_box();
+        auto padding = 50;
+        box.x     -= padding;
+        box.y     -= padding;
+        box.width += padding * 2;
+        box.height += padding * 2;
+        return box;
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        return get_padded_bounding_box();
     }
 
     wf::effect_hook_t pre_hook = [=] ()

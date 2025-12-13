@@ -78,7 +78,7 @@
 			<option name="burn_flame_speed" type="double">
 				<_short>Burn flame speed</_short>
 				<_long>The speed at which the flames flicker.</_long>
-				<default>5</default>
+				<default>7</default>
 				<min>1</min>
 				<max>100</max>
 				<precision>1</precision>
