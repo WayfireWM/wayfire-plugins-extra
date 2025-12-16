@@ -34,6 +34,7 @@
 #include "melt.hpp"
 #include "dodge.hpp"
 #include "burn.hpp"
+#include "carpet.hpp"
 
 class wayfire_extra_animations : public wf::plugin_interface_t
 {
@@ -45,6 +46,7 @@ class wayfire_extra_animations : public wf::plugin_interface_t
     wf::option_wrapper_t<wf::animation_description_t> vortex_duration{"extra-animations/vortex_duration"};
     wf::option_wrapper_t<wf::animation_description_t> melt_duration{"extra-animations/melt_duration"};
     wf::option_wrapper_t<wf::animation_description_t> burn_duration{"extra-animations/burn_duration"};
+    wf::option_wrapper_t<wf::animation_description_t> carpet_duration{"extra-animations/carpet_duration"};
     std::unique_ptr<wf::dodge::wayfire_dodge> dodge_plugin;
 
   public:
@@ -80,6 +82,10 @@ class wayfire_extra_animations : public wf::plugin_interface_t
             .generator = [] { return std::make_unique<wf::burn::burn_animation>(); },
             .default_duration = [=] { return burn_duration.value(); },
         });
+        effects_registry->register_effect("carpet", wf::animate::effect_description_t{
+            .generator = [] { return std::make_unique<wf::carpet::carpet_animation>(); },
+            .default_duration = [=] { return carpet_duration.value(); },
+        });
         dodge_toggle.set_callback([=] {dodge_option_changed();});
         dodge_option_changed();
     }
@@ -105,6 +111,7 @@ class wayfire_extra_animations : public wf::plugin_interface_t
         effects_registry->unregister_effect("vortex");
         effects_registry->unregister_effect("melt");
         effects_registry->unregister_effect("burn");
+        effects_registry->unregister_effect("carpet");
 
         if (dodge_plugin)
         {

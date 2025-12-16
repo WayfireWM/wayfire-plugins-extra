@@ -127,6 +127,35 @@
 			</option>
 		</group>
 		<group>
+			<_short>Magic Carpet Settings</_short>
+			<option name="carpet_duration" type="animation">
+				<_short>Magic carpet duration</_short>
+				<_long>Sets the duration for the magic carpet animation in milliseconds.</_long>
+				<default>1000ms linear</default>
+			</option>
+			<option name="carpet_direction" type="int">
+				<_short>Carpet Direction</_short>
+				<_long>From which side to unroll the carpet for the open animation. The opposite direction will be used on close animation.</_long>
+				<default>0</default>
+				<desc>
+					<value>0</value>
+					<_name>Left</_name>
+				</desc>
+				<desc>
+					<value>1</value>
+					<_name>Right</_name>
+				</desc>
+				<desc>
+					<value>2</value>
+					<_name>Top</_name>
+				</desc>
+				<desc>
+					<value>3</value>
+					<_name>Bottom</_name>
+				</desc>
+			</option>
+		</group>
+		<group>
 			<_short>Dodge Settings</_short>
 			<option name="dodge_toggle" type="bool">
 				<_short>Enable Dodge</_short>
