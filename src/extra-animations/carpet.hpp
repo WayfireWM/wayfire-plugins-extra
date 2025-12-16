@@ -194,7 +194,7 @@ using namespace wf::animation;
 
 static std::string carpet_transformer_name = "animation-carpet";
 
-wf::option_wrapper_t<int> carpet_direction{"extra-animations/carpet_direction"};
+wf::option_wrapper_t<int> carpet_roll_direction{"extra-animations/carpet_roll_direction"};
 
 class carpet_transformer : public wf::scene::view_2d_transformer_t
 {
@@ -282,7 +282,7 @@ class carpet_transformer : public wf::scene::view_2d_transformer_t
                 self->program.attrib_pointer("position", 2, 0, vertices);
                 self->program.attrib_pointer("uv_in", 2, 0, uv);
                 self->program.uniform1f("progress", progress);
-                self->program.uniform1i("direction", carpet_direction);
+                self->program.uniform1i("direction", carpet_roll_direction);
 
                 self->program.set_active_texture(tex);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
