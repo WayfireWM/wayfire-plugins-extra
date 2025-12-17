@@ -135,7 +135,7 @@
 			</option>
 			<option name="carpet_roll_direction" type="int">
 				<_short>Roll Direction</_short>
-				<_long>From which side to unroll the carpet for the open animation. The opposite direction will be used on close animation.</_long>
+				<_long>Choose how the window rolls. Single directions (left, right, top, bottom) roll from one edge. Scroll modes (horizontal, vertical) unroll from both edges toward the middle like an ancient scroll</_long>
 				<default>0</default>
 				<desc>
 					<value>0</value>
