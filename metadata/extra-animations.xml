@@ -153,6 +153,14 @@
 					<value>3</value>
 					<_name>Bottom</_name>
 				</desc>
+				<desc>
+					<value>4</value>
+					<_name>Scroll X</_name>
+				</desc>
+				<desc>
+					<value>5</value>
+					<_name>Scroll Y</_name>
+				</desc>
 			</option>
 		</group>
 		<group>
