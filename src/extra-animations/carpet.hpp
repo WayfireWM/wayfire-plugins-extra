@@ -125,13 +125,13 @@ vec4 single_roll(vec2 uvpos_var, float progress, int direction)
             if (direction == 1)
             {
                 pfrag = get_pixel(vec2(1.0 - uv.x, uv.y));
-            } else if (direction == 2)
+			} else if (direction == 2)
             {
                 pfrag = get_pixel(vec2(uv.x, 1.0 - uv.y));
-            } else
+			} else
             {
                 pfrag = get_pixel(uv);
-            }
+			}
         }
         // store color for fragment mixing with current fragment if translucent
         wfrag = mix(pfrag, wfrag, wfrag.a);
@@ -167,13 +167,13 @@ vec4 single_roll(vec2 uvpos_var, float progress, int direction)
             if (direction == 1)
             {
                 pfrag = get_pixel(vec2(1.0 - uv.x, uv.y));
-            } else if (direction == 2)
+			} else if (direction == 2)
             {
                 pfrag = get_pixel(vec2(uv.x, 1.0 - uv.y));
-            } else
+			} else
             {
                 pfrag = get_pixel(uv);
-            }
+			}
         }
         // compute lighting
         pfrag = vec4(clamp(pfrag.rgb + (angle / -M_PI), 0.0, 1.0), pfrag.a);
