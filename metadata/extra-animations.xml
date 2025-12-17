@@ -155,11 +155,11 @@
 				</desc>
 				<desc>
 					<value>4</value>
-					<_name>Scroll X</_name>
+					<_name>Horizontal Scroll</_name>
 				</desc>
 				<desc>
 					<value>5</value>
-					<_name>Scroll Y</_name>
+					<_name>Vertical Scroll</_name>
 				</desc>
 			</option>
 		</group>
