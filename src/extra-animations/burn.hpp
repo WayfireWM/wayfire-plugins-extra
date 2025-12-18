@@ -147,13 +147,15 @@ void main()
 
     float a = clamp(c * (1.0 - pow(uvpos.y, 10.0)), 0.0, 1.0);
     vec4 wfrag = get_pixel(uvpos);
-    if (uvpos.y < progress)
+    if (uvpos.x < 0.0 || uvpos.x > 1.0 ||
+        uvpos.y < 0.0 || uvpos.y > 1.0 ||
+        uvpos.y < progress)
     {
         wfrag = vec4(0.0);
     }
     a *= clamp(progress * 10.0, 0.0, 1.0);
-    a *= clamp(uvpos.x * (width / 30.0), 0.0, 1.0);
-    a *= clamp((1.0 - uvpos.x) * (width / 30.0), 0.0, 1.0);
+    a *= 1.0 - pow(clamp(-uvpos.x * (width * 0.05), 0.0, 1.0), 0.7);
+    a *= 1.0 - pow(clamp((1.0 - (2.0 - uvpos.x)) * (width * 0.05), 0.0, 1.0), 0.7);
     vec4 color = vec4(col * a, a);
     gl_FragColor = color + wfrag * (1.0 - a);
 }
