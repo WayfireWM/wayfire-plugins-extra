@@ -321,10 +321,12 @@ void main()
     
     if (direction <= 3)
     {
+        // single roll: left, right, top, bottom
         wfrag = single_roll(uvpos_var, progress, direction);
     }
     else
     {
+        // dual scroll: horizontal or vertical from middle
         wfrag = dual_scroll(uvpos_var, progress, direction);
     }
 
