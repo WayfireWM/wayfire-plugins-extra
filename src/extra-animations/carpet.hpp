@@ -2,6 +2,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2025 Scott Moreau <oreaus@gmail.com>
+ * Copyright (c) 2025 Andrew Pliatsikas <futurebytestore@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,7 +61,8 @@ uniform int direction;
 
 #define M_PI 3.1415926535897932384626433832795
 
-void main()
+// Original single roll effect
+vec4 single_roll(vec2 uvpos_var, float progress, int direction)
 {
     vec4 wfrag;
     vec2 uv;
@@ -178,6 +180,154 @@ void main()
         pfrag = vec4(clamp(pfrag.rgb + (angle / -M_PI), 0.0, 1.0), pfrag.a);
         // store color for fragment mixing with current fragment if translucent
         wfrag = mix(wfrag, pfrag, pfrag.a);
+    }
+
+    return wfrag;
+}
+
+// Dual scroll effect (both sides rolling toward/from middle) by Phodius
+vec4 dual_scroll(vec2 uvpos_var, float progress, int dir)
+{
+    vec4 wfrag = vec4(0.0);
+    vec2 uv;
+    
+    float coord;
+    float other_coord;
+    
+    // dir 5 = vertical, dir 4 = horizontal
+    if (dir == 5)
+    {
+        coord = uvpos_var.y;
+        other_coord = uvpos_var.x;
+    }
+    else
+    {
+        coord = uvpos_var.x;
+        other_coord = uvpos_var.y;
+    }
+    
+    // Determine which half we're on
+    bool second_half = (coord > 0.5);
+    
+    // Map to local coordinate: 0 at middle, 1 at edge
+    float local_coord;
+    if (second_half)
+    {
+        local_coord = (coord - 0.5) * 2.0;
+    }
+    else
+    {
+        local_coord = (0.5 - coord) * 2.0;
+    }
+    
+    float offset = 0.1;
+    float p = progress * 1.2 - 0.2;
+
+    // Get pixel from default position if before peel line
+    if (local_coord < p + offset + 0.05)
+    {
+        if (uvpos_var.x >= 0.0 && uvpos_var.x <= 1.0 &&
+            uvpos_var.y >= 0.0 && uvpos_var.y <= 1.0)
+        {
+            wfrag = get_pixel(uvpos_var);
+        }
+    }
+    
+    // Back of roll
+    if (local_coord > p + offset + 0.05 && local_coord < p + offset + 0.1)
+    {
+        float tsin = (local_coord - (p + offset + 0.05)) * 20.0;
+        float angle = asin(tsin);
+        
+        float local_sample = (angle / M_PI) * 0.15 + p + offset + 0.05;
+        
+        float global_sample;
+        if (second_half)
+        {
+            global_sample = 0.5 + local_sample * 0.5;
+        }
+        else
+        {
+            global_sample = 0.5 - local_sample * 0.5;
+        }
+        
+        float perp_sample = (other_coord - 0.5) * pow(cos(angle), 0.02) + 0.5;
+        
+        if (dir == 5)
+        {
+            uv.y = global_sample;
+            uv.x = perp_sample;
+        }
+        else
+        {
+            uv.x = global_sample;
+            uv.y = perp_sample;
+        }
+        
+        vec4 pfrag = vec4(0.0);
+        if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0)
+        {
+            pfrag = get_pixel(uv);
+        }
+        wfrag = mix(pfrag, wfrag, wfrag.a);
+    }
+    
+    // Front of roll
+    if (local_coord > p + offset && local_coord < p + offset + 0.1)
+    {
+        float tsin = (local_coord - (p + offset + 0.1)) * 20.0 + 1.0;
+        float angle = asin(tsin);
+        
+        float local_sample = (angle / (-M_PI)) * 0.1 + p + offset + 0.2;
+        
+        float global_sample;
+        if (second_half)
+        {
+            global_sample = 0.5 + local_sample * 0.5;
+        }
+        else
+        {
+            global_sample = 0.5 - local_sample * 0.5;
+        }
+        
+        float perp_sample = (other_coord - 0.5) * 0.9 * pow(cos(angle), -0.04) + 0.5;
+        
+        if (dir == 5)
+        {
+            uv.y = global_sample;
+            uv.x = perp_sample;
+        }
+        else
+        {
+            uv.x = global_sample;
+            uv.y = perp_sample;
+        }
+        
+        vec4 pfrag = vec4(0.0);
+        if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0)
+        {
+            pfrag = get_pixel(uv);
+        }
+        pfrag = vec4(clamp(pfrag.rgb + (angle / -M_PI), 0.0, 1.0), pfrag.a);
+        wfrag = mix(wfrag, pfrag, pfrag.a);
+    }
+    
+    return wfrag;
+}
+
+void main()
+{
+    vec4 wfrag;
+    
+    if (direction <= 3)
+    {
+        // single roll: left, right, top, bottom
+        wfrag = single_roll(uvpos_var, progress, direction);
+    }
+    else
+    {
+        // dual scroll: horizontal or vertical from middle
+        wfrag = dual_scroll(uvpos_var, progress, direction);
     }
 
     gl_FragColor = wfrag;
