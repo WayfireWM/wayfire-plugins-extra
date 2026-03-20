@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2023 Scott Moreau
+ * Copyright (c) 2026 Scott Moreau
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -132,11 +132,18 @@ class simple_node_t : public node_t
 
   public:
     std::shared_ptr<workspace_name> workspace;
-    simple_node_t(wf::point_t offset) : node_t(false)
+    wf::point_t ws;
+    simple_node_t(wf::point_t offset, wf::point_t ws) : node_t(false)
     {
-        this->offset     = offset;
+        this->ws     = ws;
+        this->offset = offset;
         this->alpha_fade = 0.0;
         workspace = std::make_shared<workspace_name>();
+    }
+
+    ~simple_node_t()
+    {
+        workspace = nullptr;
     }
 
     void gen_render_instances(std::vector<render_instance_uptr>& instances,
@@ -164,10 +171,14 @@ class simple_node_t : public node_t
             workspace->rect.width, workspace->rect.height};
     }
 
-    void set_offset(int x, int y)
+    void set_offset(wf::point_t offset)
     {
-        this->offset.x = x;
-        this->offset.y = y;
+        this->offset = offset;
+    }
+
+    wf::point_t get_ws()
+    {
+        return this->ws;
     }
 
     void set_alpha(double alpha)
@@ -177,9 +188,9 @@ class simple_node_t : public node_t
 };
 
 std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
-    wf::point_t offset)
+    wf::point_t offset, wf::point_t ws)
 {
-    auto subnode = std::make_shared<simple_node_t>(offset);
+    auto subnode = std::make_shared<simple_node_t>(offset, ws);
     wf::scene::add_front(output->node_for_layer(wf::scene::layer::OVERLAY), subnode);
     return subnode;
 }
@@ -187,8 +198,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output,
 class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 {
     wf::wl_timer<false> timer;
-    bool hook_set  = false;
-    bool timed_out = false;
+    bool hook_set = false;
     std::vector<std::vector<std::shared_ptr<simple_node_t>>> workspaces;
     wf::option_wrapper_t<std::string> font{"workspace-names/font"};
     wf::option_wrapper_t<std::string> position{"workspace-names/position"};
@@ -208,76 +218,90 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     void init() override
     {
         alpha_fade.set(0, 0);
-        timed_out = false;
 
+        output->wset()->connect(&workspace_grid_changed);
+        output->connect(&workarea_changed);
+        output->connect(&viewport_changed);
+        output->connect(&viewport_change_request);
+        font.set_callback(option_changed);
+        position.set_callback(option_changed);
+        background_color.set_callback(option_changed);
+        text_color.set_callback(option_changed);
+        show_option_values.set_callback(option_changed);
+        show_option_names.set_callback(show_options_changed);
+
+        if (show_option_names)
+        {
+            show_options_changed();
+        }
+    }
+
+    void init_workspace_name_nodes()
+    {
         auto wsize = output->wset()->get_workspace_grid_size();
+        auto og    = output->get_relative_geometry();
         workspaces.resize(wsize.width);
         for (int x = 0; x < wsize.width; x++)
         {
             workspaces[x].resize(wsize.height);
         }
 
-        auto og = output->get_relative_geometry();
         for (int x = 0; x < wsize.width; x++)
         {
             for (int y = 0; y < wsize.height; y++)
             {
                 workspaces[x][y] = add_simple_node(output, {x *og.width,
-                    y * og.height});
+                    y * og.height}, {x, y});
             }
         }
-
-        output->connect(&workarea_changed);
-        output->connect(&viewport_changed);
-        font.set_callback(option_changed);
-        position.set_callback(option_changed);
-        background_color.set_callback(option_changed);
-        text_color.set_callback(option_changed);
-        show_option_names.set_callback(show_options_changed);
-
-        if (show_option_names)
-        {
-            show_options_changed();
-        } else
-        {
-            update_names();
-        }
-
-        wf::get_core().connect(&reload_config);
     }
 
-    wf::signal::connection_t<wf::reload_config_signal> reload_config{[this] (wf::reload_config_signal *ev)
+    void fini_workspace_name_nodes()
+    {
+        for (auto & x : workspaces)
         {
-            update_names();
+            for (auto & workspace : x)
+            {
+                auto& wsn = workspace->workspace;
+                cairo_surface_destroy(wsn->cairo_surface);
+                cairo_destroy(wsn->cr);
+                wf::scene::remove_child(workspace);
+                workspace.reset();
+            }
+        }
+    }
+
+    wf::signal::connection_t<wf::workspace_grid_changed_signal> workspace_grid_changed{[this] (wf::
+                                                                                               workspace_grid_changed_signal
+                                                                                               *ev)
+        {
+            deactivate();
+            init_workspace_name_nodes();
         }
     };
 
     wf::config::option_base_t::updated_callback_t show_options_changed = [=] ()
     {
-        update_names();
-
-        viewport_changed.emit(nullptr);
-
         if (show_option_names)
         {
-            timer.disconnect();
-            output->render->rem_effect(&post_hook);
+            activate();
+            update_names();
+            viewport_changed.emit(nullptr);
+            alpha_fade.animate(alpha_fade, 1);
         } else
         {
-            output->connect(&viewport_changed);
-            output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
+            alpha_fade.animate(alpha_fade, 0);
         }
 
-        alpha_fade.animate(alpha_fade, 1.0);
         output->render->damage_whole();
     };
 
-    void update_name(int x, int y)
+    void update_name(std::shared_ptr<simple_node_t> workspace)
     {
         auto section = wf::get_core().config->get_section("workspace-names");
         auto wsize   = output->wset()->get_workspace_grid_size();
-        auto wsn     = workspaces[x][y]->workspace;
-        int ws_num   = x + y * wsize.width + 1;
+        auto wsn     = workspace->workspace;
+        int ws_num   = workspace->get_ws().x + workspace->get_ws().y * wsize.width + 1;
 
         // Get the option name (key) of the target workspace
         std::string key = output->to_string() + "_workspace_" + std::to_string(ws_num);
@@ -327,13 +351,12 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     void update_names()
     {
-        auto wsize = output->wset()->get_workspace_grid_size();
-        for (int x = 0; x < wsize.width; x++)
+        for (auto & x : workspaces)
         {
-            for (int y = 0; y < wsize.height; y++)
+            for (auto & workspace : x)
             {
-                update_name(x, y);
-                update_texture(workspaces[x][y]->workspace);
+                update_name(workspace);
+                update_texture(workspace->workspace);
             }
         }
     }
@@ -400,7 +423,11 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
 
     wf::config::option_base_t::updated_callback_t option_changed = [=] ()
     {
-        update_textures();
+        if (hook_set)
+        {
+            update_names();
+            update_textures();
+        }
     };
 
     void update_texture_position(std::shared_ptr<workspace_name> wsn)
@@ -455,6 +482,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     wf::signal::connection_t<wf::workarea_changed_signal> workarea_changed{[this] (wf::workarea_changed_signal
                                                                                    *ev)
         {
+            update_workspace_names_timeout();
             update_textures();
         }
     };
@@ -528,7 +556,46 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         if (alpha_fade.running())
         {
             set_alpha();
-            output->render->damage_whole();
+        }
+    };
+
+    void update_workspace_names_timeout()
+    {
+        auto wsize = output->wset()->get_workspace_grid_size();
+        auto nvp   = output->wset()->get_current_workspace();
+        auto og    = output->get_relative_geometry();
+
+        activate();
+        update_textures();
+        update_names();
+
+        for (int x = 0; x < wsize.width; x++)
+        {
+            for (int y = 0; y < wsize.height; y++)
+            {
+                workspaces[x][y]->set_offset({(x - nvp.x) * og.width, (y - nvp.y) * og.height});
+            }
+        }
+
+        output->render->damage_whole();
+
+        if (show_option_names)
+        {
+            return;
+        }
+
+        alpha_fade.animate(alpha_fade, 1);
+
+        timer.disconnect();
+        timer.set_timeout((int)display_duration, timeout);
+    }
+
+    wf::signal::connection_t<wf::workspace_change_request_signal> viewport_change_request{[this] (wf::
+                                                                                                  workspace_change_request_signal
+                                                                                                  *
+                                                                                                  ev)
+        {
+            update_workspace_names_timeout();
         }
     };
 
@@ -536,65 +603,21 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
                                                                                     workspace_changed_signal*
                                                                                     ev)
         {
-            auto wsize = output->wset()->get_workspace_grid_size();
-            auto nvp   = output->wset()->get_current_workspace();
-            auto og    = output->get_relative_geometry();
-
-            for (int x = 0; x < wsize.width; x++)
-            {
-                for (int y = 0; y < wsize.height; y++)
-                {
-                    workspaces[x][y]->set_offset((x - nvp.x) * og.width,
-                        (y - nvp.y) * og.height);
-                }
-            }
-
-            output->render->damage_whole();
-
-            activate();
-
-            if (show_option_names)
-            {
-                return;
-            }
-
-            if (!alpha_fade.running())
-            {
-                if (!timer.is_connected())
-                {
-                    alpha_fade.animate(alpha_fade, 1.0);
-                }
-            } else if (timed_out)
-            {
-                timed_out = false;
-                alpha_fade.animate(alpha_fade, 1.0);
-            }
-
-            timer.disconnect();
-            timer.set_timeout((int)display_duration, timeout);
+            update_workspace_names_timeout();
         }
     };
 
     wf::wl_timer<false>::callback_t timeout = [=] ()
     {
         output->render->damage_whole();
-        alpha_fade.animate(1.0, 0.0);
-        timed_out = true;
+        alpha_fade.animate(alpha_fade, 0);
     };
 
     wf::effect_hook_t post_hook = [=] ()
     {
-        if (!alpha_fade.running())
+        if (!alpha_fade.running() && !timer.is_connected() && !show_option_names)
         {
-            if (timed_out)
-            {
-                deactivate();
-                timed_out = false;
-                output->render->damage_whole();
-            } else if (!timer.is_connected())
-            {
-                timer.set_timeout((int)display_duration, timeout);
-            }
+            deactivate();
         } else
         {
             set_alpha();
@@ -608,6 +631,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             return;
         }
 
+        init_workspace_name_nodes();
         output->render->add_effect(&post_hook, wf::OUTPUT_EFFECT_POST);
         output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
         output->render->damage_whole();
@@ -621,6 +645,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
             return;
         }
 
+        timer.disconnect();
+        fini_workspace_name_nodes();
         output->render->rem_effect(&post_hook);
         output->render->rem_effect(&pre_hook);
         hook_set = false;
@@ -629,18 +655,10 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
     void fini() override
     {
         deactivate();
-        auto wsize = output->wset()->get_workspace_grid_size();
-        for (int x = 0; x < wsize.width; x++)
-        {
-            for (int y = 0; y < wsize.height; y++)
-            {
-                auto& wsn = workspaces[x][y]->workspace;
-                cairo_surface_destroy(wsn->cairo_surface);
-                cairo_destroy(wsn->cr);
-                wf::scene::remove_child(workspaces[x][y]);
-                workspaces[x][y].reset();
-            }
-        }
+        workspace_grid_changed.disconnect();
+        viewport_change_request.disconnect();
+        viewport_changed.disconnect();
+        workarea_changed.disconnect();
 
         output->render->damage_whole();
     }
