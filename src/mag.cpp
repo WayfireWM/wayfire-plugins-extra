@@ -71,7 +71,8 @@ class mag_view_t : public wf::toplevel_view_interface_t
                 /* Draw the inside of the rect, if we have already captured the output's contents */
                 if (view->mag_tex.get_buffer() != NULL)
                 {
-                    data.pass->add_texture({view->mag_tex.get_texture()}, data.target, geometry, data.damage);
+                    data.pass->add_texture(wf::texture_t::from_aux(
+                        view->mag_tex), data.target, geometry, data.damage);
                 }
             }
         };

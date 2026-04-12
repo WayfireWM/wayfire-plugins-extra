@@ -8,6 +8,7 @@ jobs:
     container: alpine:3.23
     steps:
     - run: apk --no-cache add git gcc g++ binutils pkgconf meson=1.9.1-r0 ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libdisplay-info-dev hwdata-dev yyjson-dev boost-dev
+    - run: git clone https://gitlab.freedesktop.org/wayland/wayland-protocols -b 1.47 && cd wayland-protocols && meson setup build --prefix=/usr && ninja -C build && ninja -C build install && cd .. && rm -rf wayland-protocols
     - name: Wayfire
       uses: actions/checkout@v2
       with:
@@ -25,6 +26,7 @@ jobs:
     container: alpine:3.23
     steps:
     - run: apk --no-cache add git gcc g++ binutils pkgconf meson=1.9.1-r0 ninja musl-dev wayland-dev wayland-protocols libinput-dev libevdev-dev libxkbcommon-dev pixman-dev glm-dev libdrm-dev mesa-dev cairo-dev pango-dev eudev-dev libxml2-dev glibmm-dev libseat-dev libxcb-dev xcb-util-wm-dev xwayland libdisplay-info-dev hwdata-dev yyjson-dev boost-dev
+    - run: git clone https://gitlab.freedesktop.org/wayland/wayland-protocols -b 1.47 && cd wayland-protocols && meson setup build --prefix=/usr && ninja -C build && ninja -C build install && cd .. && rm -rf wayland-protocols
     - name: Wayfire
       uses: actions/checkout@v2
       with:
