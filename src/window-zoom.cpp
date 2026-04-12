@@ -123,7 +123,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
     {
         auto src_tex = get_texture(1.0);
         auto scaled_geometry = get_scaled_geometry();
-        src_tex.filter_mode = nearest_filtering ? WLR_SCALE_FILTER_NEAREST : WLR_SCALE_FILTER_BILINEAR;
+        src_tex->set_filter_mode(nearest_filtering ? WLR_SCALE_FILTER_NEAREST : WLR_SCALE_FILTER_BILINEAR);
         data.pass->add_texture(src_tex, data.target, scaled_geometry, data.damage);
     }
 };

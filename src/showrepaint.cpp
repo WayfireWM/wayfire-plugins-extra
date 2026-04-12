@@ -167,9 +167,8 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
          */
         if (last_buffer.get_size().width > 0)
         {
-            wf::texture_t texture;
-            texture.texture   = last_buffer.get_texture();
-            texture.transform = target_fb.wl_transform;
+            std::shared_ptr<wf::texture_t> texture = wf::texture_t::from_aux(last_buffer);
+            texture->set_transform(target_fb.wl_transform);
             rpass->add_texture(texture, target_fb, target_fb.geometry, inverted_damage);
         }
     };
