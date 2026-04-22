@@ -108,7 +108,7 @@ class WayfireAutorotateIIO : public wf::per_output_plugin_instance_t
 
     /* Debounce: pending transform waiting to be confirmed stable */
     int32_t pending_transform = -1;
-    guint debounce_timer_id = 0;
+    guint debounce_timer_id   = 0;
     static constexpr guint DEBOUNCE_ROTATE_MS = 500;
     static constexpr guint DEBOUNCE_NORMAL_MS = 1200;
 
@@ -290,15 +290,13 @@ class WayfireAutorotateIIO : public wf::per_output_plugin_instance_t
                 self->update_transform();
                 return G_SOURCE_REMOVE;
             }, this);
-        }
-        else if (!pend_is_normal)
+        } else if (!pend_is_normal)
         {
             if (!new_is_normal)
             {
                 pending_transform = new_transform;
             }
-        }
-        else
+        } else
         {
             if (!new_is_normal)
             {
