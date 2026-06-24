@@ -68,17 +68,17 @@ class wayfire_crosshair : public wf::per_output_plugin_instance_t
     {
         auto target_fb = output->render->get_target_framebuffer();
         auto gc = wf::get_core().get_cursor_position();
-        wf::point_t coords{(int)gc.x, (int)gc.y};
+        wf::pointf_t coords{gc.x, gc.y};
 
         if (!(output->get_layout_geometry() & coords))
         {
             return;
         }
 
-        wf::region_t region;
+        wf::regionf_t region;
         region |= geometry[0];
         region |= geometry[1];
-        region &= output->render->get_swap_damage();
+        region &= target_fb.geometry_region_from_framebuffer_region(output->render->get_swap_damage());
 
         auto alpha = wf::color_t(line_color).a;
         wf::color_t color = wf::color_t{

@@ -123,7 +123,7 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -132,9 +132,9 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
                     });
         }
 
-        void transform_damage_region(wf::region_t& damage) override
+        void transform_damage_region(wf::regionf_t& damage) override
         {
-            damage |= wf::region_t{self->animation_geometry};
+            damage |= self->animation_geometry;
         }
 
         void render(const wf::scene::render_instruction_t& data) override
@@ -159,9 +159,9 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
                 auto y     = src_box.height - i;
                 auto inv_h = 1.0 / src_box.height;
                 uv.push_back(0.0);
-                uv.push_back(std::max(0, y - line_height) * inv_h);
+                uv.push_back(std::max(0.0, y - line_height) * inv_h);
                 uv.push_back(1.0);
-                uv.push_back(std::max(0, y - line_height) * inv_h);
+                uv.push_back(std::max(0.0, y - line_height) * inv_h);
                 uv.push_back(0.0);
                 uv.push_back(y * inv_h);
                 uv.push_back(1.0);
@@ -169,7 +169,7 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
                 uv.push_back(0.0);
                 uv.push_back(y * inv_h);
                 uv.push_back(1.0);
-                uv.push_back(std::max(0, y - line_height) * inv_h);
+                uv.push_back(std::max(0.0, y - line_height) * inv_h);
                 glm::vec4 v, r;
                 glm::mat4 m(1.0);
                 m = glm::rotate(m, float(M_PI), glm::vec3(1.0, 0.0, 0.0));
@@ -231,7 +231,7 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
                 wf::gles::bind_render_buffer(data.target);
                 for (auto box : data.damage)
                 {
-                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    wf::gles::render_target_logic_scissor(data.target, box);
                     self->program.use(wf::TEXTURE_TYPE_RGBA);
                     self->program.uniformMatrix4f("matrix", transform);
                     self->program.attrib_pointer("position", 3, 0, vertices.data());

@@ -148,7 +148,7 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -157,9 +157,9 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
                     });
         }
 
-        void transform_damage_region(wf::region_t& damage) override
+        void transform_damage_region(wf::regionf_t& damage) override
         {
-            damage |= wf::region_t{self->animation_geometry};
+            damage |= self->animation_geometry;
         }
 
         void render(const wf::scene::render_instruction_t& data) override

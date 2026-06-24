@@ -43,7 +43,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
   private:
     wayfire_view focus_view = nullptr;
     wf::wl_timer<false> change_output_focus, change_view_focus;
-    wf::point_t last_output_coords, last_view_coords;
+    wf::pointf_t last_output_coords, last_view_coords;
 
     wf::option_wrapper_t<bool> should_change_view{"follow-focus/change_view"};
     wf::option_wrapper_t<bool> should_change_output{"follow-focus/change_output"};
@@ -67,7 +67,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
     void change_output()
     {
         auto cpf = wf::get_core().get_cursor_position();
-        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+        wf::pointf_t coords{cpf.x, cpf.y};
 
         if (output->get_layout_geometry() & coords && (output == focus_output))
         {
@@ -90,7 +90,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
         }
 
         auto cpf = wf::get_core().get_cursor_position();
-        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+        wf::pointf_t coords{cpf.x, cpf.y};
 
         if (output->get_layout_geometry() & coords && (output != focus_output))
         {
@@ -98,7 +98,7 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
             focus_output = output;
         }
 
-        if (abs(coords - last_output_coords) < threshold)
+        if (wf::abs(coords - last_output_coords) < threshold)
         {
             return;
         }
@@ -142,14 +142,14 @@ class wayfire_follow_focus : public wf::per_output_plugin_instance_t
         }
 
         auto cpf = wf::get_core().get_cursor_position();
-        wf::point_t coords{static_cast<int>(cpf.x), static_cast<int>(cpf.y)};
+        wf::pointf_t coords{cpf.x, cpf.y};
         if (view != focus_view)
         {
             last_view_coords = coords;
             focus_view = view;
         }
 
-        if (abs(coords - last_view_coords) < threshold)
+        if (wf::abs(coords - last_view_coords) < threshold)
         {
             return;
         }

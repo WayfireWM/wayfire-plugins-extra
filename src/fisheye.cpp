@@ -171,12 +171,12 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
     wf::post_hook_t render_hook = [=] (wf::auxilliary_buffer_t& source,
                                        const wf::render_buffer_t& dest)
     {
-        auto oc     = output->get_cursor_position();
-        wlr_box box = {(int)oc.x, (int)oc.y, 1, 1};
-        box = output->render->get_target_framebuffer().
+        auto oc = output->get_cursor_position();
+        wf::geometry_t box = {oc.x, oc.y, 1, 1};
+        auto fb_box = output->render->get_target_framebuffer().
             framebuffer_box_from_geometry_box(box);
-        oc.x = box.x;
-        oc.y = box.y;
+        oc.x = fb_box.x;
+        oc.y = fb_box.y;
 
         static const float vertexData[] = {
             -1.0f, -1.0f,

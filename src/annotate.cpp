@@ -99,7 +99,7 @@ class simple_node_render_instance_t : public render_instance_t
     }
 
     void schedule_instructions(std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage) override
+        const wf::render_target_t& target, wf::regionf_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -111,15 +111,15 @@ class simple_node_render_instance_t : public render_instance_t
 
     void render(const wf::scene::render_instruction_t& data) override
     {
-        auto ol    = this->overlay;
-        wlr_box og = {*x, *y, *w, *h};
+        auto ol = this->overlay;
+        wf::geometry_t og = {(double)*x, (double)*y, (double)*w, (double)*h};
 
         data.pass->custom_gles_subpass([&]
         {
             wf::gles::bind_render_buffer(data.target);
             for (auto& box : data.damage)
             {
-                wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                wf::gles::render_target_logic_scissor(data.target, box);
                 if (ol->cr)
                 {
                     OpenGL::render_texture(wf::gles_texture_t{ol->texture->tex}, data.target, og,
@@ -164,7 +164,7 @@ class simple_node_t : public node_t
             this, push_damage, &x, &y, &w, &h, overlay, shape_overlay));
     }
 
-    void do_push_damage(wf::region_t updated_region)
+    void do_push_damage(wf::regionf_t updated_region)
     {
         node_damage_signal ev;
         ev.region = updated_region;
@@ -201,7 +201,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int 
 class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public wf::pointer_interaction_t
 {
     uint32_t button;
-    wlr_box last_bbox;
+    wf::geometry_t last_bbox;
     annotate_draw_method draw_method;
     wf::pointf_t grab_point, last_cursor;
     std::vector<std::vector<std::shared_ptr<simple_node_t>>> overlays;
@@ -519,15 +519,15 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         cairo_line_to(cr, to.x, to.y);
         cairo_stroke(cr);
 
-        wlr_box bbox;
+        wf::geometry_t bbox;
         int padding = line_width + 1;
         bbox.x     = std::min(from.x, to.x) - padding;
         bbox.y     = std::min(from.y, to.y) - padding;
-        bbox.width = abs(from.x - to.x) + padding * 2;
-        bbox.height = abs(from.y - to.y) + padding * 2;
-        get_node_overlay()->do_push_damage(wf::region_t(bbox));
+        bbox.width = std::abs(from.x - to.x) + padding * 2;
+        bbox.height = std::abs(from.y - to.y) + padding * 2;
+        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
         cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
-            bbox);
+            wf::to_integer_box(bbox));
     }
 
     bool should_damage_last()
@@ -563,14 +563,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         cairo_line_to(cr, to.x, to.y);
         cairo_stroke(cr);
 
-        wlr_box bbox;
+        wf::geometry_t bbox;
         int padding = line_width + 1;
         bbox.x     = std::min(from.x, to.x) - padding;
         bbox.y     = std::min(from.y, to.y) - padding;
-        bbox.width = abs(from.x - to.x) + padding * 2;
-        bbox.height = abs(from.y - to.y) + padding * 2;
+        bbox.width = std::abs(from.x - to.x) + padding * 2;
+        bbox.height = std::abs(from.y - to.y) + padding * 2;
         output->render->damage(bbox);
-        wf::region_t damage_region{bbox};
+        wf::regionf_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
@@ -579,14 +579,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         damage_region &= output->get_relative_geometry();
         auto damage_extents = damage_region.get_extents();
-        wlr_box damage_box  =
+        auto damage_box     = wf::to_integer_box(wf::geometry_t
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1};
+            damage_extents.y2 - damage_extents.y1});
         cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
-        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::region_t(bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
         last_bbox = bbox;
     }
 
@@ -632,14 +632,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         cairo_rectangle(cr, x, y, w, h);
         cairo_stroke(cr);
 
-        wlr_box bbox;
+        wf::geometry_t bbox;
         int padding = line_width + 1;
         bbox.x     = x - padding;
         bbox.y     = y - padding;
         bbox.width = w + padding * 2;
         bbox.height = h + padding * 2;
         output->render->damage(bbox);
-        wf::region_t damage_region{bbox};
+        wf::regionf_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
@@ -648,14 +648,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         damage_region &= output->get_relative_geometry();
         auto damage_extents = damage_region.get_extents();
-        wlr_box damage_box  =
+        auto damage_box     = wf::to_integer_box(wf::geometry_t
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1};
+            damage_extents.y2 - damage_extents.y1});
         cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
-        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::region_t(bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
         last_bbox = bbox;
     }
 
@@ -695,14 +695,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         cairo_arc(cr, from.x, from.y, radius, 0, 2 * M_PI);
         cairo_stroke(cr);
 
-        wlr_box bbox;
+        wf::geometry_t bbox;
         int padding = line_width + 1;
         bbox.x     = (from.x - radius) - padding;
         bbox.y     = (from.y - radius) - padding;
         bbox.width = (radius * 2) + padding * 2;
         bbox.height = (radius * 2) + padding * 2;
         output->render->damage(bbox);
-        wf::region_t damage_region{bbox};
+        wf::regionf_t damage_region{bbox};
         if (damage_last_bbox)
         {
             output->render->damage(last_bbox);
@@ -711,14 +711,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         damage_region &= output->get_relative_geometry();
         auto damage_extents = damage_region.get_extents();
-        wlr_box damage_box  =
+        auto damage_box     = wf::to_integer_box(wf::geometry_t
         {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1};
+            damage_extents.y2 - damage_extents.y1});
         cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
             damage_box);
 
-        get_node_overlay()->do_push_damage(wf::region_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::region_t(bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
+        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
         last_bbox = bbox;
     }
 

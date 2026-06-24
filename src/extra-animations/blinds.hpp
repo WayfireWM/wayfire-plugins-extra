@@ -122,7 +122,7 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -131,9 +131,9 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                     });
         }
 
-        void transform_damage_region(wf::region_t& damage) override
+        void transform_damage_region(wf::regionf_t& damage) override
         {
-            damage |= wf::region_t{self->animation_geometry};
+            damage |= self->animation_geometry;
         }
 
         void render(const wf::scene::render_instruction_t& data) override
@@ -157,17 +157,17 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                     auto y     = src_box.height - i;
                     auto inv_h = 1.0 / src_box.height;
                     uv.push_back(1.0);
-                    uv.push_back(std::max(0, y - line_height) * inv_h);
+                    uv.push_back(std::max(0.0, y - line_height) * inv_h);
                     uv.push_back(0.0);
-                    uv.push_back(std::max(0, y - line_height) * inv_h);
+                    uv.push_back(std::max(0.0, y - line_height) * inv_h);
                     uv.push_back(0.0);
                     uv.push_back(y * inv_h);
                     uv.push_back(1.0);
                     uv.push_back(y * inv_h);
                     auto x1 = src_box.width / 2.0;
                     auto x2 = -(src_box.width / 2.0);
-                    auto y1 = -(std::min(src_box.height - i, line_height) / 2.0);
-                    auto y2 = std::min(src_box.height - i, line_height) / 2.0;
+                    auto y1 = -(std::min(src_box.height - i, (double)line_height) / 2.0);
+                    auto y2 = std::min(src_box.height - i, (double)line_height) / 2.0;
                     glm::vec4 v, r;
                     glm::mat4 m(1.0);
                     m =
@@ -208,7 +208,8 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
 
                     auto transform = p * l;
                     wf::auxilliary_buffer_t slice_buffer;
-                    slice_buffer.allocate({src_box.width + line_height * 2, static_cast<int32_t>(y2 - y1)});
+                    slice_buffer.allocate({static_cast<int32_t>(std::ceil(src_box.width + line_height * 2)),
+                        static_cast<int32_t>(std::ceil(y2 - y1))});
                     wf::gles::bind_render_buffer(slice_buffer.get_renderbuffer());
                     OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
                     self->program.use(wf::TEXTURE_TYPE_RGBA);
@@ -223,7 +224,7 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                     wf::gles::bind_render_buffer(data.target);
                     for (auto box : data.damage)
                     {
-                        wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                        wf::gles::render_target_logic_scissor(data.target, box);
                         OpenGL::render_transformed_texture(slice_tex,
                             gl_geometry{float(src_box.x - line_height),
                                 float(src_box.y + i),

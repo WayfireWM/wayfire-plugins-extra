@@ -119,13 +119,13 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
     wf::effect_hook_t overlay_hook = [=] ()
     {
         auto target_fb = output->render->get_target_framebuffer();
-        wf::region_t swap_damage = target_fb.geometry_region_from_framebuffer_region(
+        wf::regionf_t swap_damage = target_fb.geometry_region_from_framebuffer_region(
             output->render->get_swap_damage());
 
-        wf::region_t scheduled_damage = output->render->get_scheduled_damage();
-        wf::region_t output_region{target_fb.geometry};
-        wf::region_t inverted_damage;
-        wf::region_t damage;
+        wf::regionf_t scheduled_damage = output->render->get_scheduled_damage();
+        wf::regionf_t output_region{target_fb.geometry};
+        wf::regionf_t inverted_damage;
+        wf::regionf_t damage;
 
         /* Show scheduled client damage. Scheduled damage is the client damage
          * in union with last frame client damage. If this region is empty, we
@@ -188,8 +188,8 @@ class wayfire_showrepaint : public wf::per_output_plugin_instance_t
          */
         auto target_fb = output->render->get_target_framebuffer();
         last_buffer.allocate(target_fb.get_size());
-        wlr_box full = wf::construct_box({0, 0}, target_fb.get_size());
-        last_buffer.get_renderbuffer().blit(target_fb, wf::geometry_to_fbox(full), full);
+        wf::geometry_t full = wf::construct_box({0, 0}, target_fb.get_size());
+        last_buffer.get_renderbuffer().blit(target_fb, full, full);
     };
 
     void fini() override

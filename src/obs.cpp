@@ -138,7 +138,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
         }
 
         void schedule_instructions(std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             // We want to render ourselves only, the node does not have children
             instructions.push_back(render_instruction_t{
@@ -190,7 +190,7 @@ class wf_obs : public wf::scene::view_2d_transformer_t
 
                 for (const auto& box : data.damage)
                 {
-                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_transformed_texture(final_tex, view_box,
                         wf::gles::render_target_orthographic_projection(data.target),
                         glm::vec4(1.0), 0);
