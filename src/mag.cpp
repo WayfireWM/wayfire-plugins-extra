@@ -297,7 +297,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
     {
         auto og = output->get_relative_geometry();
         float aspect = (float)og.width / og.height;
-        wf::geometry_t start_geometry = {100, 100, (int)(default_height * aspect), default_height};
+        wf::geometry_t start_geometry = {100, 100, default_height *aspect, (double)default_height};
         return start_geometry;
     }
 
@@ -345,7 +345,7 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
             glm::translate(glm::mat4(1.0), glm::vec3(0.5, 0.5, 0.0)) *
             glm::scale(glm::mat4(1.0), glm::vec3{0.5, -0.5, 1.0}) * ortho;
 
-        glm::vec4 cursor = glm::vec4(cursor_position.x, cursor_position.y, 0.0, 1.0);
+        glm::vec4 cursor = glm::vec4((int)cursor_position.x, (int)cursor_position.y, 0.0, 1.0);
         cursor = cursor_transform * cursor;
 
         float x = cursor.x;
@@ -400,10 +400,10 @@ class wayfire_magnifier : public wf::per_output_plugin_instance_t
             zoom_box.y2  = 1.0;
         }
 
-        zoom_box.x1 *= width - 1;
-        zoom_box.x2 *= width - 1;
-        zoom_box.y1 *= height - 1;
-        zoom_box.y2 *= height - 1;
+        zoom_box.x1 *= width;
+        zoom_box.x2 *= width;
+        zoom_box.y1 *= height;
+        zoom_box.y2 *= height;
 
         /* Copy zoom_box part of the output to our own texture to be
          * read by the mag_view_t. */
