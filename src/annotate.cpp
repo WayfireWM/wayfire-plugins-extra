@@ -80,19 +80,16 @@ class simple_node_render_instance_t : public render_instance_t
     node_t *self;
     damage_callback push_to_parent;
     std::shared_ptr<anno_ws_overlay> overlay, shape_overlay;
-    int *x, *y, *w, *h;
+    wf::geometry_t *geometry;
 
   public:
     simple_node_render_instance_t(node_t *self, damage_callback push_dmg,
-        int *x, int *y, int *w, int *h, std::shared_ptr<anno_ws_overlay> overlay,
+        wf::geometry_t *geometry, std::shared_ptr<anno_ws_overlay> overlay,
         std::shared_ptr<anno_ws_overlay> shape_overlay)
     {
-        this->x    = x;
-        this->y    = y;
-        this->w    = w;
-        this->h    = h;
-        this->self = self;
-        this->overlay = overlay;
+        this->geometry = geometry;
+        this->self     = self;
+        this->overlay  = overlay;
         this->shape_overlay  = shape_overlay;
         this->push_to_parent = push_dmg;
         self->connect(&on_node_damaged);
@@ -112,7 +109,7 @@ class simple_node_render_instance_t : public render_instance_t
     void render(const wf::scene::render_instruction_t& data) override
     {
         auto ol = this->overlay;
-        wf::geometry_t og = {(double)*x, (double)*y, (double)*w, (double)*h};
+        wf::geometry_t og = *geometry;
 
         data.pass->custom_gles_subpass([&]
         {
@@ -139,16 +136,16 @@ class simple_node_render_instance_t : public render_instance_t
 
 class simple_node_t : public node_t
 {
-    int x, y, w, h;
+    wf::geometry_t geometry;
 
   public:
     std::shared_ptr<anno_ws_overlay> overlay, shape_overlay;
     simple_node_t(int x, int y, int w, int h) : node_t(false)
     {
-        this->x = x;
-        this->y = y;
-        this->w = w;
-        this->h = h;
+        this->geometry.x     = x;
+        this->geometry.y     = y;
+        this->geometry.width = w;
+        this->geometry.height = h;
         overlay = std::make_shared<anno_ws_overlay>();
         shape_overlay = std::make_shared<anno_ws_overlay>();
     }
@@ -161,7 +158,7 @@ class simple_node_t : public node_t
         // this simple nodes does not need any transformations, so the push_damage
         // callback is just passed along.
         instances.push_back(std::make_unique<simple_node_render_instance_t>(
-            this, push_damage, &x, &y, &w, &h, overlay, shape_overlay));
+            this, push_damage, &geometry, overlay, shape_overlay));
     }
 
     void do_push_damage(wf::regionf_t updated_region)
@@ -174,19 +171,19 @@ class simple_node_t : public node_t
     wf::geometry_t get_bounding_box() override
     {
         // Specify whatever geometry your node has
-        return {x, y, w, h};
+        return geometry;
     }
 
     void set_position(int x, int y)
     {
-        this->x = x;
-        this->y = y;
+        this->geometry.x = x;
+        this->geometry.y = y;
     }
 
     void set_size(int w, int h)
     {
-        this->w = w;
-        this->h = h;
+        this->geometry.width  = w;
+        this->geometry.height = h;
     }
 };
 

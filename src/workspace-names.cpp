@@ -250,8 +250,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                workspaces[x][y] = add_simple_node(output, {x *og.width,
-                    y * og.height}, {x, y});
+                workspaces[x][y] = add_simple_node(output, {int(x * og.width),
+                    int(y * og.height)}, {x, y});
             }
         }
     }
@@ -573,7 +573,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                workspaces[x][y]->set_offset({(x - nvp.x) * og.width, (y - nvp.y) * og.height});
+                workspaces[x][y]->set_offset({int((x - nvp.x) * og.width), int((y - nvp.y) * og.height)});
             }
         }
 

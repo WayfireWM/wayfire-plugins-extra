@@ -424,7 +424,7 @@ class carpet_transformer : public wf::scene::view_2d_transformer_t
 
             data.pass->custom_gles_subpass([&]
             {
-                self->buffer.allocate({pbb.width, pbb.height});
+                self->buffer.allocate({int(pbb.width), int(pbb.height)});
                 wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
                 wf::gles_texture_t final_tex{self->buffer.get_texture()};
                 OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);

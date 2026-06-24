@@ -55,21 +55,18 @@ class simple_node_render_instance_t : public render_instance_t
     node_t *self;
     wayfire_toplevel_view view;
     damage_callback push_to_parent;
-    int *x, *y, *w, *h;
+    wf::geometry_t *geometry;
     wf::geometry_t *transparent_box;
     wf::option_wrapper_t<bool> transparent_behind_views{
         "force-fullscreen/transparent_behind_views"};
 
   public:
     simple_node_render_instance_t(node_t *self, damage_callback push_damage,
-        wayfire_toplevel_view view, int *x, int *y, int *w, int *h, wf::geometry_t *transparent_box)
+        wayfire_toplevel_view view, wf::geometry_t *geometry, wf::geometry_t *transparent_box)
     {
-        this->x    = x;
-        this->y    = y;
-        this->w    = w;
-        this->h    = h;
-        this->self = self;
-        this->view = view;
+        this->geometry = geometry;
+        this->self     = self;
+        this->view     = view;
         this->transparent_box = transparent_box;
         this->push_to_parent  = push_damage;
         self->connect(&on_node_damaged);
@@ -117,15 +114,15 @@ class black_border_node_t : public node_t
     wf::geometry_t transparent_box;
 
   public:
-    int x, y, w, h;
+    wf::geometry_t geometry;
 
     black_border_node_t(wayfire_toplevel_view view, int x, int y, int w,
         int h, wf::geometry_t transparent_box) : node_t(false)
     {
-        this->x    = x;
-        this->y    = y;
-        this->w    = w;
-        this->h    = h;
+        this->geometry.x     = x;
+        this->geometry.y     = y;
+        this->geometry.width = w;
+        this->geometry.height = h;
         this->view = view;
         this->transparent_box = transparent_box;
     }
@@ -138,13 +135,13 @@ class black_border_node_t : public node_t
         // this simple nodes does not need any transformations, so the push_damage
         // callback is just passed along.
         instances.push_back(std::make_unique<simple_node_render_instance_t>(
-            this, push_damage, view, &x, &y, &w, &h, &transparent_box));
+            this, push_damage, view, &geometry, &transparent_box));
     }
 
     wf::geometry_t get_bounding_box() override
     {
         // Specify whatever geometry your node has
-        return {x, y, w, h};
+        return geometry;
     }
 };
 
@@ -216,11 +213,11 @@ class wayfire_force_fullscreen : public wf::per_output_plugin_instance_t
                 int x = offset.x * og.width;
                 int y = offset.y * og.height;
                 b.second->transformed_view_box.x = x + w;
-                b.second->black_border_node->x   = x;
-                b.second->black_border_node->y   = y;
-                b.second->black_border_node->w   = og.width;
-                b.second->black_border_node->h   = og.height;
-                b.second->transformed_view_box.y = b.second->black_border_node->y =
+                b.second->black_border_node->geometry.x     = x;
+                b.second->black_border_node->geometry.y     = y;
+                b.second->black_border_node->geometry.width = og.width;
+                b.second->black_border_node->geometry.height = og.height;
+                b.second->transformed_view_box.y = b.second->black_border_node->geometry.y =
                     y;
             }
 

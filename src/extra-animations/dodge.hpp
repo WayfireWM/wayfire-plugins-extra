@@ -362,8 +362,8 @@ class wayfire_dodge
 
     wf::pointf_t compute_direction(wf::geometry_t from_bb, wf::geometry_t to_bb)
     {
-        auto from_center = wf::point_t{from_bb.x + from_bb.width / 2, from_bb.y + from_bb.height / 2};
-        auto to_center   = wf::point_t{to_bb.x + to_bb.width / 2, to_bb.y + to_bb.height / 2};
+        auto from_center = wf::pointf_t{from_bb.x + from_bb.width / 2, from_bb.y + from_bb.height / 2};
+        auto to_center   = wf::pointf_t{to_bb.x + to_bb.width / 2, to_bb.y + to_bb.height / 2};
         auto x = double(from_center.x - to_center.x);
         auto y = double(from_center.y - to_center.y);
         auto m = magnitude(x, y);

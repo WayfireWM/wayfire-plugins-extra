@@ -175,14 +175,14 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
                 0.0f, 1.0f,
             };
 
-            const float vertex_data_pos[] = {
-                1.0f * src_box.x,
-                1.0f * src_box.y + src_box.height,
-                1.0f * src_box.x + src_box.width,
-                1.0f * src_box.y + src_box.height,
-                1.0f * src_box.x + src_box.width,
-                1.0f * src_box.y,
-                1.0f * src_box.x, 1.0f * src_box.y,
+            const double vertex_data_pos[] = {
+                src_box.x,
+                src_box.y + src_box.height,
+                src_box.x + src_box.width,
+                src_box.y + src_box.height,
+                src_box.x + src_box.width,
+                src_box.y,
+                src_box.x, src_box.y,
             };
 
             data.pass->custom_gles_subpass([&]

@@ -31,7 +31,7 @@
 
 class wayfire_crosshair : public wf::per_output_plugin_instance_t
 {
-    wf::option_wrapper_t<int> line_width{"crosshair/line_width"};
+    wf::option_wrapper_t<double> line_width{"crosshair/line_width"};
     wf::option_wrapper_t<wf::color_t> line_color{"crosshair/line_color"};
     wf::geometry_t geometry[2];
 
@@ -56,9 +56,9 @@ class wayfire_crosshair : public wf::per_output_plugin_instance_t
         output->render->damage(geometry[1]);
 
         geometry[0] =
-            wf::geometry_t{int(oc.x - half_width), 0, line_width, og.height};
+            wf::geometry_t{oc.x - half_width, 0, line_width, og.height};
         geometry[1] =
-            wf::geometry_t{0, int(oc.y - half_width), og.width, line_width};
+            wf::geometry_t{0, oc.y - half_width, og.width, line_width};
 
         output->render->damage(geometry[0]);
         output->render->damage(geometry[1]);

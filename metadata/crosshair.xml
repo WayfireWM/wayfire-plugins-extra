@@ -4,7 +4,7 @@
 		<_short>Crosshair</_short>
 		<_long>Render fullscreen mouse crosshair</_long>
 		<category>Utility</category>
-		<option name="line_width" type="int">
+		<option name="line_width" type="double">
 			<_short>Line Width</_short>
 			<_long>Line width of crosshair</_long>
 			<default>2</default>
