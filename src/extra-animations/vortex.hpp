@@ -175,7 +175,7 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
                 0.0f, 1.0f,
             };
 
-            static const float vertex_data_pos[] = {
+            const float vertex_data_pos[] = {
                 (float)src_box.x,
                 (float)src_box.y + (float)src_box.height,
                 (float)src_box.x + (float)src_box.width,
@@ -216,11 +216,6 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
         {
             program.compile(vortex_vert_source, vortex_frag_source);
         });
-    }
-
-    wf::geometry_t get_bounding_box() override
-    {
-        return this->animation_geometry;
     }
 
     wf::effect_hook_t pre_hook = [=] ()
