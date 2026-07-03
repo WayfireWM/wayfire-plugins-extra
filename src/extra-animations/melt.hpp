@@ -240,11 +240,6 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
         return box;
     }
 
-    wf::geometry_t get_bounding_box() override
-    {
-        return get_padded_bounding_box();
-    }
-
     wf::effect_hook_t pre_hook = [=] ()
     {
         output->render->damage(this->get_padded_bounding_box());

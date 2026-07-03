@@ -261,11 +261,6 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
         });
     }
 
-    wf::geometry_t get_bounding_box() override
-    {
-        return this->animation_geometry;
-    }
-
     wf::effect_hook_t pre_hook = [=] ()
     {
         output->render->damage(animation_geometry);
