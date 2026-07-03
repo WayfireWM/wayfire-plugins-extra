@@ -202,9 +202,9 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
 
                     glm::mat4 p = glm::perspective(float(M_PI / 64.0), 1.0f, 0.1f, 100.0f);
                     glm::mat4 l = glm::lookAt(
-                        glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 64.0) / 2)),
+                        glm::vec3(0., 0., -1.0 / std::tan(float(M_PI / 64.0) / 2)),
                         glm::vec3(0., 0., 0.),
-                        glm::vec3(0., 1., 0.));
+                        glm::vec3(0., -1., 0.));
 
                     auto transform = p * l;
                     wf::auxilliary_buffer_t slice_buffer;
@@ -222,16 +222,17 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                     wf::gles_texture_t slice_tex{slice_buffer.get_texture()};
 
                     wf::gles::bind_render_buffer(data.target);
-                    for (auto box : data.damage)
-                    {
-                        wf::gles::render_target_logic_scissor(data.target, box);
-                        OpenGL::render_transformed_texture(slice_tex,
-                            gl_geometry{float(src_box.x - line_height),
-                                float(src_box.y + i),
-                                float((src_box.x - line_height) + src_box.width + line_height * 2.0),
-                                float((src_box.y + i) + (y2 - y1))}, {},
-                            wf::gles::render_target_orthographic_projection(data.target), glm::vec4(1.0), 0);
-                    }
+                    /* XXX: Scissoring wrong boxes here makes only top part of effect work */
+                    // for (auto box : data.damage)
+                    // {
+                    // wf::gles::render_target_logic_scissor(data.target, box);
+                    OpenGL::render_transformed_texture(slice_tex,
+                        gl_geometry{float(src_box.x - line_height),
+                            float(src_box.y + i),
+                            float((src_box.x - line_height) + src_box.width + line_height * 2.0),
+                            float((src_box.y + i) + (y2 - y1))}, {},
+                        wf::gles::render_target_orthographic_projection(data.target), glm::vec4(1.0), 0);
+                    // }
 
                     slice_buffer.free();
                 }
