@@ -148,7 +148,7 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -157,9 +157,9 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
                     });
         }
 
-        void transform_damage_region(wf::region_t& damage) override
+        void transform_damage_region(wf::regionf_t& damage) override
         {
-            damage |= wf::region_t{self->animation_geometry};
+            damage |= self->animation_geometry;
         }
 
         void render(const wf::scene::render_instruction_t& data) override
@@ -176,13 +176,13 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
             };
 
             const float vertex_data_pos[] = {
-                1.0f * src_box.x,
-                1.0f * src_box.y + src_box.height,
-                1.0f * src_box.x + src_box.width,
-                1.0f * src_box.y + src_box.height,
-                1.0f * src_box.x + src_box.width,
-                1.0f * src_box.y,
-                1.0f * src_box.x, 1.0f * src_box.y,
+                (float)src_box.x,
+                (float)src_box.y + (float)src_box.height,
+                (float)src_box.x + (float)src_box.width,
+                (float)src_box.y + (float)src_box.height,
+                (float)src_box.x + (float)src_box.width,
+                (float)src_box.y,
+                (float)src_box.x, (float)src_box.y,
             };
 
             data.pass->custom_gles_subpass([&]
@@ -216,11 +216,6 @@ class vortex_transformer : public wf::scene::view_2d_transformer_t
         {
             program.compile(vortex_vert_source, vortex_frag_source);
         });
-    }
-
-    wf::geometry_t get_bounding_box() override
-    {
-        return this->animation_geometry;
     }
 
     wf::effect_hook_t pre_hook = [=] ()

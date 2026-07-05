@@ -91,7 +91,7 @@ class simple_node_render_instance_t : public render_instance_t
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage) override
+        const wf::render_target_t& target, wf::regionf_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -113,7 +113,7 @@ class simple_node_render_instance_t : public render_instance_t
                 wf::gles::bind_render_buffer(data.target);
                 for (auto& box : data.damage)
                 {
-                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_texture(wf::gles_texture_t{workspace->texture->get_texture()},
                         data.target, g, glm::vec4(1, 1, 1, *alpha_fade), 0);
                 }
@@ -157,7 +157,7 @@ class simple_node_t : public node_t
             this, push_damage, &offset, &alpha_fade, workspace));
     }
 
-    void do_push_damage(wf::region_t updated_region)
+    void do_push_damage(wf::regionf_t updated_region)
     {
         node_damage_signal ev;
         ev.region = updated_region;
@@ -250,8 +250,8 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                workspaces[x][y] = add_simple_node(output, {x *og.width,
-                    y * og.height}, {x, y});
+                workspaces[x][y] = add_simple_node(output, {int(x * og.width),
+                    int(y * og.height)}, {x, y});
             }
         }
     }
@@ -573,7 +573,7 @@ class wayfire_workspace_names_output : public wf::per_output_plugin_instance_t
         {
             for (int y = 0; y < wsize.height; y++)
             {
-                workspaces[x][y]->set_offset({(x - nvp.x) * og.width, (y - nvp.y) * og.height});
+                workspaces[x][y]->set_offset({int((x - nvp.x) * og.width), int((y - nvp.y) * og.height)});
             }
         }
 

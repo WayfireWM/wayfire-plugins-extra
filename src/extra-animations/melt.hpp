@@ -140,7 +140,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
 
         void schedule_instructions(
             std::vector<render_instruction_t>& instructions,
-            const wf::render_target_t& target, wf::region_t& damage) override
+            const wf::render_target_t& target, wf::regionf_t& damage) override
         {
             instructions.push_back(render_instruction_t{
                         .instance = this,
@@ -149,7 +149,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                     });
         }
 
-        void transform_damage_region(wf::region_t& damage) override
+        void transform_damage_region(wf::regionf_t& damage) override
         {
             damage |= self->get_padded_bounding_box();
         }
@@ -180,7 +180,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
 
             data.pass->custom_gles_subpass([&]
             {
-                self->buffer.allocate({pbb.width, pbb.height});
+                self->buffer.allocate({int(pbb.width), int(pbb.height)});
                 wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
                 wf::gles_texture_t final_tex{self->buffer.get_texture()};
                 OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
@@ -196,7 +196,7 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
                 wf::gles::bind_render_buffer(data.target);
                 for (auto box : data.damage)
                 {
-                    wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
                         glm::vec4(1.0, 1.0, 1.0, 1.0 / (1.0 + pow(2.718, -(progress * 15.0 - 3.0)))), 0);
@@ -238,11 +238,6 @@ class melt_transformer : public wf::scene::view_2d_transformer_t
         box.width += padding * 2;
         box.height += padding * 2;
         return box;
-    }
-
-    wf::geometry_t get_bounding_box() override
-    {
-        return get_padded_bounding_box();
     }
 
     wf::effect_hook_t pre_hook = [=] ()

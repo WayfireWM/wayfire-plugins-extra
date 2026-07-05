@@ -60,14 +60,14 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
     node_t *self;
     wayfire_toplevel_view view;
     float *scale_x, *scale_y;
-    wlr_box *transformed_view_geometry;
+    wf::geometry_t *transformed_view_geometry;
     damage_callback push_damage;
     wf::option_wrapper_t<bool> nearest_filtering{"winzoom/nearest_filtering"};
 
   public:
     simple_node_render_instance_t(transformer_base_node_t *self, damage_callback push_damage,
         wayfire_toplevel_view view, float *scale_x, float *scale_y,
-        wlr_box *transformed_view_geometry) :
+        wf::geometry_t *transformed_view_geometry) :
         transformer_render_instance_t<transformer_base_node_t>(self, push_damage,
             view->get_output())
     {
@@ -89,7 +89,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage) override
+        const wf::render_target_t& target, wf::regionf_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -99,16 +99,16 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
                     });
     }
 
-    void transform_damage_region(wf::region_t& damage) override
+    void transform_damage_region(wf::regionf_t& damage) override
     {
         damage |= view->get_transformed_node()->get_children_bounding_box();
     }
 
-    wlr_box get_scaled_geometry()
+    wf::geometry_t get_scaled_geometry()
     {
         auto vg = view->get_geometry();
         auto midpoint = get_center(vg);
-        auto result   = wf::pointf_t{float(vg.x), float(vg.y)} - midpoint;
+        auto result   = wf::pointf_t{vg.x, vg.y} - midpoint;
         result.x *= *scale_x;
         result.y *= *scale_y;
         result   += midpoint;
@@ -131,7 +131,7 @@ class simple_node_render_instance_t : public transformer_render_instance_t<trans
 class winzoom_t : public view_2d_transformer_t
 {
     wayfire_toplevel_view view;
-    wlr_box transformed_view_geometry;
+    wf::geometry_t transformed_view_geometry;
 
   public:
     winzoom_t(wayfire_toplevel_view view) : view_2d_transformer_t(view)

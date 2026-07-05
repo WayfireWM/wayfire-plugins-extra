@@ -130,7 +130,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
 
     void schedule_instructions(
         std::vector<render_instruction_t>& instructions,
-        const wf::render_target_t& target, wf::region_t& damage) override
+        const wf::render_target_t& target, wf::regionf_t& damage) override
     {
         // We want to render ourselves only, the node does not have children
         instructions.push_back(render_instruction_t{
@@ -196,7 +196,7 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
 
             for (const auto& box : data.damage)
             {
-                wf::gles::render_target_logic_scissor(data.target, wlr_box_from_pixman_box(box));
+                wf::gles::render_target_logic_scissor(data.target, box);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
             }
 
