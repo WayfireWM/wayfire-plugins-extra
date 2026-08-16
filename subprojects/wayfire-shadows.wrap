@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://github.com/timgott/wayfire-shadows.git
+revision = HEAD
+depth = 1

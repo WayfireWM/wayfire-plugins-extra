@@ -1,0 +1,4 @@
+[wrap-git]
+url = https://gitlab.com/wayfireplugins/focus-request.git
+revision = HEAD
+depth = 1
