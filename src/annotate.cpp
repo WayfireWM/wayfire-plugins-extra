@@ -40,6 +40,8 @@
 #include "wayfire/per-output-plugin.hpp"
 #include "wayfire/signal-definitions.hpp"
 #include "wayfire/plugins/common/input-grab.hpp"
+#include "wayfire/plugins/common/shared-core-data.hpp"
+#include "wayfire/plugins/ipc/ipc-method-repository.hpp"
 
 enum annotate_draw_method
 {
@@ -223,7 +225,10 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         .name = "annotate",
         .capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR,
     };
+
     annotate_mode mode = ANNOTATE_MODE_DRAW;
+
+    wf::shared_data::ref_ptr_t<wf::ipc::method_repository_t> method_repository;
 
   public:
     void init() override
@@ -260,6 +265,8 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
             nullptr);
         method_changed();
+
+        method_repository->register_method("annotate/clear-workspace", on_clear_workspace);
     }
 
     void handle_pointer_button(const wlr_pointer_button_event& event) override
@@ -446,6 +453,13 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         return true;
     };
+
+    wf::ipc::method_callback on_clear_workspace = [&] (const wf::json_t& js)
+    {
+        clear();
+        return wf::ipc::json_ok();
+    };
+
 
     void cairo_init(std::shared_ptr<anno_ws_overlay> ol)
     {
@@ -917,6 +931,8 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         }
 
         output->render->damage_whole();
+
+        method_repository->unregister_method("annotate/clear-workspace");
     }
 };
 
