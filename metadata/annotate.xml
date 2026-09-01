@@ -9,6 +9,11 @@
 			<_long>Begin drawing on workspace.</_long>
 			<default>&lt;super&gt; &lt;alt&gt; BTN_LEFT</default>
 		</option>
+		<option name="erase" type="button">
+			<_short>Erase</_short>
+			<_long>Erase the drawing below the cursor.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; BTN_RIGHT</default>
+		</option>
 		<option name="clear_workspace" type="activator">
 			<_short>Clear Workspace</_short>
 			<_long>Clear workspace.</_long>
@@ -44,6 +49,13 @@
 			<_short>Line Width</_short>
 			<_long>Line width used for drawing.</_long>
 			<default>3.0</default>
+			<min>1.0</min>
+			<precision>1.0</precision>
+		</option>
+		<option name="erase_line_width" type="double">
+			<_short>Line Width</_short>
+			<_long>Line width used for drawing.</_long>
+			<default>9.0</default>
 			<min>1.0</min>
 			<precision>1.0</precision>
 		</option>

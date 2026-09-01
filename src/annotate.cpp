@@ -49,6 +49,12 @@ enum annotate_draw_method
     ANNOTATE_METHOD_CIRCLE,
 };
 
+enum annotate_mode
+{
+    ANNOTATE_MODE_DRAW,
+    ANNOTATE_MODE_ERASE,
+};
+
 struct simple_texture_t
 {
     GLuint tex = -1;
@@ -61,6 +67,7 @@ struct anno_ws_overlay
     cairo_t *cr = nullptr;
     cairo_surface_t *cairo_surface;
     std::unique_ptr<simple_texture_t> texture;
+    bool visible = false;
 };
 
 namespace wf
@@ -117,13 +124,13 @@ class simple_node_render_instance_t : public render_instance_t
             for (auto& box : data.damage)
             {
                 wf::gles::render_target_logic_scissor(data.target, box);
-                if (ol->cr)
+                if (ol->cr && ol->visible)
                 {
                     OpenGL::render_texture(wf::gles_texture_t{ol->texture->tex}, data.target, og,
                         glm::vec4(1.0), OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
                 }
 
-                if (shape_overlay->cr)
+                if (shape_overlay->cr && shape_overlay->visible)
                 {
                     OpenGL::render_texture(wf::gles_texture_t{shape_overlay->texture->tex}, data.target, og,
                         glm::vec4(1.0), OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
@@ -204,9 +211,11 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
     std::vector<std::vector<std::shared_ptr<simple_node_t>>> overlays;
     wf::option_wrapper_t<std::string> method{"annotate/method"};
     wf::option_wrapper_t<double> line_width{"annotate/line_width"};
+    wf::option_wrapper_t<double> erase_line_width{"annotate/erase_line_width"};
     wf::option_wrapper_t<bool> shapes_from_center{"annotate/from_center"};
     wf::option_wrapper_t<wf::color_t> stroke_color{"annotate/stroke_color"};
     wf::option_wrapper_t<wf::buttonbinding_t> draw_binding{"annotate/draw"};
+    wf::option_wrapper_t<wf::buttonbinding_t> erase_binding{"annotate/erase"};
     wf::option_wrapper_t<wf::activatorbinding_t> clear_binding{
         "annotate/clear_workspace"};
     std::unique_ptr<wf::input_grab_t> input_grab;
@@ -214,6 +223,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         .name = "annotate",
         .capabilities = wf::CAPABILITY_MANAGE_COMPOSITOR,
     };
+    annotate_mode mode = ANNOTATE_MODE_DRAW;
 
   public:
     void init() override
@@ -245,6 +255,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         output->connect(&viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
+        output->add_button(erase_binding, &erase_begin);
         output->add_activator(clear_binding, &clear_workspace);
         input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
             nullptr);
@@ -320,7 +331,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         }
     };
 
-    wf::button_callback draw_begin = [=] (wf::buttonbinding_t btn)
+    bool change_begin(wf::buttonbinding_t btn)
     {
         output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
         output->render->damage_whole();
@@ -330,6 +341,18 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         grab();
 
         return false;
+    }
+
+    wf::button_callback draw_begin = [=] (wf::buttonbinding_t btn)
+    {
+        mode = ANNOTATE_MODE_DRAW;
+        return change_begin(btn);
+    };
+
+    wf::button_callback erase_begin = [=] (wf::buttonbinding_t btn)
+    {
+        mode = ANNOTATE_MODE_ERASE;
+        return change_begin(btn);
     };
 
     void draw_end()
@@ -338,26 +361,23 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         auto shape_overlay = get_shape_overlay();
 
         output->render->rem_effect(&frame_pre_paint);
-        overlay_destroy(shape_overlay);
-        ungrab();
 
         switch (draw_method)
         {
           case ANNOTATE_METHOD_LINE:
-            cairo_draw_line(ol, wf::get_core().get_cursor_position());
-            break;
-
           case ANNOTATE_METHOD_RECTANGLE:
-            cairo_draw_rectangle(ol, last_cursor);
-            break;
-
           case ANNOTATE_METHOD_CIRCLE:
-            cairo_draw_circle(ol, last_cursor);
+            commit_shape_to_overlay(ol, grab_point,
+                wf::get_core().get_cursor_position(), draw_method, mode);
             break;
 
           default:
             break;
         }
+
+        overlay_destroy(shape_overlay);
+        ol->visible = ol->cr != nullptr;
+        ungrab();
     }
 
     void overlay_clear(std::shared_ptr<anno_ws_overlay> ol)
@@ -368,6 +388,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         }
 
         cairo_clear(ol->cr);
+        ol->visible = false;
     }
 
     void overlay_destroy(std::shared_ptr<anno_ws_overlay> ol)
@@ -389,6 +410,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         cairo_surface_destroy(ol->cairo_surface);
         cairo_destroy(ol->cr);
         ol->cr = nullptr;
+        ol->visible = false;
     }
 
     void clear()
@@ -440,6 +462,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         ol->cr = cairo_create(ol->cairo_surface);
 
         ol->texture = std::make_unique<simple_texture_t>();
+        ol->visible = false;
     }
 
     void cairo_clear(cairo_t *cr)
@@ -493,38 +516,237 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         });
     }
 
-    void cairo_draw(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t from,
-        wf::pointf_t to)
+    struct shape_geom_t
+    {
+        double x, y, w, h; // circle uses x, y and w
+    };
+
+    shape_geom_t compute_shape_geometry(wf::pointf_t from, wf::pointf_t to, annotate_draw_method method)
+    {
+        shape_geom_t g{};
+
+        if (method == ANNOTATE_METHOD_LINE)
+        {
+            g.x = from.x;
+            g.y = from.y;
+            g.w = to.x;
+            g.h = to.y;
+            return g;
+        }
+
+        if (method == ANNOTATE_METHOD_RECTANGLE)
+        {
+            double w = fabs(from.x - to.x);
+            double h = fabs(from.y - to.y);
+
+            if (shapes_from_center)
+            {
+                g.x = from.x - w;
+                g.y = from.y - h;
+                g.w = w * 2.0;
+                g.h = h * 2.0;
+            } else
+            {
+                g.x = std::min(from.x, to.x);
+                g.y = std::min(from.y, to.y);
+                g.w = w;
+                g.h = h;
+            }
+
+            return g;
+        }
+
+        if (method == ANNOTATE_METHOD_CIRCLE)
+        {
+            auto radius = glm::distance(glm::vec2(from.x, from.y), glm::vec2(to.x, to.y));
+            if (!shapes_from_center)
+            {
+                radius /= 2.0;
+                from.x += (to.x - from.x) / 2.0;
+                from.y += (to.y - from.y) / 2.0;
+            }
+
+            g.x     = from.x;
+            g.y     = from.y;
+            g.w = radius;
+            return g;
+        }
+
+        assert(false); // isn’t called in draw method
+    }
+
+    void append_shape_path(cairo_t *cr, annotate_draw_method method, const shape_geom_t& g)
+    {
+        switch (method)
+        {
+          case ANNOTATE_METHOD_LINE:
+            cairo_move_to(cr, g.x, g.y);
+            cairo_line_to(cr, g.w, g.h);
+            break;
+
+          case ANNOTATE_METHOD_RECTANGLE:
+            cairo_rectangle(cr, g.x, g.y, g.w, g.h);
+            break;
+
+          case ANNOTATE_METHOD_CIRCLE:
+            cairo_arc(cr, g.x, g.y, g.w, 0, 2 * M_PI);
+            break;
+
+          default:
+            break;
+        }
+    }
+
+    wf::geometry_t shape_bbox(const shape_geom_t& g, annotate_draw_method method, double stroke_w)
+    {
+        int padding = stroke_w + 1;
+        wf::geometry_t bbox{};
+
+        if (method == ANNOTATE_METHOD_LINE)
+        {
+            bbox.x     = std::min(g.x, g.w) - padding;
+            bbox.y     = std::min(g.y, g.h) - padding;
+            bbox.width = std::abs(g.x - g.w) + padding * 2;
+            bbox.height = std::abs(g.y - g.h) + padding * 2;
+            return bbox;
+        }
+
+        if (method == ANNOTATE_METHOD_RECTANGLE)
+        {
+            bbox.x     = g.x - padding;
+            bbox.y     = g.y - padding;
+            bbox.width = g.w + padding * 2;
+            bbox.height = g.h + padding * 2;
+            return bbox;
+        }
+
+        if (method == ANNOTATE_METHOD_CIRCLE)
+        {
+            bbox.x     = (g.x - g.w) - padding;
+            bbox.y     = (g.y - g.w) - padding;
+            bbox.width = (g.w * 2) + padding * 2;
+            bbox.height = (g.w * 2) + padding * 2;
+            return bbox;
+        }
+
+        assert(false); // isn’t called in draw method
+    }
+
+    void setup_stroke_style(cairo_t *cr, double stroke_w)
+    {
+        cairo_set_line_width(cr, stroke_w);
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+        cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    }
+
+    void stroke_path_to_overlay(
+        std::shared_ptr<anno_ws_overlay> overlay,
+        wf::pointf_t from_global, wf::pointf_t to_global,
+        annotate_draw_method method,
+        annotate_mode op_mode,
+        bool is_preview,
+        bool from_is_previous_cursor = false)
     {
         auto og = output->get_layout_geometry();
+        wf::pointf_t from = from_global;
+        wf::pointf_t to   = to_global;
 
         from.x -= og.x;
         from.y -= og.y;
         to.x   -= og.x;
         to.y   -= og.y;
 
-        cairo_init(ol);
-        cairo_t *cr = ol->cr;
+        bool damage_last_bbox = is_preview && should_damage_last();
 
-        cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba(cr,
-            wf::color_t(stroke_color).r,
-            wf::color_t(stroke_color).g,
-            wf::color_t(stroke_color).b,
-            wf::color_t(stroke_color).a);
-        cairo_move_to(cr, from.x, from.y);
-        cairo_line_to(cr, to.x, to.y);
+        if (is_preview)
+        {
+            overlay_clear(overlay);
+        }
+
+        cairo_init(overlay);
+        cairo_t *cr = overlay->cr;
+
+        const double stroke_w = (op_mode == ANNOTATE_MODE_ERASE) ?
+            (double)erase_line_width : (double)line_width;
+        setup_stroke_style(cr, stroke_w);
+
+        if (method == ANNOTATE_METHOD_DRAW)
+        {
+            cairo_move_to(cr, from.x, from.y);
+            cairo_line_to(cr, to.x, to.y);
+        } else
+        {
+            auto g = compute_shape_geometry(from, to, method);
+            append_shape_path(cr, method, g);
+        }
+
+        if (op_mode == ANNOTATE_MODE_ERASE)
+        {
+            cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+        } else
+        {
+            cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+            cairo_set_source_rgba(cr,
+                wf::color_t(stroke_color).r,
+                wf::color_t(stroke_color).g,
+                wf::color_t(stroke_color).b,
+                wf::color_t(stroke_color).a);
+        }
+
         cairo_stroke(cr);
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
         wf::geometry_t bbox;
-        int padding = line_width + 1;
-        bbox.x     = std::min(from.x, to.x) - padding;
-        bbox.y     = std::min(from.y, to.y) - padding;
-        bbox.width = std::abs(from.x - to.x) + padding * 2;
-        bbox.height = std::abs(from.y - to.y) + padding * 2;
-        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
-        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
-            wf::to_integer_box(bbox));
+        if (method == ANNOTATE_METHOD_DRAW)
+        {
+            int padding = stroke_w + 1;
+            bbox.x     = std::min(from.x, to.x) - padding;
+            bbox.y     = std::min(from.y, to.y) - padding;
+            bbox.width = std::abs(from.x - to.x) + padding * 2;
+            bbox.height = std::abs(from.y - to.y) + padding * 2;
+        } else
+        {
+            auto g = compute_shape_geometry(from, to, method);
+            bbox = shape_bbox(g, method, stroke_w);
+        }
+
+        if (is_preview)
+        {
+            output->render->damage(bbox);
+            wf::regionf_t damage_region{bbox};
+            if (damage_last_bbox)
+            {
+                output->render->damage(last_bbox);
+                damage_region |= last_bbox;
+            }
+
+            damage_region &= output->get_relative_geometry();
+            auto damage_extents = damage_region.get_extents();
+            auto damage_box     = wf::to_integer_box(wf::geometry_t{
+                            damage_extents.x1, damage_extents.y1,
+                            damage_extents.x2 - damage_extents.x1,
+                            damage_extents.y2 - damage_extents.y1});
+
+            cairo_surface_upload_to_texture_with_damage(overlay->cairo_surface,
+                *overlay->texture, damage_box);
+
+            get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
+            get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
+            last_bbox = bbox;
+        } else
+        {
+            cairo_surface_upload_to_texture_with_damage(overlay->cairo_surface,
+                *overlay->texture, wf::to_integer_box(bbox));
+            get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
+        }
+
+        overlay->visible = true;
+    }
+
+    void cairo_draw(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t from,
+        wf::pointf_t to)
+    {
+        stroke_path_to_overlay(ol, from, to, ANNOTATE_METHOD_DRAW, mode, false);
     }
 
     bool should_damage_last()
@@ -535,216 +757,127 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
     void cairo_draw_line(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
-        auto og = output->get_layout_geometry();
-        auto shape_overlay = get_shape_overlay();
-        auto from = grab_point;
-
-        from.x -= og.x;
-        from.y -= og.y;
-        to.x   -= og.x;
-        to.y   -= og.y;
-
-        bool damage_last_bbox = should_damage_last();
-        overlay_clear(shape_overlay);
-
-        cairo_init(ol);
-        cairo_t *cr = ol->cr;
-
-        cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba(cr,
-            wf::color_t(stroke_color).r,
-            wf::color_t(stroke_color).g,
-            wf::color_t(stroke_color).b,
-            wf::color_t(stroke_color).a);
-        cairo_move_to(cr, from.x, from.y);
-        cairo_line_to(cr, to.x, to.y);
-        cairo_stroke(cr);
-
-        wf::geometry_t bbox;
-        int padding = line_width + 1;
-        bbox.x     = std::min(from.x, to.x) - padding;
-        bbox.y     = std::min(from.y, to.y) - padding;
-        bbox.width = std::abs(from.x - to.x) + padding * 2;
-        bbox.height = std::abs(from.y - to.y) + padding * 2;
-        output->render->damage(bbox);
-        wf::regionf_t damage_region{bbox};
-        if (damage_last_bbox)
-        {
-            output->render->damage(last_bbox);
-            damage_region |= last_bbox;
-        }
-
-        damage_region &= output->get_relative_geometry();
-        auto damage_extents = damage_region.get_extents();
-        auto damage_box     = wf::to_integer_box(wf::geometry_t
-        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1});
-        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
-            damage_box);
-
-        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
-        last_bbox = bbox;
+        preview_shape_stroke(ol, grab_point, to, ANNOTATE_METHOD_LINE);
     }
 
     void cairo_draw_rectangle(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
-        auto og = output->get_layout_geometry();
-        auto shape_overlay = get_shape_overlay();
-        auto from = grab_point;
-        double x, y, w, h;
-
-        from.x -= og.x;
-        from.y -= og.y;
-        to.x   -= og.x;
-        to.y   -= og.y;
-
-        bool damage_last_bbox = should_damage_last();
-        overlay_clear(shape_overlay);
-
-        cairo_init(ol);
-        cairo_t *cr = ol->cr;
-
-        w = fabs(from.x - to.x);
-        h = fabs(from.y - to.y);
-
-        if (shapes_from_center)
-        {
-            x  = from.x - w;
-            y  = from.y - h;
-            w *= 2;
-            h *= 2;
-        } else
-        {
-            x = std::min(from.x, to.x);
-            y = std::min(from.y, to.y);
-        }
-
-        cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba(cr,
-            wf::color_t(stroke_color).r,
-            wf::color_t(stroke_color).g,
-            wf::color_t(stroke_color).b,
-            wf::color_t(stroke_color).a);
-        cairo_rectangle(cr, x, y, w, h);
-        cairo_stroke(cr);
-
-        wf::geometry_t bbox;
-        int padding = line_width + 1;
-        bbox.x     = x - padding;
-        bbox.y     = y - padding;
-        bbox.width = w + padding * 2;
-        bbox.height = h + padding * 2;
-        output->render->damage(bbox);
-        wf::regionf_t damage_region{bbox};
-        if (damage_last_bbox)
-        {
-            output->render->damage(last_bbox);
-            damage_region |= last_bbox;
-        }
-
-        damage_region &= output->get_relative_geometry();
-        auto damage_extents = damage_region.get_extents();
-        auto damage_box     = wf::to_integer_box(wf::geometry_t
-        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1});
-        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
-            damage_box);
-
-        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
-        last_bbox = bbox;
+        preview_shape_stroke(ol, grab_point, to, ANNOTATE_METHOD_RECTANGLE);
     }
 
     void cairo_draw_circle(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
     {
-        auto og = output->get_layout_geometry();
-        auto shape_overlay = get_shape_overlay();
-        auto from = grab_point;
+        preview_shape_stroke(ol, grab_point, to, ANNOTATE_METHOD_CIRCLE);
+    }
 
+    void preview_shape_stroke(std::shared_ptr<anno_ws_overlay> preview_overlay,
+        wf::pointf_t from_global, wf::pointf_t to_global, annotate_draw_method method)
+    {
+        stroke_path_to_overlay(preview_overlay, from_global, to_global, method, mode, true);
+    }
+
+    void compose_erase_shape_preview(
+        std::shared_ptr<anno_ws_overlay> base_overlay,
+        std::shared_ptr<anno_ws_overlay> preview_overlay,
+        wf::pointf_t from, wf::pointf_t to,
+        annotate_draw_method method)
+    {
+        auto og = output->get_layout_geometry();
         from.x -= og.x;
         from.y -= og.y;
         to.x   -= og.x;
         to.y   -= og.y;
 
-        bool damage_last_bbox = should_damage_last();
-        overlay_clear(shape_overlay);
+        cairo_init(preview_overlay);
+        cairo_t *cr = preview_overlay->cr;
 
-        cairo_init(ol);
-        cairo_t *cr = ol->cr;
-
-        auto radius =
-            glm::distance(glm::vec2(from.x, from.y), glm::vec2(to.x, to.y));
-
-        if (!shapes_from_center)
+        cairo_clear(cr);
+        // copy committed overlay into preview
+        if (base_overlay->cr)
         {
-            radius /= 2;
-            from.x += (to.x - from.x) / 2;
-            from.y += (to.y - from.y) / 2;
+            cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+            cairo_set_source_surface(cr, base_overlay->cairo_surface, 0, 0);
+            cairo_paint(cr);
         }
 
-        cairo_set_line_width(cr, line_width);
-        cairo_set_source_rgba(cr,
-            wf::color_t(stroke_color).r,
-            wf::color_t(stroke_color).g,
-            wf::color_t(stroke_color).b,
-            wf::color_t(stroke_color).a);
-        cairo_arc(cr, from.x, from.y, radius, 0, 2 * M_PI);
+        // clear selected shape from copied content
+        setup_stroke_style(cr, erase_line_width);
+
+        auto g = compute_shape_geometry(from, to, method);
+        append_shape_path(cr, method, g);
+
+        cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
         cairo_stroke(cr);
+        cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 
-        wf::geometry_t bbox;
-        int padding = line_width + 1;
-        bbox.x     = (from.x - radius) - padding;
-        bbox.y     = (from.y - radius) - padding;
-        bbox.width = (radius * 2) + padding * 2;
-        bbox.height = (radius * 2) + padding * 2;
-        output->render->damage(bbox);
+        auto bbox = shape_bbox(g, method, erase_line_width);
+
+        // push preview
+        auto rel = output->get_relative_geometry();
+        cairo_surface_upload_to_texture_with_damage(preview_overlay->cairo_surface,
+            *preview_overlay->texture, wf::to_integer_box(rel));
+
+        preview_overlay->visible = true;
+
         wf::regionf_t damage_region{bbox};
-        if (damage_last_bbox)
-        {
-            output->render->damage(last_bbox);
-            damage_region |= last_bbox;
-        }
+        damage_region &= rel;
+        get_node_overlay()->do_push_damage(damage_region);
+    }
 
-        damage_region &= output->get_relative_geometry();
-        auto damage_extents = damage_region.get_extents();
-        auto damage_box     = wf::to_integer_box(wf::geometry_t
-        {damage_extents.x1, damage_extents.y1, damage_extents.x2 - damage_extents.x1,
-            damage_extents.y2 - damage_extents.y1});
-        cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
-            damage_box);
-
-        get_node_overlay()->do_push_damage(wf::regionf_t(last_bbox));
-        get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
-        last_bbox = bbox;
+    void commit_shape_to_overlay(
+        std::shared_ptr<anno_ws_overlay> target_overlay,
+        wf::pointf_t from, wf::pointf_t to,
+        annotate_draw_method method,
+        annotate_mode op_mode)
+    {
+        stroke_path_to_overlay(target_overlay, from, to, method, op_mode, false);
     }
 
     wf::effect_hook_t frame_pre_paint = [=] ()
     {
-        auto current_cursor = wf::get_core().get_cursor_position();
-        auto shape_overlay  = get_shape_overlay();
-        auto ol = get_current_overlay();
+        auto current_cursor  = wf::get_core().get_cursor_position();
+        auto preview_overlay = get_shape_overlay();
+        auto base_overlay    = get_current_overlay();
 
         switch (draw_method)
         {
           case ANNOTATE_METHOD_DRAW:
-            cairo_draw(ol, last_cursor, current_cursor);
+            cairo_draw(base_overlay, last_cursor, current_cursor);
+            base_overlay->visible = true;
             break;
 
           case ANNOTATE_METHOD_LINE:
-            cairo_draw_line(shape_overlay, current_cursor);
-            break;
-
           case ANNOTATE_METHOD_RECTANGLE:
-            cairo_draw_rectangle(shape_overlay, current_cursor);
-            break;
-
           case ANNOTATE_METHOD_CIRCLE:
-            cairo_draw_circle(shape_overlay, current_cursor);
-            break;
+            if (mode == ANNOTATE_MODE_ERASE)
+            {
+                compose_erase_shape_preview(base_overlay, preview_overlay,
+                    grab_point, current_cursor, draw_method);
+                base_overlay->visible = false;
+                last_cursor = current_cursor;
+                return;
+            }
 
-          default:
-            return;
+            switch (draw_method)
+            {
+              case ANNOTATE_METHOD_LINE:
+                cairo_draw_line(preview_overlay, current_cursor);
+                break;
+
+              case ANNOTATE_METHOD_RECTANGLE:
+                cairo_draw_rectangle(preview_overlay, current_cursor);
+                break;
+
+              case ANNOTATE_METHOD_CIRCLE:
+                cairo_draw_circle(preview_overlay, current_cursor);
+                break;
+
+              default:
+                break;
+            }
+
+            preview_overlay->visible = true;
+            base_overlay->visible    = true;
         }
 
         last_cursor = current_cursor;
@@ -771,6 +904,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
     {
         ungrab();
         output->rem_binding(&draw_begin);
+        output->rem_binding(&erase_begin);
         output->rem_binding(&clear_workspace);
         for (auto& row : overlays)
         {
