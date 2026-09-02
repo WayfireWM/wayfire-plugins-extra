@@ -21,6 +21,7 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <wayfire/matcher.hpp>
 #include <wayfire/plugins/common/shared-core-data.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugin.hpp>
@@ -30,53 +31,101 @@
 
 namespace wf_hide_cursor
 {
+
 bool hidden;
 
 class wayfire_hide_cursor
 {
     wf::option_wrapper_t<int> hide_delay{"hide-cursor/hide_delay"};
+    wf::view_matcher_t disabled_for{"hide-cursor/disabled_for"};
     wf::wl_timer<false> hide_timer;
 
+    void restart_hide_timer()
+    {
+        hide_timer.disconnect();
+        hide_timer.set_timeout(hide_delay, [=] ()
+        {
+            hide_or_show_cursor();
+        });
+    }
+
+    void hide_or_show_cursor()
+    {
+        auto view = wf::get_core().get_cursor_focus_view();
+
+        if (view && disabled_for.matches(view))
+        {
+            show_cursor();
+        } else
+        {
+            hide_cursor();
+        }
+    }
+
   public:
+    void hide_cursor()
+    {
+        hide_timer.disconnect();
+
+        if (hidden)
+            return;
+
+        wf::get_core().hide_cursor();
+        hidden = true;
+    }
+
+    void show_cursor()
+    {
+        hide_timer.disconnect();
+
+        if (!hidden)
+            return;
+
+        wf::get_core().unhide_cursor();
+        hidden = false;
+    }
+
+    void toggle_cursor()
+    {
+        if (hidden)
+        {
+            show_cursor();
+        } else
+        {
+            hide_cursor();
+        }
+    }
+
     wayfire_hide_cursor()
     {
         hidden = false;
-        setup_hide_timer();
+        restart_hide_timer();
+
         wf::get_core().connect(&pointer_motion);
+    }
+
+    void on_event()
+    {
+        if (hidden)
+        {
+            show_cursor();
+        }
+
+        restart_hide_timer();
     }
 
     wf::signal::connection_t<wf::input_event_signal<wlr_pointer_motion_event>> pointer_motion =
         [=] (wf::input_event_signal<wlr_pointer_motion_event> *ev)
     {
-        setup_hide_timer();
-        if (hidden)
-        {
-            wf::get_core().unhide_cursor();
-            hidden = false;
-        }
+        on_event();
     };
-
-    void setup_hide_timer()
-    {
-        hide_timer.disconnect();
-        hide_timer.set_timeout(hide_delay, [=] ()
-        {
-            if (!hidden)
-            {
-                wf::get_core().hide_cursor();
-                hidden = true;
-            }
-        });
-    }
 
     ~wayfire_hide_cursor()
     {
         pointer_motion.disconnect();
         hide_timer.disconnect();
-        if (hidden)
-        {
-            wf::get_core().unhide_cursor();
-        }
+
+        show_cursor();
     }
 };
 
@@ -86,17 +135,14 @@ class wayfire_hide_cursor_plugin : public wf::per_output_plugin_instance_t
 
     wf::activator_callback toggle_cb = [=] (auto)
     {
-        hidden = !hidden;
-
-        if (hidden)
-        {
-            wf::get_core().hide_cursor();
-        } else
-        {
-            wf::get_core().unhide_cursor();
-        }
-
+        global_idle->toggle_cursor();
         return true;
+    };
+
+    wf::signal::connection_t<wf::workspace_changed_signal> workspace_changed =
+        [=] (wf::workspace_changed_signal *ev)
+    {
+        global_idle->on_event();
     };
 
   public:
@@ -105,13 +151,17 @@ class wayfire_hide_cursor_plugin : public wf::per_output_plugin_instance_t
         output->add_activator(
             wf::option_wrapper_t<wf::activatorbinding_t>{"hide-cursor/toggle"},
             &toggle_cb);
+
+        output->connect(&workspace_changed);
     }
 
     void fini() override
     {
         output->rem_binding(&toggle_cb);
+        workspace_changed.disconnect();
     }
 };
 
 DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_hide_cursor_plugin>);
+
 }

@@ -15,5 +15,10 @@
 			<default>2000</default>
 			<min>250</min>
 		</option>
+		<option name="disabled_for" type="string">
+			<_short>Disabled for specified window types</_short>
+			<_long>Disables cursor hiding for windows matching the specified criteria.</_long>
+			<default>none</default>
+		</option>
 	</plugin>
 </wayfire>
