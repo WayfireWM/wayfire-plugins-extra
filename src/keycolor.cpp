@@ -30,6 +30,7 @@
 #include <wayfire/view-transform.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/signal-definitions.hpp>
+#include <wayfire/matcher.hpp>
 
 
 static const char *vertex_shader =
@@ -243,6 +244,14 @@ class wayfire_keycolor : public wf::plugin_interface_t
     const std::string transformer_name = "keycolor";
     std::map<wayfire_view, std::shared_ptr<wf_keycolor>> transformers;
 
+    wf::view_matcher_t enabled_for{"keycolor/enabled_for"};
+    wf::option_wrapper_t<std::string> enabled_for_option{"keycolor/enabled_for"};
+
+    bool should_enable_for(wayfire_view view)
+    {
+        return enabled_for.matches(view);
+    }
+
     void add_transformer(wayfire_view view)
     {
         if (view->get_transformed_node()->get_transformer(transformer_name))
@@ -260,6 +269,23 @@ class wayfire_keycolor : public wf::plugin_interface_t
         if (view->get_transformed_node()->get_transformer(transformer_name))
         {
             view->get_transformed_node()->rem_transformer(transformers[view]);
+        }
+    }
+
+    void update_view(wayfire_view view)
+    {
+        if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
+        {
+            pop_transformer(view);
+            return;
+        }
+
+        if (should_enable_for(view))
+        {
+            add_transformer(view);
+        } else
+        {
+            pop_transformer(view);
         }
     }
 
@@ -295,16 +321,19 @@ class wayfire_keycolor : public wf::plugin_interface_t
 
         program_ref_count++;
 
+        enabled_for_option.set_callback([=] ()
+        {
+            for (auto& view : wf::get_core().get_all_views())
+            {
+                update_view(view);
+            }
+        });
+
         wf::get_core().connect(&on_view_map);
 
         for (auto& view : wf::get_core().get_all_views())
         {
-            if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
-            {
-                continue;
-            }
-
-            add_transformer(view);
+            update_view(view);
         }
     }
 
@@ -316,17 +345,9 @@ class wayfire_keycolor : public wf::plugin_interface_t
             return;
         }
 
-        if (view->role == wf::VIEW_ROLE_DESKTOP_ENVIRONMENT)
-        {
-            return;
-        }
-
         idle_attach.run_once([=] ()
         {
-            if (!view->get_transformed_node()->get_transformer(transformer_name))
-            {
-                add_transformer(view);
-            }
+            update_view(view);
         });
     };
 
