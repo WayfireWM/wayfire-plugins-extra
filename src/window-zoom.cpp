@@ -179,11 +179,30 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
     wf::option_wrapper_t<bool> preserve_aspect{"winzoom/preserve_aspect"};
     wf::option_wrapper_t<wf::keybinding_t> modifier{"winzoom/modifier"};
     wf::option_wrapper_t<double> zoom_step{"winzoom/zoom_step"};
+    const std::string transformer_name = "winzoom";
     std::map<wayfire_view, std::shared_ptr<winzoom_t>> transformers;
     wf::plugin_activation_data_t grab_interface{
         .name = "window-zoom",
         .capabilities = 0,
     };
+
+  private:
+    void pop_transformer(wayfire_view view)
+    {
+        if (view->get_transformed_node()->get_transformer(transformer_name))
+        {
+            view->get_transformed_node()->rem_transformer(transformers[view]);
+        }
+    }
+
+    void remove_transformers()
+    {
+        for (auto& view : wf::get_core().get_all_views())
+        {
+            pop_transformer(view);
+        }
+        transformers.clear();
+    }
 
   public:
     void init() override
@@ -223,16 +242,16 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
             return false;
         }
 
-        if (!view->get_transformed_node()->get_transformer("winzoom"))
+        if (!view->get_transformed_node()->get_transformer(transformer_name))
         {
             transformers[view] = std::make_shared<winzoom_t>(view);
             view->get_transformed_node()->add_transformer(transformers[view],
-                wf::TRANSFORMER_2D, "winzoom");
+                wf::TRANSFORMER_2D, transformer_name);
         }
 
         transformer =
             dynamic_cast<winzoom_t*>(view->get_transformed_node()->get_transformer(
-                "winzoom").get());
+                transformer_name).get());
 
         zoom.x = transformer->scale_x;
         zoom.y = transformer->scale_y;
@@ -258,7 +277,7 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
 
         if ((zoom.x == 1.0) && (zoom.y == 1.0))
         {
-            view->get_transformed_node()->rem_transformer(transformers[view]);
+            pop_transformer(view);
             return true;
         }
 
@@ -315,10 +334,7 @@ class wayfire_winzoom : public wf::per_output_plugin_instance_t
 
     void fini() override
     {
-        for (auto& t : transformers)
-        {
-            t.first->get_transformed_node()->rem_transformer(t.second);
-        }
+        remove_transformers();
 
         output->rem_binding(&axis_cb);
         output->rem_binding(&on_inc_x);
