@@ -12,7 +12,7 @@
 		<option name="radius" type="double">
 			<_short>Radius</_short>
 			<_long>Sets the border radius in pixels.</_long>
-			<default>450.0</default>
+			<default>150.0</default>
 			<min>1.0</min>
 		</option>
 		<option name="zoom" type="double">
@@ -22,6 +22,11 @@
 			<min>1.0</min>
 			<max>20.0</max>
 			<precision>0.01</precision>
+		</option>
+		<option name="fancy" type="bool">
+			<_short>Fancy Fisheye</_short>
+			<_long>Add a bit of flair to the fisheye lens.</_long>
+			<default>true</default>
 		</option>
 	</plugin>
 </wayfire>
