@@ -49,6 +49,8 @@ uniform vec2 u_resolution;
 uniform vec2 u_mouse;
 uniform float u_radius;
 uniform float u_zoom;
+uniform float u_progress;
+uniform int  u_fancy;
 uniform sampler2D u_texture;
 
 const float PI = 3.1415926535;
@@ -61,13 +63,12 @@ void main()
         float pw = 1.0 / u_resolution.x;
         float ph = 1.0 / u_resolution.y;
 
-        vec4 p0 = vec4(u_mouse.x, u_resolution.y - u_mouse.y, 1.0 / radius, 0.0);
+        vec4 p0 = vec4(u_mouse.x, u_mouse.y, 1.0 / radius, 0.0);
         vec4 p1 = vec4(pw, ph, PI / radius, (zoom - 1.0) * zoom);
         vec4 p2 = vec4(0, 0, -PI / 2.0, 0.0);
 
         vec4 t0, t1, t2, t3;
 
-        vec3 tc = vec3(1.0, 0.0, 0.0);
         vec2 uv = vec2(gl_FragCoord.x, gl_FragCoord.y);
 
         t1 = p0.xyww - vec4(uv, 0.0, 0.0);
@@ -90,9 +91,21 @@ void main()
 
         t1 = t1 * p1 + p2;
 
-        tc = texture2D(u_texture, t1.xy).rgb;
+        vec4 tc = texture2D(u_texture, t1.xy);
 
-        gl_FragColor = vec4(tc, 1.0);
+        if (u_fancy == 1)
+        {
+            float d = distance(p0.xy, uv);
+            if (d > radius)
+            {
+                tc = mix(vec4(0.0, 0.0, 0.0, 0.5) * u_progress, tc, clamp((d - radius / 4.0) / radius, 0.0, 1.0));
+            } else
+            {
+                tc = mix(tc, vec4(1.0, 1.0, 1.0, 0.5) * u_progress, clamp((d - radius / 2.0) / radius, 0.0, 1.0));
+            }
+        }
+
+        gl_FragColor = tc;
 }
 )";
 
@@ -100,11 +113,11 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
 {
     wf::animation::simple_animation_t progression{wf::create_option<int>(300)};
 
-    float target_zoom;
     bool active, hook_set;
 
     wf::option_wrapper_t<double> radius{"fisheye/radius"};
     wf::option_wrapper_t<double> zoom{"fisheye/zoom"};
+    wf::option_wrapper_t<bool> fancy{"fisheye/fancy"};
 
     OpenGL::program_t program;
 
@@ -132,12 +145,11 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
         hook_set = active = false;
         output->add_activator(wf::option_wrapper_t<wf::activatorbinding_t>{"fisheye/toggle"}, &toggle_cb);
 
-        target_zoom = zoom;
         zoom.set_callback([=] ()
         {
             if (active)
             {
-                this->progression.animate(zoom);
+                this->progression.animate(1);
             }
         });
     }
@@ -156,7 +168,7 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
         } else
         {
             active = true;
-            progression.animate(zoom);
+            progression.animate(1);
             if (!hook_set)
             {
                 hook_set = true;
@@ -192,15 +204,22 @@ class wayfire_fisheye : public wf::per_output_plugin_instance_t
             GL_CALL(glBindTexture(GL_TEXTURE_2D, wf::gles_texture_t::from_aux(source).tex_id));
             GL_CALL(glActiveTexture(GL_TEXTURE0));
 
-            program.uniform2f("u_mouse", oc.x, dest.get_size().height - oc.y);
+            program.uniform2f("u_mouse", oc.x, oc.y);
             program.uniform2f("u_resolution", dest.get_size().width, dest.get_size().height);
             program.uniform1f("u_radius", radius);
-            program.uniform1f("u_zoom", progression);
+            program.uniform1f("u_zoom", (zoom - 1.0) * progression + 1.0);
+            program.uniform1f("u_progress", progression);
+            program.uniform1i("u_fancy", fancy);
 
             program.attrib_pointer("position", 2, 0, vertexData);
 
+            GL_CALL(glEnable(GL_BLEND));
+            GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
+
             GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            GL_CALL(glDisable(GL_BLEND));
 
             program.deactivate();
         });
