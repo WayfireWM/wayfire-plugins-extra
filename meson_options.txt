@@ -2,3 +2,4 @@ option('wayfire_shadows', type: 'boolean', value: 'false', description: 'Install
 option('focus_request', type: 'boolean', value: 'false', description: 'Install wayfire focus-request plugin')
 option('pixdecor', type: 'boolean', value: 'false', description: 'Install wayfire pixdecor plugin')
 option('filters', type: 'boolean', value: 'false', description: 'Install wayfire filters plugin')
+option('wstroke', type: 'boolean', value: 'false', description: 'Install wayfire wstroke plugin')

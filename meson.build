@@ -40,6 +40,10 @@ if get_option('filters') == true
     filters = subproject('filters')
 endif
 
+if get_option('wstroke') == true
+    wstroke = subproject('wstroke')
+endif
+
 add_project_arguments(['-DWLR_USE_UNSTABLE'], language: ['cpp', 'c'])
 add_project_arguments(['-DWAYFIRE_PLUGIN'], language: ['cpp', 'c'])
 add_project_link_arguments(['-rdynamic'], language:'cpp')
