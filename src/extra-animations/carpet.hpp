@@ -422,34 +422,32 @@ class carpet_transformer : public wf::scene::view_2d_transformer_t
             };
             auto progress = self->progression.progress();
 
+            self->buffer.allocate({int(pbb.width), int(pbb.height)});
+            wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
+            wf::gles_texture_t final_tex{self->buffer.get_texture()};
+            OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
+            self->program.use(wf::TEXTURE_TYPE_RGBA);
+            self->program.attrib_pointer("position", 2, 0, vertices);
+            self->program.attrib_pointer("uv_in", 2, 0, uv);
+            self->program.uniform1f("progress", progress);
+            self->program.uniform1i("direction", carpet_roll_direction);
+
+            self->program.set_active_texture(tex);
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+            self->program.deactivate();
+
             data.pass->custom_gles_subpass([&]
             {
-                self->buffer.allocate({int(pbb.width), int(pbb.height)});
-                wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
-                wf::gles_texture_t final_tex{self->buffer.get_texture()};
-                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
-                self->program.use(wf::TEXTURE_TYPE_RGBA);
-                self->program.attrib_pointer("position", 2, 0, vertices);
-                self->program.attrib_pointer("uv_in", 2, 0, uv);
-                self->program.uniform1f("progress", progress);
-                self->program.uniform1i("direction", carpet_roll_direction);
-
-                self->program.set_active_texture(tex);
-                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-
-                wf::gles::bind_render_buffer(data.target);
-                for (auto box : data.damage)
+                wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
                 {
-                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
-                        glm::vec4(1.0, 1.0, 1.0, 1.0), 0);
-                }
-
-                GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-                self->program.deactivate();
-                self->buffer.free();
+                        glm::vec4(1.0), 0);
+                });
             });
+            self->buffer.free();
         }
     };
 
@@ -473,12 +471,17 @@ class carpet_transformer : public wf::scene::view_2d_transformer_t
     wf::geometry_t get_padded_bounding_box()
     {
         auto box     = this->get_children_bounding_box();
-        auto padding = (box.width > box.height ? box.width : box.height) * 0.07;
+        auto padding = (box.width > box.height ? box.width : box.height) * 0.1;
         box.x     -= padding;
         box.y     -= padding;
         box.width += padding * 2;
         box.height += padding * 2;
         return box;
+    }
+
+    wf::geometry_t get_bounding_box() override
+    {
+        return get_padded_bounding_box();
     }
 
     wf::effect_hook_t pre_hook = [=] ()
