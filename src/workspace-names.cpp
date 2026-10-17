@@ -110,13 +110,11 @@ class simple_node_render_instance_t : public render_instance_t
         {
             data.pass->custom_gles_subpass(data.target, [&]
             {
-                wf::gles::bind_render_buffer(data.target);
-                for (auto& box : data.damage)
+                wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
                 {
-                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_texture(wf::gles_texture_t{workspace->texture->get_texture()},
                         data.target, g, glm::vec4(1, 1, 1, *alpha_fade), 0);
-                }
+                });
 
                 wf::scene::damage_node(self, g);
             });
