@@ -228,17 +228,15 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
             auto transform = wf::gles::output_transform(data.target) * t * p * l;
             data.pass->custom_gles_subpass([&]
             {
-                wf::gles::bind_render_buffer(data.target);
-                for (auto box : data.damage)
+                wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
                 {
-                    wf::gles::render_target_logic_scissor(data.target, box);
                     self->program.use(wf::TEXTURE_TYPE_RGBA);
                     self->program.uniformMatrix4f("matrix", transform);
                     self->program.attrib_pointer("position", 3, 0, vertices.data());
                     self->program.attrib_pointer("uv_in", 2, 0, uv.data());
                     self->program.set_active_texture(gl_tex);
                     GL_CALL(glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3));
-                }
+                });
             });
         }
     };
