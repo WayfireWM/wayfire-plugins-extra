@@ -9,6 +9,11 @@
 			<_long>Begin drawing on workspace.</_long>
 			<default>&lt;super&gt; &lt;alt&gt; BTN_LEFT</default>
 		</option>
+		<option name="erase" type="button">
+			<_short>Erase</_short>
+			<_long>Erase previous renderings.</_long>
+			<default>&lt;super&gt; &lt;alt&gt; BTN_RIGHT</default>
+		</option>
 		<option name="clear_workspace" type="activator">
 			<_short>Clear Workspace</_short>
 			<_long>Clear workspace.</_long>

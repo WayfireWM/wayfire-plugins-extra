@@ -25,7 +25,7 @@
 #include <math.h>
 #include <memory>
 #include <cairo.h>
-#include <wayfire/workspace-set.hpp> // IWYU pragma: keep
+#include <wayfire/workspace-set.hpp>
 #include "wayfire/geometry.hpp"
 #include "wayfire/opengl.hpp"
 #include "wayfire/region.hpp"
@@ -43,6 +43,7 @@
 
 enum annotate_draw_method
 {
+    ANNOTATE_METHOD_ERASE,
     ANNOTATE_METHOD_DRAW,
     ANNOTATE_METHOD_LINE,
     ANNOTATE_METHOD_RECTANGLE,
@@ -113,10 +114,8 @@ class simple_node_render_instance_t : public render_instance_t
 
         data.pass->custom_gles_subpass([&]
         {
-            wf::gles::bind_render_buffer(data.target);
-            for (auto& box : data.damage)
+            wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
             {
-                wf::gles::render_target_logic_scissor(data.target, box);
                 if (ol->cr)
                 {
                     OpenGL::render_texture(wf::gles_texture_t{ol->texture->tex}, data.target, og,
@@ -128,7 +127,7 @@ class simple_node_render_instance_t : public render_instance_t
                     OpenGL::render_texture(wf::gles_texture_t{shape_overlay->texture->tex}, data.target, og,
                         glm::vec4(1.0), OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
                 }
-            }
+            });
         });
     }
 };
@@ -197,7 +196,7 @@ std::shared_ptr<simple_node_t> add_simple_node(wf::output_t *output, int x, int 
 
 class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public wf::pointer_interaction_t
 {
-    uint32_t button;
+    uint32_t draw_button, erase_button;
     wf::geometry_t last_bbox;
     annotate_draw_method draw_method;
     wf::pointf_t grab_point, last_cursor;
@@ -207,6 +206,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
     wf::option_wrapper_t<bool> shapes_from_center{"annotate/from_center"};
     wf::option_wrapper_t<wf::color_t> stroke_color{"annotate/stroke_color"};
     wf::option_wrapper_t<wf::buttonbinding_t> draw_binding{"annotate/draw"};
+    wf::option_wrapper_t<wf::buttonbinding_t> erase_binding{"annotate/erase"};
     wf::option_wrapper_t<wf::activatorbinding_t> clear_binding{
         "annotate/clear_workspace"};
     std::unique_ptr<wf::input_grab_t> input_grab;
@@ -245,6 +245,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
         output->connect(&viewport_changed);
         method.set_callback(method_changed);
         output->add_button(draw_binding, &draw_begin);
+        output->add_button(erase_binding, &erase_begin);
         output->add_activator(clear_binding, &clear_workspace);
         input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
             nullptr);
@@ -253,9 +254,19 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
     void handle_pointer_button(const wlr_pointer_button_event& event) override
     {
-        if ((event.button == button) && (event.state == WL_POINTER_BUTTON_STATE_RELEASED))
+        if (event.state != WL_POINTER_BUTTON_STATE_RELEASED)
+        {
+            return;
+        }
+
+        if (event.button == draw_button)
         {
             draw_end();
+        }
+
+        if (event.button == erase_button)
+        {
+            erase_end();
         }
     }
 
@@ -324,8 +335,21 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
     {
         output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
         output->render->damage_whole();
-        grab_point = last_cursor = wf::get_core().get_cursor_position();
-        button     = btn.get_button();
+        grab_point  = last_cursor = wf::get_core().get_cursor_position();
+        draw_button = btn.get_button();
+
+        grab();
+
+        return false;
+    };
+
+    wf::button_callback erase_begin = [=] (wf::buttonbinding_t btn)
+    {
+        output->render->add_effect(&frame_pre_paint, wf::OUTPUT_EFFECT_DAMAGE);
+        last_cursor  = wf::get_core().get_cursor_position();
+        draw_method  = ANNOTATE_METHOD_ERASE;
+        erase_button = btn.get_button();
+        output->render->damage_whole();
 
         grab();
 
@@ -339,6 +363,7 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         output->render->rem_effect(&frame_pre_paint);
         overlay_destroy(shape_overlay);
+        draw_button = 0;
         ungrab();
 
         switch (draw_method)
@@ -358,6 +383,14 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
           default:
             break;
         }
+    }
+
+    void erase_end()
+    {
+        output->render->rem_effect(&frame_pre_paint);
+        method_changed();
+        erase_button = 0;
+        ungrab();
     }
 
     void overlay_clear(std::shared_ptr<anno_ws_overlay> ol)
@@ -491,6 +524,46 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
             GL_CALL(glPixelStorei(GL_UNPACK_SKIP_ROWS, 0));
             GL_CALL(glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0));
         });
+    }
+
+    void cairo_erase(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t to)
+    {
+        auto og = output->get_layout_geometry();
+
+        to.x -= og.x;
+        to.y -= og.y;
+
+        cairo_init(ol);
+        cairo_t *cr = ol->cr;
+
+        cairo_set_line_width(cr, line_width);
+
+        auto size = line_width * 2;
+
+        cairo_set_source_rgba(cr, 0, 0, 0, 0);
+        cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+
+        wf::pointf_t step;
+        std::vector<float> points;
+        auto d = glm::distance(glm::vec2(last_cursor.x, last_cursor.y),
+            glm::vec2(to.x, to.y));
+
+        /* Interpolate between last and current cursor */
+        int num_points = std::min(int(d / 5 + 1), 64);
+        step.x = (to.x - last_cursor.x) / num_points;
+        step.y = (to.y - last_cursor.y) / num_points;
+        for (int i = 0; i < num_points; i++)
+        {
+            wf::pointf_t p = wf::pointf_t{
+                to.x - step.x * i,
+                to.y - step.y * i};
+            cairo_rectangle(cr, p.x - size / 2, p.y - size / 2, size, size);
+            cairo_fill(cr);
+            wf::geometry_t bbox{p.x - size / 2, p.y - size / 2, size, size};
+            get_node_overlay()->do_push_damage(wf::regionf_t(bbox));
+            cairo_surface_upload_to_texture_with_damage(ol->cairo_surface, *ol->texture,
+                wf::to_integer_box(bbox));
+        }
     }
 
     void cairo_draw(std::shared_ptr<anno_ws_overlay> ol, wf::pointf_t from,
@@ -727,6 +800,10 @@ class wayfire_annotate_screen : public wf::per_output_plugin_instance_t, public 
 
         switch (draw_method)
         {
+          case ANNOTATE_METHOD_ERASE:
+            cairo_erase(ol, current_cursor);
+            break;
+
           case ANNOTATE_METHOD_DRAW:
             cairo_draw(ol, last_cursor, current_cursor);
             break;
