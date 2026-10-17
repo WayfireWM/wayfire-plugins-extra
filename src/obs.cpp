@@ -167,40 +167,34 @@ class wf_obs : public wf::scene::view_2d_transformer_t
 
             auto src_tex = get_texture(1.0);
             auto gl_tex  = wf::gles_texture_t{src_tex};
+            buffer.allocate({int(view_box.width), int(view_box.height)});
+            wf::gles::bind_render_buffer(buffer.get_renderbuffer());
+            wf::gles_texture_t final_tex{buffer.get_texture()};
+            OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0});
+            /* Upload data to shader */
+            this->self->program->use(gl_tex.type);
+            this->self->program->uniform1f("opacity", this->self->get_opacity());
+            this->self->program->uniform1f("brightness", this->self->get_brightness());
+            this->self->program->uniform1f("saturation", this->self->get_saturation());
+            this->self->program->attrib_pointer("position", 2, 0, vertexData);
+            this->self->program->attrib_pointer("texcoord", 2, 0, texCoords);
+            GL_CALL(glActiveTexture(GL_TEXTURE0));
+            this->self->program->set_active_texture(gl_tex);
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+            this->self->program->deactivate();
+            GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
+
+            /* Render it to target */
             data.pass->custom_gles_subpass(data.target, [&]
             {
-                buffer.allocate({int(view_box.width), int(view_box.height)});
-                wf::gles::bind_render_buffer(buffer.get_renderbuffer());
-                wf::gles_texture_t final_tex{buffer.get_texture()};
-                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0});
-                /* Upload data to shader */
-                this->self->program->use(gl_tex.type);
-                this->self->program->uniform1f("opacity", this->self->get_opacity());
-                this->self->program->uniform1f("brightness", this->self->get_brightness());
-                this->self->program->uniform1f("saturation", this->self->get_saturation());
-                this->self->program->attrib_pointer("position", 2, 0, vertexData);
-                this->self->program->attrib_pointer("texcoord", 2, 0, texCoords);
-                GL_CALL(glActiveTexture(GL_TEXTURE0));
-                this->self->program->set_active_texture(gl_tex);
-                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-                this->self->program->deactivate();
-
-                /* Render it to target */
-                wf::gles::bind_render_buffer(data.target);
-
-                for (const auto& box : data.damage)
+                wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
                 {
-                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_transformed_texture(final_tex, view_box,
                         wf::gles::render_target_orthographic_projection(data.target),
                         glm::vec4(1.0), 0);
-                }
-
-                /* Disable stuff */
-                GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-                GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-                buffer.free();
+                });
             });
+            buffer.free();
         }
     };
 
