@@ -77,7 +77,6 @@ void main()
 )";
 
 static const std::string program_name = "keycolor_shader_program";
-static int program_ref_count;
 
 namespace wf
 {
@@ -166,7 +165,6 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
             1.0f, 1.0f,
             0.0f, 1.0f
         };
-
         data.pass->custom_gles_subpass(data.target, [&]
         {
             /* Upload data to shader */
@@ -189,22 +187,19 @@ class simple_node_render_instance_t : public wf::scene::transformer_render_insta
 
             /* Render it to target */
             wf::gles::bind_render_buffer(data.target);
-            GL_CALL(glViewport(x, fb_geom.height - y - h, w, h));
+            GL_CALL(glViewport(x, y, w, h));
 
             GL_CALL(glEnable(GL_BLEND));
             GL_CALL(glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
 
-            for (const auto& box : data.damage)
+            wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
             {
-                wf::gles::render_target_logic_scissor(data.target, box);
                 GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-            }
+            });
 
             /* Disable stuff */
             GL_CALL(glDisable(GL_BLEND));
-            GL_CALL(glActiveTexture(GL_TEXTURE0));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
-            GL_CALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 
             key_data->program.deactivate();
         });
@@ -293,8 +288,6 @@ class wayfire_keycolor : public wf::plugin_interface_t
             wf::get_core().store_data(std::move(data), program_name);
         }
 
-        program_ref_count++;
-
         wf::get_core().connect(&on_view_map);
 
         for (auto& view : wf::get_core().get_all_views())
@@ -321,25 +314,12 @@ class wayfire_keycolor : public wf::plugin_interface_t
             return;
         }
 
-        idle_attach.run_once([=] ()
-        {
-            if (!view->get_transformed_node()->get_transformer(transformer_name))
-            {
-                add_transformer(view);
-            }
-        });
+        add_transformer(view);
     };
 
     void fini() override
     {
         remove_transformers();
-
-        program_ref_count--;
-
-        if (program_ref_count)
-        {
-            return;
-        }
 
         nonstd::observer_ptr<keycolor_custom_data_t> data =
             wf::get_core().get_data<keycolor_custom_data_t>(program_name);
