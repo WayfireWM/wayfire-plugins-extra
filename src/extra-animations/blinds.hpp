@@ -148,95 +148,93 @@ class blinds_transformer : public wf::scene::view_2d_transformer_t
                 src_box.y + src_box.height};
 
             int line_height = int(blinds_strip_height);
-            data.pass->custom_gles_subpass([&]
+            for (int i = 0; i < src_box.height; i += line_height)
             {
-                for (int i = 0; i < src_box.height; i += line_height)
+                std::vector<float> uv;
+                std::vector<float> vertices;
+                auto y     = src_box.height - i;
+                auto inv_h = 1.0 / src_box.height;
+                uv.push_back(1.0);
+                uv.push_back(std::max(0.0, y - line_height) * inv_h);
+                uv.push_back(0.0);
+                uv.push_back(std::max(0.0, y - line_height) * inv_h);
+                uv.push_back(0.0);
+                uv.push_back(y * inv_h);
+                uv.push_back(1.0);
+                uv.push_back(y * inv_h);
+                auto x1 = src_box.width / 2.0;
+                auto x2 = -(src_box.width / 2.0);
+                auto y1 = -(std::min(src_box.height - i, (double)line_height) / 2.0);
+                auto y2 = std::min(src_box.height - i, (double)line_height) / 2.0;
+                glm::vec4 v, r;
+                glm::mat4 m(1.0);
+                m =
+                    glm::rotate(m,
+                        float(std::min(M_PI,
+                            std::max(0.0,
+                                (M_PI * (1.0 - progress)) - M_PI / 2.0 * (float(i) / src_box.height)) +
+                            M_PI / 2.0)), glm::vec3(1.0, 0.0, 0.0));
+                m =
+                    glm::scale(m,
+                        glm::vec3(2.0f / (src_box.width + line_height * 2), 2.0f / (y2 - y1), 1.0));
+                v = glm::vec4(x1, y2, 0.0, 1.0);
+                r = m * v;
+                vertices.push_back(r.x);
+                vertices.push_back(r.y);
+                vertices.push_back(r.z);
+                v = glm::vec4(x2, y2, 0.0, 1.0);
+                r = m * v;
+                vertices.push_back(r.x);
+                vertices.push_back(r.y);
+                vertices.push_back(r.z);
+                v = glm::vec4(x2, y1, 0.0, 1.0);
+                r = m * v;
+                vertices.push_back(r.x);
+                vertices.push_back(r.y);
+                vertices.push_back(r.z);
+                v = glm::vec4(x1, y1, 0.0, 1.0);
+                r = m * v;
+                vertices.push_back(r.x);
+                vertices.push_back(r.y);
+                vertices.push_back(r.z);
+
+                glm::mat4 p = glm::perspective(float(M_PI / 64.0), 1.0f, 0.1f, 100.0f);
+                glm::mat4 l = glm::lookAt(
+                    glm::vec3(0., 0., 1.0 / std::tan(float(M_PI / 64.0) / 2)),
+                    glm::vec3(0., 0., 0.),
+                    glm::vec3(0., 1., 0.));
+
+                auto transform = p * l;
+                wf::auxilliary_buffer_t slice_buffer;
+                slice_buffer.allocate({static_cast<int32_t>(std::ceil(src_box.width + line_height * 2)),
+                    static_cast<int32_t>(std::ceil(y2 - y1))});
+                wf::gles::bind_render_buffer(slice_buffer.get_renderbuffer());
+                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
+                self->program.use(wf::TEXTURE_TYPE_RGBA);
+                self->program.uniformMatrix4f("matrix", transform);
+                self->program.attrib_pointer("position", 3, 0, vertices.data());
+                self->program.attrib_pointer("uv_in", 2, 0, uv.data());
+                self->program.set_active_texture(gl_tex);
+                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 3));
+
+                wf::gles_texture_t slice_tex{slice_buffer.get_texture()};
+
+                data.pass->custom_gles_subpass([&]
                 {
-                    std::vector<float> uv;
-                    std::vector<float> vertices;
-                    auto y     = src_box.height - i;
-                    auto inv_h = 1.0 / src_box.height;
-                    uv.push_back(1.0);
-                    uv.push_back(std::max(0.0, y - line_height) * inv_h);
-                    uv.push_back(0.0);
-                    uv.push_back(std::max(0.0, y - line_height) * inv_h);
-                    uv.push_back(0.0);
-                    uv.push_back(y * inv_h);
-                    uv.push_back(1.0);
-                    uv.push_back(y * inv_h);
-                    auto x1 = src_box.width / 2.0;
-                    auto x2 = -(src_box.width / 2.0);
-                    auto y1 = -(std::min(src_box.height - i, (double)line_height) / 2.0);
-                    auto y2 = std::min(src_box.height - i, (double)line_height) / 2.0;
-                    glm::vec4 v, r;
-                    glm::mat4 m(1.0);
-                    m =
-                        glm::rotate(m,
-                            float(std::min(M_PI,
-                                std::max(0.0,
-                                    (M_PI * (1.0 - progress)) - M_PI / 2.0 * (float(i) / src_box.height)) +
-                                M_PI / 2.0)), glm::vec3(1.0, 0.0, 0.0));
-                    m =
-                        glm::scale(m,
-                            glm::vec3(2.0f / (src_box.width + line_height * 2), 2.0f / (y2 - y1), 1.0));
-                    v = glm::vec4(x1, y2, 0.0, 1.0);
-                    r = m * v;
-                    vertices.push_back(r.x);
-                    vertices.push_back(r.y);
-                    vertices.push_back(r.z);
-                    v = glm::vec4(x2, y2, 0.0, 1.0);
-                    r = m * v;
-                    vertices.push_back(r.x);
-                    vertices.push_back(r.y);
-                    vertices.push_back(r.z);
-                    v = glm::vec4(x2, y1, 0.0, 1.0);
-                    r = m * v;
-                    vertices.push_back(r.x);
-                    vertices.push_back(r.y);
-                    vertices.push_back(r.z);
-                    v = glm::vec4(x1, y1, 0.0, 1.0);
-                    r = m * v;
-                    vertices.push_back(r.x);
-                    vertices.push_back(r.y);
-                    vertices.push_back(r.z);
+                    wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
+                    {
+                        OpenGL::render_transformed_texture(slice_tex,
+                            gl_geometry{float(src_box.x - line_height),
+                                float(src_box.y + i),
+                                float((src_box.x - line_height) + src_box.width + line_height * 2.0),
+                                float((src_box.y + i) + (y2 - y1))}, {},
+                            wf::gles::render_target_orthographic_projection(data.target), glm::vec4(1.0),
+                            OpenGL::TEXTURE_TRANSFORM_INVERT_Y);
+                    });
+                });
 
-                    glm::mat4 p = glm::perspective(float(M_PI / 64.0), 1.0f, 0.1f, 100.0f);
-                    glm::mat4 l = glm::lookAt(
-                        glm::vec3(0., 0., -1.0 / std::tan(float(M_PI / 64.0) / 2)),
-                        glm::vec3(0., 0., 0.),
-                        glm::vec3(0., -1., 0.));
-
-                    auto transform = p * l;
-                    wf::auxilliary_buffer_t slice_buffer;
-                    slice_buffer.allocate({static_cast<int32_t>(std::ceil(src_box.width + line_height * 2)),
-                        static_cast<int32_t>(std::ceil(y2 - y1))});
-                    wf::gles::bind_render_buffer(slice_buffer.get_renderbuffer());
-                    OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
-                    self->program.use(wf::TEXTURE_TYPE_RGBA);
-                    self->program.uniformMatrix4f("matrix", transform);
-                    self->program.attrib_pointer("position", 3, 0, vertices.data());
-                    self->program.attrib_pointer("uv_in", 2, 0, uv.data());
-                    self->program.set_active_texture(gl_tex);
-                    GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, vertices.size() / 3));
-
-                    wf::gles_texture_t slice_tex{slice_buffer.get_texture()};
-
-                    wf::gles::bind_render_buffer(data.target);
-                    /* XXX: Scissoring wrong boxes here makes only top part of effect work */
-                    // for (auto box : data.damage)
-                    // {
-                    // wf::gles::render_target_logic_scissor(data.target, box);
-                    OpenGL::render_transformed_texture(slice_tex,
-                        gl_geometry{float(src_box.x - line_height),
-                            float(src_box.y + i),
-                            float((src_box.x - line_height) + src_box.width + line_height * 2.0),
-                            float((src_box.y + i) + (y2 - y1))}, {},
-                        wf::gles::render_target_orthographic_projection(data.target), glm::vec4(1.0), 0);
-                    // }
-
-                    slice_buffer.free();
-                }
-            });
+                slice_buffer.free();
+            }
         }
     };
 
