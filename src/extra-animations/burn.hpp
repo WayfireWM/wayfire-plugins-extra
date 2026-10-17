@@ -253,65 +253,63 @@ class burn_transformer : public wf::scene::view_2d_transformer_t
             };
             auto progress = self->progression.progress();
 
+            self->buffer.allocate({int(pbb.width), int(pbb.height)});
+            wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
+            wf::gles_texture_t final_tex{self->buffer.get_texture()};
+            OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
+            self->program.use(wf::TEXTURE_TYPE_RGBA);
+            self->program.attrib_pointer("position", 2, 0, vertices);
+            self->program.attrib_pointer("uv_in", 2, 0, uv);
+            self->program.uniform2f("size", bb.width * 1.0, bb.height * 1.0);
+            self->program.uniform1f("progress", 1.0 - progress);
+            self->program.uniform1i("direction", self->progression.get_direction());
+            self->program.uniform1f("flame_speed", burn_flame_speed);
+            self->program.uniform1f("flame_width", burn_flame_width);
+            self->program.uniform1f("flame_height", burn_flame_height);
+            if (std::string(burn_flame_smoothness) == "softest")
+            {
+                self->program.uniform1i("flame_smooth_1", 0);
+                self->program.uniform1i("flame_smooth_2", 0);
+                self->program.uniform1i("flame_smooth_3", 0);
+                self->program.uniform1i("flame_smooth_4", 0);
+            } else if (std::string(burn_flame_smoothness) == "soft")
+            {
+                self->program.uniform1i("flame_smooth_1", 0);
+                self->program.uniform1i("flame_smooth_2", 1);
+                self->program.uniform1i("flame_smooth_3", 1);
+                self->program.uniform1i("flame_smooth_4", 1);
+            } else if (std::string(burn_flame_smoothness) == "hard")
+            {
+                self->program.uniform1i("flame_smooth_1", 1);
+                self->program.uniform1i("flame_smooth_2", 1);
+                self->program.uniform1i("flame_smooth_3", 1);
+                self->program.uniform1i("flame_smooth_4", 1);
+            } else // "normal"
+            {
+                self->program.uniform1i("flame_smooth_1", 1);
+                self->program.uniform1i("flame_smooth_2", 0);
+                self->program.uniform1i("flame_smooth_3", 1);
+                self->program.uniform1i("flame_smooth_4", 0);
+            }
+
+            glm::vec4 flame_color{
+                wf::color_t(burn_flame_color).r,
+                wf::color_t(burn_flame_color).g,
+                wf::color_t(burn_flame_color).b,
+                wf::color_t(burn_flame_color).a};
+            self->program.uniform4f("flame_color", flame_color);
+
+            self->program.set_active_texture(tex);
+            GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
+
             data.pass->custom_gles_subpass([&]
             {
-                self->buffer.allocate({int(pbb.width), int(pbb.height)});
-                wf::gles::bind_render_buffer(self->buffer.get_renderbuffer());
-                wf::gles_texture_t final_tex{self->buffer.get_texture()};
-                OpenGL::clear(wf::color_t{0.0, 0.0, 0.0, 0.0}, GL_COLOR_BUFFER_BIT);
-                self->program.use(wf::TEXTURE_TYPE_RGBA);
-                self->program.attrib_pointer("position", 2, 0, vertices);
-                self->program.attrib_pointer("uv_in", 2, 0, uv);
-                self->program.uniform2f("size", bb.width * 1.0, bb.height * 1.0);
-                self->program.uniform1f("progress", 1.0 - progress);
-                self->program.uniform1i("direction", self->progression.get_direction());
-                self->program.uniform1f("flame_speed", burn_flame_speed);
-                self->program.uniform1f("flame_width", burn_flame_width);
-                self->program.uniform1f("flame_height", burn_flame_height);
-                if (std::string(burn_flame_smoothness) == "softest")
+                wf::gles::for_each_scissor_rect(data.target, data.damage, [&]
                 {
-                    self->program.uniform1i("flame_smooth_1", 0);
-                    self->program.uniform1i("flame_smooth_2", 0);
-                    self->program.uniform1i("flame_smooth_3", 0);
-                    self->program.uniform1i("flame_smooth_4", 0);
-                } else if (std::string(burn_flame_smoothness) == "soft")
-                {
-                    self->program.uniform1i("flame_smooth_1", 0);
-                    self->program.uniform1i("flame_smooth_2", 1);
-                    self->program.uniform1i("flame_smooth_3", 1);
-                    self->program.uniform1i("flame_smooth_4", 1);
-                } else if (std::string(burn_flame_smoothness) == "hard")
-                {
-                    self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 1);
-                    self->program.uniform1i("flame_smooth_3", 1);
-                    self->program.uniform1i("flame_smooth_4", 1);
-                } else // "normal"
-                {
-                    self->program.uniform1i("flame_smooth_1", 1);
-                    self->program.uniform1i("flame_smooth_2", 0);
-                    self->program.uniform1i("flame_smooth_3", 1);
-                    self->program.uniform1i("flame_smooth_4", 0);
-                }
-
-                glm::vec4 flame_color{
-                    wf::color_t(burn_flame_color).r,
-                    wf::color_t(burn_flame_color).g,
-                    wf::color_t(burn_flame_color).b,
-                    wf::color_t(burn_flame_color).a};
-                self->program.uniform4f("flame_color", flame_color);
-
-                self->program.set_active_texture(tex);
-                GL_CALL(glDrawArrays(GL_TRIANGLE_FAN, 0, 4));
-
-                wf::gles::bind_render_buffer(data.target);
-                for (auto box : data.damage)
-                {
-                    wf::gles::render_target_logic_scissor(data.target, box);
                     OpenGL::render_transformed_texture(final_tex, pbb,
                         wf::gles::render_target_orthographic_projection(data.target),
                         glm::vec4(1.0, 1.0, 1.0, std::clamp((progress - 0.07) * 10.0, 0.0, 1.0)), 0);
-                }
+                });
 
                 GL_CALL(glBindTexture(GL_TEXTURE_2D, 0));
                 self->program.deactivate();
