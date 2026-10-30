@@ -49,7 +49,7 @@ jobs:
       with:
         repository: ammen99/uncrustify
         path: uncrustify
-    - run: cd uncrustify && mkdir build && cd build && cmake .. && make && cd ../..
+    - run: cd uncrustify && mkdir build && cd build && cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make && cd ../..
     - name: Run Uncrustify Check
       uses: actions/checkout@v2
       with:
