@@ -144,7 +144,6 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
             auto gl_tex   = wf::gles_texture_t{src_tex};
             auto progress = self->progression.progress();
             auto og = self->output->get_relative_geometry();
-            self->animation_geometry = og;
 
             int line_height = int(helix_strip_height);
             std::vector<float> uv;
@@ -249,10 +248,11 @@ class helix_transformer : public wf::scene::view_2d_transformer_t
         if (view->get_output())
         {
             output = view->get_output();
+            auto og = output->get_relative_geometry();
+            this->animation_geometry = og;
             output->render->add_effect(&pre_hook, wf::OUTPUT_EFFECT_PRE);
         }
 
-        animation_geometry = bbox;
         wf::gles::run_in_context([&]
         {
             program.compile(helix_vert_source, helix_frag_source);
