@@ -78,6 +78,10 @@ showtouch = shared_module('showtouch', 'showtouch.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+snow = shared_module('snow', 'snow.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 view_shot = shared_module('view-shot', 'view-shot.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
