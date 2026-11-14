@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="cover-switch">
+		<_short>Cover Switch</_short>
+		<_long>A window switcher in the style of Compiz's Shift Switcher (Cover mode): the windows of the workspace stand in a row like album covers, mirrored on the floor, with the title of the selected window.</_long>
+		<category>Desktop</category>
+		<option name="next" type="key">
+			<_short>Next window</_short>
+			<_long>Opens the switcher, or selects the next window. Releasing the modifier picks the selected window.</_long>
+			<default>&lt;super&gt; KEY_TAB</default>
+		</option>
+		<option name="prev" type="key">
+			<_short>Previous window</_short>
+			<_long>Opens the switcher, or selects the previous window.</_long>
+			<default>&lt;super&gt; &lt;shift&gt; KEY_TAB</default>
+		</option>
+		<option name="speed" type="animation">
+			<_short>Animation</_short>
+			<_long>Duration and easing of opening, closing and moving the selection.</_long>
+			<default>300ms circle</default>
+		</option>
+		<option name="scale" type="double">
+			<_short>Window size</_short>
+			<_long>Height of the selected window, as a fraction of the screen height.</_long>
+			<default>0.45</default>
+			<min>0.1</min>
+			<max>0.9</max>
+			<precision>0.05</precision>
+		</option>
+		<option name="angle" type="double">
+			<_short>Side angle</_short>
+			<_long>How far the windows beside the selected one are turned towards the middle, in degrees.</_long>
+			<default>65</default>
+			<min>0</min>
+			<max>85</max>
+			<precision>1</precision>
+		</option>
+		<option name="spacing" type="double">
+			<_short>Side spacing</_short>
+			<_long>Distance between the windows on each side (1 = half the screen height).</_long>
+			<default>0.2</default>
+			<min>0.05</min>
+			<max>1.0</max>
+			<precision>0.01</precision>
+		</option>
+		<option name="background_dim" type="double">
+			<_short>Darken desktop</_short>
+			<_long>How much the desktop behind the windows is darkened (0 = not at all, 1 = black).</_long>
+			<default>0.6</default>
+			<min>0.0</min>
+			<max>1.0</max>
+			<precision>0.05</precision>
+		</option>
+		<option name="reflection" type="bool">
+			<_short>Reflection</_short>
+			<_long>Draw a mirror image of every window on the floor.</_long>
+			<default>true</default>
+		</option>
+		<option name="reflection_intensity" type="double">
+			<_short>Reflection intensity</_short>
+			<_long>Opacity of the mirror images at the floor (0-1).</_long>
+			<default>0.35</default>
+			<min>0.0</min>
+			<max>1.0</max>
+			<precision>0.05</precision>
+		</option>
+		<option name="reflection_fade" type="double">
+			<_short>Reflection length</_short>
+			<_long>Length of a mirror image until it has faded out, as a fraction of the window height.</_long>
+			<default>0.5</default>
+			<min>0.05</min>
+			<max>1.0</max>
+			<precision>0.05</precision>
+		</option>
+		<option name="show_title" type="bool">
+			<_short>Show title</_short>
+			<_long>Show the title of the selected window at the bottom of the screen.</_long>
+			<default>true</default>
+		</option>
+		<option name="font_size" type="int">
+			<_short>Title font size</_short>
+			<default>18</default>
+			<min>8</min>
+			<max>72</max>
+		</option>
+		<option name="text_color" type="color">
+			<_short>Title colour</_short>
+			<default>#E6E6E6FF</default>
+		</option>
+		<option name="label_color" type="color">
+			<_short>Title box colour</_short>
+			<default>#1A1A1ACC</default>
+		</option>
+	</plugin>
+</wayfire>
