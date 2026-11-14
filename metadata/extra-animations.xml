@@ -127,6 +127,22 @@
 			</option>
 		</group>
 		<group>
+			<_short>Glide Settings</_short>
+			<option name="glide_duration" type="animation">
+				<_short>Duration</_short>
+				<_long>Sets the duration for the glide animation: the window tilts back, recedes and fades.</_long>
+				<default>350ms circle</default>
+			</option>
+			<option name="glide_angle" type="double">
+				<_short>Tilt Angle</_short>
+				<_long>How far the window is tilted back about its horizontal centre line at the start of opening / the end of closing, in degrees. Negative values tilt the bottom edge away.</_long>
+				<default>60</default>
+				<min>-90</min>
+				<max>90</max>
+				<precision>1</precision>
+			</option>
+		</group>
+		<group>
 			<_short>Magic Carpet Settings</_short>
 			<option name="carpet_roll_duration" type="animation">
 				<_short>Roll Duration</_short>
