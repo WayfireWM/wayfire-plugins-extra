@@ -12,6 +12,10 @@ benchmark = shared_module('bench', 'bench.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+colorfilter = shared_module('colorfilter', 'colorfilter.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 crosshair = shared_module('crosshair', 'crosshair.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
