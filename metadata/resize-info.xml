@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="resize-info">
+		<_short>Resize Info</_short>
+		<_long>Shows the size of a window in its centre while it is being resized with the resize plugin.</_long>
+		<category>Window Management</category>
+		<option name="font_size" type="int">
+			<_short>Font size</_short>
+			<_long>Size of the text in (logical) pixels.</_long>
+			<default>20</default>
+			<min>8</min>
+			<max>72</max>
+		</option>
+		<option name="text_color" type="color">
+			<_short>Text colour</_short>
+			<_long>Colour of the size text.</_long>
+			<default>1.0 1.0 1.0 1.0</default>
+		</option>
+		<option name="bg_color" type="color">
+			<_short>Background colour</_short>
+			<_long>Colour of the rounded box behind the text.</_long>
+			<default>0.1 0.1 0.1 0.8</default>
+		</option>
+	</plugin>
+</wayfire>
