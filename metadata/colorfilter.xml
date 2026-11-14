@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="colorfilter">
+		<_short>Color Filter</_short>
+		<_long>A colour filter over the whole screen until toggled off: greyscale, sepia, a warm night tint, or simulation and correction of colour-vision deficiencies. Costs nothing extra while the screen does not change.</_long>
+		<category>Accessibility</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle filter</_short>
+			<_long>Switches the filter on and off. Also available as the IPC method colorfilter/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_C</default>
+		</option>
+		<option name="filter" type="string">
+			<_short>Filter</_short>
+			<_long>The filter to apply. "simulate" shows how the screen looks with that colour-vision deficiency; "correct" shifts the colours a person with it cannot tell apart into ones they can (daltonize).</_long>
+			<default>greyscale</default>
+			<desc>
+				<value>greyscale</value>
+				<_name>Greyscale</_name>
+			</desc>
+			<desc>
+				<value>sepia</value>
+				<_name>Sepia</_name>
+			</desc>
+			<desc>
+				<value>night</value>
+				<_name>Night (warm tint)</_name>
+			</desc>
+			<desc>
+				<value>protanopia</value>
+				<_name>Protanopia (simulate)</_name>
+			</desc>
+			<desc>
+				<value>deuteranopia</value>
+				<_name>Deuteranopia (simulate)</_name>
+			</desc>
+			<desc>
+				<value>tritanopia</value>
+				<_name>Tritanopia (simulate)</_name>
+			</desc>
+			<desc>
+				<value>protanopia-correct</value>
+				<_name>Protanopia (correct)</_name>
+			</desc>
+			<desc>
+				<value>deuteranopia-correct</value>
+				<_name>Deuteranopia (correct)</_name>
+			</desc>
+			<desc>
+				<value>tritanopia-correct</value>
+				<_name>Tritanopia (correct)</_name>
+			</desc>
+		</option>
+		<option name="strength" type="int">
+			<_short>Strength</_short>
+			<_long>How strongly the filter is applied, in percent (0 = off, 100 = full).</_long>
+			<default>100</default>
+			<min>0</min>
+			<max>100</max>
+		</option>
+	</plugin>
+</wayfire>
