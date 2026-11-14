@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="stars">
+		<_short>Stars</_short>
+		<_long>A star field over the whole screen until toggled off: a flight through space or a twinkling night sky. The desktop stays usable.</_long>
+		<category>Effects</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle stars</_short>
+			<_long>Starts the star field; it stays until the binding is used again. Also available as the IPC method stars/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_T</default>
+		</option>
+		<option name="mode" type="string">
+			<_short>Mode</_short>
+			<_long>Flight through space (stars stream outwards from the centre) or a calm, twinkling sky.</_long>
+			<default>fly</default>
+			<desc>
+				<value>fly</value>
+				<_name>Flight through space</_name>
+			</desc>
+			<desc>
+				<value>twinkle</value>
+				<_name>Twinkling sky</_name>
+			</desc>
+		</option>
+		<option name="density" type="int">
+			<_short>Density</_short>
+			<_long>How many stars, in percent.</_long>
+			<default>30</default>
+			<min>1</min>
+			<max>100</max>
+		</option>
+		<option name="star_size" type="int">
+			<_short>Star size</_short>
+			<_long>Radius of the nearest stars in pixels; far stars are smaller.</_long>
+			<default>4</default>
+			<min>1</min>
+			<max>10</max>
+		</option>
+		<option name="speed" type="int">
+			<_short>Speed</_short>
+			<_long>Flight and twinkling speed in percent (100 = normal).</_long>
+			<default>100</default>
+			<min>10</min>
+			<max>300</max>
+		</option>
+		<option name="darken" type="int">
+			<_short>Darken screen</_short>
+			<_long>Darkens the screen behind the stars, in percent (0 = off, at most 90).</_long>
+			<default>0</default>
+			<min>0</min>
+			<max>90</max>
+		</option>
+	</plugin>
+</wayfire>
