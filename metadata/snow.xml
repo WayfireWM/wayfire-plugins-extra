@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="snow">
+		<_short>Snow</_short>
+		<_long>Snowflakes falling over the whole screen in several depth layers, drifting with the wind, until toggled off. The desktop stays usable.</_long>
+		<category>Effects</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle snow</_short>
+			<_long>Starts the snowfall; it keeps snowing until the binding is used again. Also available as the IPC method snow/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_N</default>
+		</option>
+		<option name="density" type="int">
+			<_short>Density</_short>
+			<_long>How many flakes, in percent (chance that a grid cell holds a flake).</_long>
+			<default>35</default>
+			<min>1</min>
+			<max>100</max>
+		</option>
+		<option name="flake_size" type="int">
+			<_short>Flake size</_short>
+			<_long>Radius of the nearest flakes in pixels; far flakes are smaller.</_long>
+			<default>6</default>
+			<min>1</min>
+			<max>10</max>
+		</option>
+		<option name="speed" type="int">
+			<_short>Speed</_short>
+			<_long>Falling speed in percent (100 = normal).</_long>
+			<default>100</default>
+			<min>10</min>
+			<max>300</max>
+		</option>
+		<option name="wind" type="int">
+			<_short>Wind</_short>
+			<_long>Sideways drift: negative = to the left, positive = to the right, 0 = none.</_long>
+			<default>15</default>
+			<min>-100</min>
+			<max>100</max>
+		</option>
+	</plugin>
+</wayfire>
