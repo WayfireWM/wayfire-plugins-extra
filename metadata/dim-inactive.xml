@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="dim-inactive">
+		<_short>Dim Inactive Windows</_short>
+		<_long>Dims every window that does not have the keyboard focus, so the active window stands out. Uses the obs plugin for drawing: enable "obs" as well.</_long>
+		<category>Accessibility</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle dimming</_short>
+			<_long>Switches dimming on and off (it is on when the plugin is loaded). Also available as the IPC method dim-inactive/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_D</default>
+		</option>
+		<option name="brightness" type="int">
+			<_short>Brightness of inactive windows</_short>
+			<_long>Brightness of windows without focus, in percent (100 = not dimmed).</_long>
+			<default>70</default>
+			<min>10</min>
+			<max>100</max>
+		</option>
+		<option name="saturation" type="int">
+			<_short>Saturation of inactive windows</_short>
+			<_long>Colour saturation of windows without focus, in percent (100 = unchanged, 0 = grey).</_long>
+			<default>100</default>
+			<min>0</min>
+			<max>100</max>
+		</option>
+		<option name="opacity" type="int">
+			<_short>Opacity of inactive windows</_short>
+			<_long>Opacity of windows without focus, in percent (100 = opaque).</_long>
+			<default>100</default>
+			<min>10</min>
+			<max>100</max>
+		</option>
+		<option name="duration" type="int">
+			<_short>Fade duration</_short>
+			<_long>Duration of the dim / undim fade in milliseconds.</_long>
+			<default>300</default>
+			<min>0</min>
+			<max>5000</max>
+		</option>
+		<option name="exclude" type="string">
+			<_short>Never dim</_short>
+			<_long>Windows matching this condition are never dimmed, e.g. app_id is "mpv". "none" = no exception.</_long>
+			<default>none</default>
+		</option>
+	</plugin>
+</wayfire>
