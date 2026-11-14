@@ -20,6 +20,10 @@ fisheye = shared_module('fisheye', 'fisheye.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+flames = shared_module('flames', 'flames.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 focus_change = shared_module('focus-change', 'focus-change.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
