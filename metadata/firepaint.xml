@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="firepaint">
+		<_short>Fire Paint</_short>
+		<_long>Paint fire on the screen with the mouse: while the binding is held, fire particles are emitted along the pointer path, rise and burn out.</_long>
+		<category>Effects</category>
+		<option name="draw" type="button">
+			<_short>Draw</_short>
+			<_long>Hold to paint fire along the pointer path.</_long>
+			<default>&lt;shift&gt; &lt;super&gt; BTN_LEFT</default>
+		</option>
+		<option name="size" type="int">
+			<_short>Particle size</_short>
+			<_long>Radius of a fire particle in pixels.</_long>
+			<default>14</default>
+			<min>2</min>
+			<max>60</max>
+		</option>
+		<option name="life" type="int">
+			<_short>Burn time</_short>
+			<_long>How long a particle burns, in milliseconds.</_long>
+			<default>1500</default>
+			<min>200</min>
+			<max>10000</max>
+		</option>
+		<option name="rate" type="int">
+			<_short>Particles per second</_short>
+			<_long>Particles emitted per second while the binding is held (more are added along fast strokes).</_long>
+			<default>300</default>
+			<min>10</min>
+			<max>2000</max>
+		</option>
+		<option name="color" type="color">
+			<_short>Fire colour</_short>
+			<_long>Base colour of the fire; young particles are brighter.</_long>
+			<default>1.0 0.35 0.05 1.0</default>
+		</option>
+	</plugin>
+</wayfire>
