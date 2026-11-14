@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="fireflies">
+		<_short>Fireflies</_short>
+		<_long>Glowing fireflies wandering and blinking over the whole screen until toggled off. The desktop stays usable.</_long>
+		<category>Effects</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle fireflies</_short>
+			<_long>Starts the fireflies; they keep flying until the binding is used again. Also available as the IPC method fireflies/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_G</default>
+		</option>
+		<option name="count" type="int">
+			<_short>Number of fireflies</_short>
+			<_long>How many fireflies per output.</_long>
+			<default>24</default>
+			<min>1</min>
+			<max>64</max>
+		</option>
+		<option name="size" type="int">
+			<_short>Glow size</_short>
+			<_long>Radius of the glow around each firefly in pixels.</_long>
+			<default>14</default>
+			<min>2</min>
+			<max>40</max>
+		</option>
+		<option name="speed" type="int">
+			<_short>Speed</_short>
+			<_long>Flying and blinking speed in percent (100 = normal).</_long>
+			<default>100</default>
+			<min>10</min>
+			<max>300</max>
+		</option>
+		<option name="color" type="color">
+			<_short>Color</_short>
+			<_long>Color of the glow.</_long>
+			<default>0.75 1.0 0.35 1.0</default>
+		</option>
+	</plugin>
+</wayfire>
