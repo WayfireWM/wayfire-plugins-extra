@@ -70,6 +70,10 @@ pin_view = shared_module('pin-view', 'pin-view.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+resize_info = shared_module('resize-info', 'resize-info.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 showrepaint = shared_module('showrepaint', 'showrepaint.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
