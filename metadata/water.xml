@@ -9,5 +9,31 @@
 			<_long>Activates water effect.</_long>
 			<default>&lt;ctrl&gt; &lt;super&gt; BTN_LEFT</default>
 		</option>
+		<option name="rain_toggle" type="activator">
+			<_short>Toggle rain</_short>
+			<_long>Starts rain (random drops on the whole screen); it keeps raining until the binding is used again. Also available as the IPC method water/rain_toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_W</default>
+		</option>
+		<option name="rain_drops" type="int">
+			<_short>Rain drops per second</_short>
+			<_long>Average number of drops per second on each output.</_long>
+			<default>12</default>
+			<min>1</min>
+			<max>200</max>
+		</option>
+		<option name="rain_intensity" type="int">
+			<_short>Rain intensity</_short>
+			<_long>How hard the drops hit the surface, in percent: higher values make stronger, longer-lasting ripples. Each drop still varies randomly between 75 and 100 percent of this value.</_long>
+			<default>85</default>
+			<min>10</min>
+			<max>100</max>
+		</option>
+		<option name="rain_drop_size" type="int">
+			<_short>Rain drop size</_short>
+			<_long>Radius of a drop in pixels; bigger drops make bigger ripples.</_long>
+			<default>4</default>
+			<min>1</min>
+			<max>20</max>
+		</option>
 	</plugin>
 </wayfire>

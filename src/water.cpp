@@ -24,7 +24,6 @@
  * Shaders ported from:
  * https://www.shadertoy.com/view/4sd3WB (Buffer A and B)
  * https://www.shadertoy.com/view/Xsd3DB (Image)
- *
  */
 
 #include <wayfire/plugin.hpp>
@@ -34,6 +33,13 @@
 #include <wayfire/render-manager.hpp>
 #include <wayfire/per-output-plugin.hpp>
 #include <wayfire/plugins/common/input-grab.hpp>
+#include <wayfire/plugins/ipc/ipc-activator.hpp>
+#include <algorithm>
+#include <chrono>
+#include <random>
+
+/* Rain mode: random drops per frame */
+#define MAX_RAIN_DROPS 16
 
 static const char *vertex_shader =
     R"(
@@ -59,12 +65,29 @@ precision highp float;
 uniform int num_points;
 uniform vec2 points[64];
 uniform int button_down;
+uniform int num_drops;
+uniform vec3 drops[16];
+uniform float drop_radius;
 varying highp vec2 uvpos;
 uniform sampler2D u_texture;
 
 void main()
 {
     int i;
+    for (i = 0; i < 16; i++)
+    {
+        if (i >= num_drops)
+        {
+            break;
+        }
+
+        if (length(gl_FragCoord.xy - drops[i].xy) < drop_radius)
+        {
+            gl_FragColor = vec4(0.0, drops[i].z, 0.0, 0.0);
+            return;
+        }
+    }
+
     for (i = 0; button_down == 1 && i < num_points; i++)
     {
         float d = length(gl_FragCoord.xy - points[i]);
@@ -195,6 +218,14 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
     bool hook_set    = false;
     wf::wl_timer<false> timer;
     int points_loc;
+    int drops_loc;
+    bool rain = false;
+    double rain_carry = 0.0;
+    std::chrono::steady_clock::time_point rain_last_frame;
+    std::mt19937 rng{std::random_device{} ()};
+    wf::option_wrapper_t<int> rain_drops{"water/rain_drops"};
+    wf::option_wrapper_t<int> rain_drop_size{"water/rain_drop_size"};
+    wf::option_wrapper_t<int> rain_intensity{"water/rain_intensity"};
     std::unique_ptr<wf::input_grab_t> input_grab;
     wf::plugin_activation_data_t grab_interface{
         .name = "water",
@@ -220,6 +251,8 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
                 OpenGL::compile_program(vertex_shader, fragment_shader_c));
             points_loc = GL_CALL(glGetUniformLocation(
                 program[0].get_program_id(wf::TEXTURE_TYPE_RGBA), "points"));
+            drops_loc = GL_CALL(glGetUniformLocation(
+                program[0].get_program_id(wf::TEXTURE_TYPE_RGBA), "drops"));
         });
 
         input_grab = std::make_unique<wf::input_grab_t>(this->grab_interface.name, output, nullptr, this,
@@ -235,10 +268,51 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
         if (event.state == WL_POINTER_BUTTON_STATE_RELEASED)
         {
             output->deactivate_plugin(&grab_interface);
-            timer.set_timeout(5000, timeout);
+            if (!rain)
+            {
+                timer.set_timeout(5000, timeout);
+            }
+
             input_grab->ungrab_input();
             button_down = false;
         }
+    }
+
+    void set_hooks()
+    {
+        if (!hook_set)
+        {
+            output->render->add_effect(&damage_hook, wf::OUTPUT_EFFECT_DAMAGE);
+            output->render->add_post(&render);
+            hook_set = true;
+        }
+    }
+
+    /* Rain does not grab input or activate the plugin, so the desktop stays
+     * fully usable while it rains. */
+    bool toggle_rain()
+    {
+        if (!wf::get_core().is_gles2())
+        {
+            return false;
+        }
+
+        rain = !rain;
+        if (rain)
+        {
+            set_hooks();
+            timer.disconnect();
+            rain_carry = 0.0;
+            rain_last_frame = std::chrono::steady_clock::now();
+            animation.animate(animation, 1);
+        } else if (!button_down)
+        {
+            /* Let the last ripples spread, then fade out like after a drag */
+            timer.set_timeout(5000, timeout);
+        }
+
+        output->render->schedule_redraw();
+        return true;
     }
 
     wf::button_callback activate_binding = [=] (auto)
@@ -251,12 +325,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             }
         }
 
-        if (!hook_set)
-        {
-            output->render->add_effect(&damage_hook, wf::OUTPUT_EFFECT_DAMAGE);
-            output->render->add_post(&render);
-            hook_set = true;
-        }
+        set_hooks();
 
         last_cursor = output->get_cursor_position();
         animation.animate(animation, 1);
@@ -330,6 +399,30 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
         last_cursor = cursor_position;
 
+        /* Rain: rain_drops per second on average, at random positions */
+        std::vector<float> drops;
+        if (rain)
+        {
+            auto now  = std::chrono::steady_clock::now();
+            double dt = std::chrono::duration<double>(now - rain_last_frame).count();
+            rain_last_frame = now;
+            rain_carry += std::clamp(dt, 0.0, 0.1) * std::max(int(rain_drops), 1);
+            int n = std::min(int(rain_carry), MAX_RAIN_DROPS);
+            rain_carry -= n;
+            /* Strength = rain_intensity % with +-random variation (75..100 %) */
+            float intensity = std::clamp(int(rain_intensity), 10, 100) / 100.f;
+            std::uniform_real_distribution<float> rx(0.f, fbg.width), ry(0.f, fbg.height),
+            strength(0.75f * intensity, intensity);
+            for (int i = 0; i < n; i++)
+            {
+                drops.push_back(rx(rng));
+                drops.push_back(ry(rng));
+                drops.push_back(strength(rng));
+            }
+        }
+
+        int num_drops = drops.size() / 3;
+
         /* First pass */
 
         for (size_t i = 0; i < 2; i++)
@@ -360,6 +453,13 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             GL_CALL(glUniform2fv(points_loc, num_points, points.data()));
             program[0].uniform1i("num_points", num_points);
             program[0].uniform1i("button_down", button_down ? 1 : 0);
+            if (num_drops > 0)
+            {
+                GL_CALL(glUniform3fv(drops_loc, num_drops, drops.data()));
+            }
+
+            program[0].uniform1i("num_drops", num_drops);
+            program[0].uniform1f("drop_radius", std::max(int(rain_drop_size), 1));
             GL_CALL(glActiveTexture(GL_TEXTURE0));
             GL_CALL(glBindTexture(GL_TEXTURE_2D, tex[1].tex_id));
             GL_CALL(glDisable(GL_BLEND));
@@ -405,7 +505,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
             program[2].deactivate();
         });
 
-        if (!button_down && !timer.is_connected() && !animation.running())
+        if (!rain && !button_down && !timer.is_connected() && !animation.running())
         {
             hook_set = false;
             output->render->rem_effect(&damage_hook);
@@ -419,6 +519,7 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
 
     void fini() override
     {
+        rain = false;
         output->deactivate_plugin(&grab_interface);
         output->rem_binding(&activate_binding);
         input_grab->ungrab_input();
@@ -440,4 +541,29 @@ class wayfire_water_screen : public wf::per_output_plugin_instance_t, public wf:
     }
 };
 
-DECLARE_WAYFIRE_PLUGIN(wf::per_output_plugin_t<wayfire_water_screen>);
+/* Global part: one key/IPC binding for rain, applied to the focused output
+ * (or the output given in the IPC call). */
+class wayfire_water_global : public wf::plugin_interface_t,
+    public wf::per_output_tracker_mixin_t<wayfire_water_screen>
+{
+    wf::ipc_activator_t rain_toggle{"water/rain_toggle"};
+
+  public:
+    void init() override
+    {
+        this->init_output_tracking();
+        rain_toggle.set_handler(rain_toggle_cb);
+    }
+
+    void fini() override
+    {
+        this->fini_output_tracking();
+    }
+
+    wf::ipc_activator_t::handler_t rain_toggle_cb = [=] (wf::output_t *output, wayfire_view)
+    {
+        return this->output_instance[output]->toggle_rain();
+    };
+};
+
+DECLARE_WAYFIRE_PLUGIN(wayfire_water_global);
