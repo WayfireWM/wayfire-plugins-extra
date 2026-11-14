@@ -78,6 +78,10 @@ showtouch = shared_module('showtouch', 'showtouch.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
 
+tilt_move = shared_module('tilt-move', 'tilt-move.cpp',
+    dependencies: [wayfire],
+    install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))
+
 view_shot = shared_module('view-shot', 'view-shot.cpp',
     dependencies: [wayfire],
     install: true, install_dir: join_paths(get_option('libdir'), 'wayfire'))

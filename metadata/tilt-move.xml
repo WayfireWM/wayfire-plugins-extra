@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="tilt-move">
+		<_short>Tilt While Moving</_short>
+		<_long>While a window is dragged, it turns in 3D perspective following the motion and springs back flat when it stops, in the style of the Compiz Fusion 3D tilt. Works with the move plugin (and together with wobbly).</_long>
+		<category>Effects</category>
+		<option name="strength" type="double">
+			<_short>Strength</_short>
+			<_long>Tilt in degrees per 1000 pixels per second of motion.</_long>
+			<default>14</default>
+			<min>0</min>
+			<max>60</max>
+			<precision>0.5</precision>
+		</option>
+		<option name="max_angle" type="double">
+			<_short>Maximum angle</_short>
+			<_long>The largest tilt, in degrees.</_long>
+			<default>35</default>
+			<min>0</min>
+			<max>80</max>
+			<precision>1</precision>
+		</option>
+		<option name="response" type="double">
+			<_short>Response</_short>
+			<_long>How quickly the tilt follows the motion and springs back, per second (higher = snappier).</_long>
+			<default>9</default>
+			<min>1</min>
+			<max>40</max>
+			<precision>0.5</precision>
+		</option>
+		<option name="invert" type="bool">
+			<_short>Invert</_short>
+			<_long>Lean the other way: the leading edge goes back instead of the trailing edge.</_long>
+			<default>false</default>
+		</option>
+	</plugin>
+</wayfire>

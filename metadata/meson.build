@@ -17,6 +17,7 @@ install_data('obs.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadi
 install_data('pin-view.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('showrepaint.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('showtouch.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
+install_data('tilt-move.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('view-shot.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('water.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('window-zoom.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
