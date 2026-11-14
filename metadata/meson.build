@@ -4,6 +4,7 @@ install_data('bench.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadata
 install_data('crosshair.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('extra-animations.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('fisheye.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
+install_data('flames.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('focus-change.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('focus-steal-prevent.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))
 install_data('follow-focus.xml', install_dir: wayfire.get_variable(pkgconfig: 'metadatadir'))

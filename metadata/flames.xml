@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<wayfire>
+	<plugin name="flames">
+		<_short>Flames</_short>
+		<_long>Animated flames rising from the bottom edge of the screen, drawn over all windows until toggled off. The desktop stays usable.</_long>
+		<category>Effects</category>
+		<option name="toggle" type="activator">
+			<_short>Toggle flames</_short>
+			<_long>Starts the flames; they keep burning until the binding is used again. Also available as the IPC method flames/toggle.</_long>
+			<default>&lt;ctrl&gt; &lt;super&gt; KEY_B</default>
+		</option>
+		<option name="height" type="int">
+			<_short>Flame height</_short>
+			<_long>Height of the flame zone in percent of the screen height.</_long>
+			<default>30</default>
+			<min>5</min>
+			<max>100</max>
+		</option>
+		<option name="intensity" type="int">
+			<_short>Intensity</_short>
+			<_long>Brightness and density of the flames in percent.</_long>
+			<default>80</default>
+			<min>10</min>
+			<max>100</max>
+		</option>
+		<option name="speed" type="int">
+			<_short>Speed</_short>
+			<_long>Animation speed in percent (100 = normal).</_long>
+			<default>100</default>
+			<min>10</min>
+			<max>300</max>
+		</option>
+		<option name="flip" type="bool">
+			<_short>Flip vertically</_short>
+			<_long>Draw the flames from the other edge; only needed if they appear at the top of the screen.</_long>
+			<default>false</default>
+		</option>
+	</plugin>
+</wayfire>
